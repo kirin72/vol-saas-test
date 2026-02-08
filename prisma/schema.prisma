@@ -1,0 +1,405 @@
+// Prisma 스키마 파일
+// 교회 봉사자 관리 SaaS 시스템
+// Multi-tenancy 기반 12개 테이블 설계
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ============================================
+// 1. Organization (조직/본당)
+// ============================================
+model Organization {
+  id        String   @id @default(cuid())
+  name      String   // 본당 이름
+  groupName String?  // 조직이름 (예: 독서단, 성가대 등)
+  slug      String   @unique // URL 친화적 식별자
+  phone     String?
+  email     String?
+  address   String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  users                User[]
+  volunteerRoles       VolunteerRole[]
+  massTemplates        MassTemplate[]
+  massSchedules        MassSchedule[]
+  assignments          Assignment[]
+  assignmentHistories  AssignmentHistory[]
+  assignmentRequests   AssignmentRequest[]
+  subscriptions        Subscription[]
+  transactions         Transaction[]  // 입출금 내역
+
+  @@index([slug])
+  @@index([isActive])
+  @@map("organizations")
+}
+
+// ============================================
+// 2. Plan (요금제)
+// ============================================
+enum PlanType {
+  FREE  // 0원 - 수동 배정
+  PRO   // 30,000원 - AI 자동 배정
+}
+
+model Plan {
+  id          String   @id @default(cuid())
+  name        String   // "무료 플랜", "프로 플랜"
+  type        PlanType @unique
+  price       Int      // 월 가격 (원)
+  features    Json     // 기능 목록
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  subscriptions Subscription[]
+
+  @@map("plans")
+}
+
+// ============================================
+// 3. Subscription (구독)
+// ============================================
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELED
+  EXPIRED
+  PENDING
+}
+
+model Subscription {
+  id                   String             @id @default(cuid())
+  organizationId       String
+  planId               String
+  status               SubscriptionStatus @default(PENDING)
+  currentPeriodStart   DateTime?
+  currentPeriodEnd     DateTime?
+  cancelAtPeriodEnd    Boolean            @default(false)
+  stripeCustomerId     String?            @unique
+  stripeSubscriptionId String?            @unique
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+
+  organization     Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  plan             Plan             @relation(fields: [planId], references: [id])
+  paymentHistory   PaymentHistory[]
+
+  @@index([organizationId])
+  @@index([status])
+  @@map("subscriptions")
+}
+
+// ============================================
+// 4. PaymentHistory (결제 이력)
+// ============================================
+model PaymentHistory {
+  id                    String   @id @default(cuid())
+  subscriptionId        String
+  amount                Int      // 결제 금액
+  currency              String   @default("KRW")
+  status                String   // succeeded, failed, refunded
+  stripePaymentIntentId String?  @unique
+  paidAt                DateTime?
+  createdAt             DateTime @default(now())
+
+  subscription Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  @@index([subscriptionId])
+  @@index([paidAt])
+  @@map("payment_histories")
+}
+
+// ============================================
+// 5. User (사용자)
+// ============================================
+enum UserRole {
+  SUPER_ADMIN  // 총괄관리자 (모든 조직 접근)
+  ADMIN        // 본당관리자 (자기 조직만)
+  VOLUNTEER    // 봉사자 (자기 조직만)
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  PENDING
+}
+
+model User {
+  id                  String     @id @default(cuid())
+  organizationId      String?    // SUPER_ADMIN은 null
+  email               String     @unique
+  password            String     // bcrypt 해시
+  name                String
+  baptismalName       String?    // 세례명
+  phone               String?
+  role                UserRole
+  status              UserStatus @default(ACTIVE)
+  isFirstLogin        Boolean    @default(true) // 첫 로그인 여부 (비밀번호 변경 안내용)
+  // 봉사자 추가 정보
+  availableThisMonth  Boolean?   // 이번 달 참여 가능 여부
+  preferredDays       Json?      // 선호 요일 (0-6 배열)
+  unavailableDays     Json?      // 불가 요일 (0-6 배열)
+  unavailableDates    Json?      // 이번 달 불가 날짜 (날짜 배열)
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
+
+  organization        Organization?        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userRoles           UserRole_[]
+  assignments         Assignment[]
+  assignmentHistories AssignmentHistory[]
+  assignmentRequests  AssignmentRequest[]
+  transactions        Transaction[]  // 입금 내역 (봉사자가 입금한 거래)
+
+  @@index([organizationId])
+  @@index([email])
+  @@index([role])
+  @@map("users")
+}
+
+// ============================================
+// 6. UserRole (사용자-역할 매핑)
+// ============================================
+model UserRole_ {
+  id              String   @id @default(cuid())
+  userId          String
+  volunteerRoleId String
+  assignedAt      DateTime @default(now())
+
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  volunteerRole VolunteerRole @relation(fields: [volunteerRoleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, volunteerRoleId])
+  @@index([userId])
+  @@index([volunteerRoleId])
+  @@map("user_roles")
+}
+
+// ============================================
+// 7. VolunteerRole (봉사 역할)
+// ============================================
+model VolunteerRole {
+  id             String   @id @default(cuid())
+  organizationId String
+  name           String   // "독서", "해설", "제대봉사", "성가대"
+  description    String?
+  color          String?  // UI 색상 코드
+  sortOrder      Int      @default(0)
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization  Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userRoles     UserRole_[]
+  templateSlots TemplateSlot[]
+  assignments   Assignment[]
+
+  @@index([organizationId])
+  @@index([isActive])
+  @@map("volunteer_roles")
+}
+
+// ============================================
+// 8. MassTemplate (미사 템플릿)
+// ============================================
+enum MassType {
+  WEEKDAY  // 평일미사
+  SATURDAY // 토요일미사
+  SUNDAY   // 주일미사
+  SPECIAL  // 특전미사
+}
+
+enum DayOfWeek {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
+model MassTemplate {
+  id             String     @id @default(cuid())
+  organizationId String
+  name           String     // "주일 오전 10시 미사"
+  massType       MassType
+  dayOfWeek      DayOfWeek?
+  time           String     // "10:00"
+  isActive       Boolean    @default(true)
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  organization  Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  slots         TemplateSlot[]
+  massSchedules MassSchedule[]
+
+  @@index([organizationId])
+  @@index([isActive])
+  @@map("mass_templates")
+}
+
+// ============================================
+// 9. TemplateSlot (템플릿 슬롯)
+// ============================================
+model TemplateSlot {
+  id              String   @id @default(cuid())
+  massTemplateId  String
+  volunteerRoleId String
+  requiredCount   Int      @default(1)
+  createdAt       DateTime @default(now())
+
+  massTemplate  MassTemplate  @relation(fields: [massTemplateId], references: [id], onDelete: Cascade)
+  volunteerRole VolunteerRole @relation(fields: [volunteerRoleId], references: [id], onDelete: Cascade)
+
+  @@unique([massTemplateId, volunteerRoleId])
+  @@index([massTemplateId])
+  @@map("template_slots")
+}
+
+// ============================================
+// 10. MassSchedule (미사 일정)
+// ============================================
+model MassSchedule {
+  id             String   @id @default(cuid())
+  organizationId String
+  massTemplateId String
+  date           DateTime // 미사 날짜
+  time           String   // "10:00"
+  notes          String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  massTemplate MassTemplate @relation(fields: [massTemplateId], references: [id])
+  assignments  Assignment[]
+
+  @@index([organizationId])
+  @@index([date])
+  @@map("mass_schedules")
+}
+
+// ============================================
+// 11. Assignment (배정)
+// ============================================
+enum AssignmentStatus {
+  ASSIGNED  // 배정됨
+  CONFIRMED // 확인됨
+  REJECTED  // 거절됨
+  COMPLETED // 완료됨
+}
+
+model Assignment {
+  id              String           @id @default(cuid())
+  organizationId  String
+  massScheduleId  String
+  userId          String
+  volunteerRoleId String
+  status          AssignmentStatus @default(ASSIGNED)
+  assignedAt      DateTime         @default(now())
+  confirmedAt     DateTime?
+  notes           String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  organization  Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  massSchedule  MassSchedule  @relation(fields: [massScheduleId], references: [id], onDelete: Cascade)
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  volunteerRole VolunteerRole @relation(fields: [volunteerRoleId], references: [id])
+
+  @@index([organizationId])
+  @@index([massScheduleId])
+  @@index([userId])
+  @@index([status])
+  @@map("assignments")
+}
+
+// ============================================
+// 12. AssignmentHistory (배정 이력)
+// ============================================
+model AssignmentHistory {
+  id             String   @id @default(cuid())
+  organizationId String
+  userId         String
+  massDate       DateTime
+  volunteerRole  String
+  status         String
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([userId])
+  @@index([massDate])
+  @@map("assignment_histories")
+}
+
+// ============================================
+// 13. AssignmentRequest (배정 교체/삭제 요청)
+// ============================================
+enum RequestType {
+  CHANGE  // 교체 요청
+  DELETE  // 삭제 요청
+}
+
+enum RequestStatus {
+  PENDING   // 대기 중
+  APPROVED  // 승인됨
+  REJECTED  // 거절됨
+}
+
+model AssignmentRequest {
+  id             String        @id @default(cuid())
+  organizationId String
+  assignmentId   String
+  userId         String
+  type           RequestType
+  status         RequestStatus @default(PENDING)
+  notes          String?       // 요청 메모
+  adminNotes     String?       // 관리자 메모
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([userId])
+  @@index([assignmentId])
+  @@index([status])
+  @@map("assignment_requests")
+}
+
+// ============================================
+// 14. Transaction (입출금 내역)
+// ============================================
+model Transaction {
+  id             String   @id @default(cuid())
+  organizationId String   // 본당 ID (Multi-tenancy)
+  date           DateTime // 거래 날짜
+  type           String   // 'income' | 'expense' | 'balance_forward'
+  amount         Int      // 금액 (원 단위, 정수)
+  description    String   // 적요
+  userId         String?  // 봉사자 ID (수입 시, 선택적)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  // Indexes
+  @@index([organizationId, date(sort: Desc)]) // 본당별 날짜 내림차순 조회
+  @@index([organizationId, type])              // 본당별 유형별 조회
+  @@index([userId])                            // 봉사자별 납부 이력 조회
+  @@map("transactions")
+}

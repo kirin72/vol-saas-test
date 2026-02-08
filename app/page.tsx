@@ -1,64 +1,100 @@
-import Image from "next/image";
+/**
+ * 메인 랜딩 페이지
+ * 봉사자 관리 시스템
+ */
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 
 export default function Home() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 px-4 py-12">
+      <main className="max-w-6xl mx-auto text-center space-y-8">
+        {/* 헤더 */}
+        <div className="space-y-4">
+          <h1 className="text-5xl font-bold text-gray-900 leading-tight">
+            봉사자 관리
+            <br />
+            <span className="text-blue-600">이제 스마트하게!</span>
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+            손쉬운 자동화 플랫폼으로
+            <br />
+            봉사자 배정, 장부, 알림까지
+            <br />
+	    한 번에 관리하세요!
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        {/* 주요 기능 - 모바일에서 2개씩, 데스크톱에서 4개 */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 py-8">
+          <div className="bg-white p-6 rounded-lg shadow-md">
+            <div className="text-4xl mb-4">📅</div>
+            <h3 className="text-lg font-semibold mb-2">봉사 일정 관리</h3>
+            <p className="text-gray-600 text-sm">
+              독서단, 해설단
+              <br />
+	      복사단, 제대회 등
+              <br />
+              자동화 관리
+            </p>
+          </div>
+
+          <div className="bg-white p-6 rounded-lg shadow-md">
+            <div className="text-4xl mb-4">👥</div>
+            <h3 className="text-lg font-semibold mb-2">봉사자 배정</h3>
+            <p className="text-gray-600 text-sm">
+              수동/자동 배정으로
+              <br />
+              효율적인 관리
+            </p>
+          </div>
+
+          <div className="bg-white p-6 rounded-lg shadow-md">
+            <div className="text-4xl mb-4">🔔</div>
+            <h3 className="text-lg font-semibold mb-2">알림 시스템</h3>
+            <p className="text-gray-600 text-sm">
+              봉사자에게 자동으로
+              <br />
+              일정 알림을 전송
+            </p>
+          </div>
+
+          <div className="bg-white p-6 rounded-lg shadow-md">
+            <div className="text-4xl mb-4">💰</div>
+            <h3 className="text-lg font-semibold mb-2">회비 출납 장부</h3>
+            <p className="text-gray-600 text-sm">
+              자동 계산 장부로
+	       <br />
+	      간편하게 관리
+            </p>
+          </div>
         </div>
+
+        {/* CTA 버튼 - 로그인 먼저, 무료 시작 아래 */}
+        <div className="flex flex-col gap-3 items-center pt-4">
+          <Link href="/auth/login" className="w-full max-w-xs">
+            <Button size="lg" variant="outline" className="w-full px-8">
+              로그인
+            </Button>
+          </Link>
+          <Link href="/auth/register" className="w-full max-w-xs">
+            <Button size="lg" className="w-full px-8">
+              무료로 시작하기
+            </Button>
+          </Link>
+        </div>
+
+        {/* Super Admin 링크 */}
+        <div className="pt-8 text-sm text-gray-500">
+          <Link href="/auth/super-admin" className="hover:text-gray-700 underline">
+            총괄 관리자 로그인
+          </Link>
+        </div>
+
+        {/* 푸터 */}
+        <footer className="pt-12 text-sm text-gray-500">
+          © 2026 교회 봉사자 관리 시스템. All rights reserved.
+        </footer>
       </main>
     </div>
   );
