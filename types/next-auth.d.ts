@@ -1,6 +1,6 @@
 /**
  * NextAuth 타입 확장
- * Session과 User에 organizationId, role 필드 추가
+ * Session과 User에 organizationId, role, isFirstLogin 필드 추가
  */
 import { DefaultSession } from 'next-auth';
 
@@ -10,6 +10,7 @@ declare module 'next-auth' {
       id: string;
       organizationId: string | null;
       role: string;
+      isFirstLogin: boolean;
     } & DefaultSession['user'];
   }
 
@@ -17,6 +18,7 @@ declare module 'next-auth' {
     id: string;
     organizationId: string | null;
     role: string;
+    isFirstLogin?: boolean;
   }
 }
 
@@ -25,5 +27,6 @@ declare module 'next-auth/jwt' {
     id: string;
     organizationId: string | null;
     role: string;
+    isFirstLogin?: boolean;
   }
 }
