@@ -157,7 +157,7 @@ export default function NewVolunteerPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          <form onSubmit={handleSubmit((data) => onSubmit(data, false))} className="space-y-6">
             {/* 이름 */}
             <div className="space-y-2">
               <Label htmlFor="name">이름 *</Label>
