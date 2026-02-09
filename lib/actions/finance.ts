@@ -170,7 +170,7 @@ export async function createTransaction(
     const transaction = await prisma.transaction.create({
       data: {
         organizationId,
-        date: validatedData.date,
+        date: new Date(validatedData.date), // 문자열을 Date 객체로 변환
         type: validatedData.type,
         amount: validatedData.amount,
         description: validatedData.description,

@@ -9,11 +9,10 @@ import { z } from 'zod';
  * 클라이언트와 서버에서 이중 검증
  */
 export const transactionSchema = z.object({
-  // 거래 날짜 (필수)
-  date: z.coerce.date({
+  // 거래 날짜 (필수) - HTML input[type=date]는 문자열 반환
+  date: z.string({
     required_error: '날짜를 선택해주세요.',
-    invalid_type_error: '올바른 날짜 형식이 아닙니다.',
-  }),
+  }).min(1, '날짜를 선택해주세요.'),
 
   // 거래 유형 (필수)
   type: z.enum(['income', 'expense'], {
