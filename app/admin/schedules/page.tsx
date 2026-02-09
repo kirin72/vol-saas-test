@@ -266,7 +266,7 @@ export default function SchedulesPage() {
           </Button>
 
           {/* 일정 추가 버튼 */}
-          <Button onClick={handleAdd}>
+          <Button onClick={() => handleAdd()}>
             <PlusCircle className="mr-2 h-4 w-4" />
             일정 추가
           </Button>
