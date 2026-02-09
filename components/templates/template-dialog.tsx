@@ -323,11 +323,17 @@ export default function TemplateDialog({
               {Array.from({ length: 29 }, (_, i) => {
                 // 06:00부터 20:00까지 30분 단위 (29개 옵션)
                 const totalMinutes = 6 * 60 + i * 30;
-                const h = String(Math.floor(totalMinutes / 60)).padStart(2, '0');
-                const m = String(totalMinutes % 60).padStart(2, '0');
-                return `${h}:${m}`;
-              }).map((t) => (
-                <option key={t} value={t}>{t}</option>
+                const hour24 = Math.floor(totalMinutes / 60);
+                const min = String(totalMinutes % 60).padStart(2, '0');
+                // 저장용 값 (24시간 형식)
+                const value = `${String(hour24).padStart(2, '0')}:${min}`;
+                // 표시용 라벨 (오전/오후 12시간 형식)
+                const period = hour24 < 12 ? '오전' : '오후';
+                const hour12 = hour24 === 0 ? 12 : hour24 > 12 ? hour24 - 12 : hour24;
+                const label = `${period} ${hour12}:${min}`;
+                return { value, label };
+              }).map(({ value, label }) => (
+                <option key={value} value={value}>{label}</option>
               ))}
             </select>
             {errors.time && (
