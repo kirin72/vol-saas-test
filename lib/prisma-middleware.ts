@@ -3,7 +3,7 @@
  * - SUPER_ADMIN을 제외한 모든 쿼리에 organizationId 필터 자동 주입
  * - 조직별 Row-level 데이터 격리 보장
  */
-import { Prisma } from './generated/prisma';
+import { Prisma } from '@prisma/client';
 
 /**
  * Multi-tenancy Middleware 생성
