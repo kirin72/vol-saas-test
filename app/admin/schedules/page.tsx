@@ -368,7 +368,7 @@ export default function SchedulesPage() {
                 <p className="text-gray-500 mb-4">
                   {selectedDate ? '이 날짜에 일정이 없습니다' : '이번 달 일정이 없습니다'}
                 </p>
-                <Button onClick={handleAdd}>
+                <Button onClick={() => handleAdd()}>
                   <PlusCircle className="mr-2 h-4 w-4" />
                   {selectedDate ? '이 날짜에 일정 추가하기' : '첫 번째 일정 추가하기'}
                 </Button>
