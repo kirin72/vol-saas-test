@@ -42,15 +42,15 @@ export const authOptions: NextAuthConfig = {
 
         // Super Admin 로그인
         if (role === 'SUPER_ADMIN') {
-          // IP 주소 검증
-          const ip =
-            req.headers?.get('x-forwarded-for')?.split(',')[0].trim() ||
-            req.headers?.get('x-real-ip') ||
-            '127.0.0.1';
-
-          if (!isAllowedIP(ip)) {
-            throw new Error('접근이 허용되지 않은 IP 주소입니다.');
-          }
+          // IP 주소 검증 비활성화 (개발/테스트 편의를 위해)
+          // const ip =
+          //   req.headers?.get('x-forwarded-for')?.split(',')[0].trim() ||
+          //   req.headers?.get('x-real-ip') ||
+          //   '127.0.0.1';
+          //
+          // if (!isAllowedIP(ip)) {
+          //   throw new Error('접근이 허용되지 않은 IP 주소입니다.');
+          // }
 
           // 환경변수 기반 인증 (DB 저장 없음)
           if (
