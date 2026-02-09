@@ -11,7 +11,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { PlusCircle, Edit, Trash2, Loader2, ChevronLeft, ChevronRight, Calendar, List } from 'lucide-react';
 import ScheduleDialog from '@/components/schedules/schedule-dialog';
 import ScheduleCalendar from '@/components/schedules/schedule-calendar';
-import BulkScheduleDialog from '@/components/schedules/bulk-schedule-dialog';
 import { massTypeLabels } from '@/lib/validations/schedule';
 
 interface MassSchedule {
@@ -44,19 +43,12 @@ export default function SchedulesPage() {
   const [error, setError] = useState('');
   const [deleting, setDeleting] = useState<string | null>(null);
 
-  // 성당 정보
-  const [organizationName, setOrganizationName] = useState('');
-
   // 뷰 모드 (calendar / list)
   const [viewMode, setViewMode] = useState<'calendar' | 'list'>('calendar');
 
   // 다이얼로그 상태
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingSchedule, setEditingSchedule] = useState<MassSchedule | null>(null);
-
-  // 요일별 일괄 추가 다이얼로그
-  const [bulkDialogOpen, setBulkDialogOpen] = useState(false);
-  const [selectedDayOfWeek, setSelectedDayOfWeek] = useState<number | null>(null);
 
   // 월 선택
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -66,23 +58,8 @@ export default function SchedulesPage() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
   useEffect(() => {
-    fetchOrganizationInfo();
     fetchSchedules();
   }, [currentMonth]);
-
-  const fetchOrganizationInfo = async () => {
-    try {
-      const response = await fetch('/api/auth/session');
-      const session = await response.json();
-      if (session?.user?.organizationId) {
-        const orgResponse = await fetch(`/api/admin/organization`);
-        const orgData = await orgResponse.json();
-        setOrganizationName(orgData.name);
-      }
-    } catch (err) {
-      console.error('성당 정보 조회 실패:', err);
-    }
-  };
 
   const fetchSchedules = async () => {
     try {
@@ -202,19 +179,6 @@ export default function SchedulesPage() {
     setSelectedDate(null);
   };
 
-  // 요일별 일괄 추가
-  const handleBulkAdd = (dayOfWeek: number) => {
-    setSelectedDayOfWeek(dayOfWeek);
-    setBulkDialogOpen(true);
-  };
-
-  // 요일별 일괄 추가 성공
-  const handleBulkAddSuccess = () => {
-    setBulkDialogOpen(false);
-    setSelectedDayOfWeek(null);
-    fetchSchedules();
-  };
-
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-96">
@@ -277,36 +241,6 @@ export default function SchedulesPage() {
       {/* 캘린더 뷰 */}
       {viewMode === 'calendar' && (
         <div className="space-y-6">
-          {/* 요일별 일괄 추가 섹션 */}
-          <Card className="p-6">
-            <h2 className="text-xl font-bold mb-4">
-              {organizationName ? `${organizationName}의 미사 일정 입력` : '미사 일정 입력'}
-            </h2>
-            <div className="grid grid-cols-7 gap-3">
-              {['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'].map((day, index) => (
-                <Card
-                  key={day}
-                  className={`p-4 text-center transition-all hover:shadow-md ${
-                    index === 0 ? 'border-red-200 bg-red-50' : index === 6 ? 'border-blue-200 bg-blue-50' : 'border-gray-200'
-                  }`}
-                >
-                  <div className={`font-semibold mb-3 ${index === 0 ? 'text-red-600' : index === 6 ? 'text-blue-600' : 'text-gray-700'}`}>
-                    {day}
-                  </div>
-                  <Button
-                    onClick={() => handleBulkAdd(index)}
-                    variant="outline"
-                    size="sm"
-                    className="w-full"
-                  >
-                    <PlusCircle className="h-4 w-4 mr-1" />
-                    추가
-                  </Button>
-                </Card>
-              ))}
-            </div>
-          </Card>
-
           {/* 캘린더 */}
           <ScheduleCalendar
             currentDate={currentDate}
@@ -488,16 +422,6 @@ export default function SchedulesPage() {
         schedules={schedules}
       />
 
-      {/* 요일별 일괄 추가 다이얼로그 */}
-      {selectedDayOfWeek !== null && (
-        <BulkScheduleDialog
-          open={bulkDialogOpen}
-          onOpenChange={setBulkDialogOpen}
-          dayOfWeek={selectedDayOfWeek}
-          currentMonth={currentDate}
-          onSuccess={handleBulkAddSuccess}
-        />
-      )}
     </div>
   );
 }
