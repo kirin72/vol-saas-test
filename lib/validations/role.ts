@@ -26,6 +26,8 @@ export const roleCreateSchema = z.object({
     .min(0, '정렬 순서는 0 이상이어야 합니다')
     .default(0),
 
+  genderPreference: z.enum(['NONE', 'MALE_PREFERRED', 'FEMALE_PREFERRED']).default('NONE'), // 성별 우선 배정
+
   isActive: z.boolean().default(true),
 });
 

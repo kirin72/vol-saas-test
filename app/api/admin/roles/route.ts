@@ -109,6 +109,7 @@ export async function POST(request: NextRequest) {
         description: validatedData.description || null,
         color: validatedData.color,
         sortOrder: nextSortOrder, // 자동 할당
+        genderPreference: validatedData.genderPreference || 'NONE', // 성별 우선 배정
         isActive: true, // 기본값 true
       },
     });

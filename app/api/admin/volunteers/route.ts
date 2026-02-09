@@ -158,6 +158,7 @@ export async function POST(request: NextRequest) {
           baptismalName: validatedData.baptismalName ?? null,
           phone: validatedData.phone ?? null,
           role: 'VOLUNTEER',
+          gender: validatedData.gender ?? null, // 성별
           status: validatedData.status,
           hasPaidDues: validatedData.hasPaidDues ?? false, // 회비 납부 여부
         },

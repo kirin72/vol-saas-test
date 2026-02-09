@@ -133,6 +133,19 @@ enum UserStatus {
   PENDING
 }
 
+// 성별
+enum Gender {
+  MALE    // 남성
+  FEMALE  // 여성
+}
+
+// 역할 성별 우선 배정
+enum GenderPreference {
+  NONE             // 성별 무관
+  MALE_PREFERRED   // 남성 우선
+  FEMALE_PREFERRED // 여성 우선
+}
+
 model User {
   id                  String     @id @default(cuid())
   organizationId      String?    // SUPER_ADMIN은 null
@@ -142,6 +155,7 @@ model User {
   baptismalName       String?    // 세례명
   phone               String?
   role                UserRole
+  gender              Gender?    // 성별 (봉사자 전용, optional)
   status              UserStatus @default(ACTIVE)
   isFirstLogin        Boolean    @default(true) // 첫 로그인 여부 (비밀번호 변경 안내용)
   // 봉사자 추가 정보
@@ -189,13 +203,14 @@ model UserRole_ {
 // 7. VolunteerRole (봉사 역할)
 // ============================================
 model VolunteerRole {
-  id             String   @id @default(cuid())
-  organizationId String
-  name           String   // "독서", "해설", "제대봉사", "성가대"
-  description    String?
-  color          String?  // UI 색상 코드
-  sortOrder      Int      @default(0)
-  isActive       Boolean  @default(true)
+  id               String           @id @default(cuid())
+  organizationId   String
+  name             String           // "독서", "해설", "제대봉사", "성가대"
+  description      String?
+  color            String?          // UI 색상 코드
+  sortOrder        Int              @default(0)
+  genderPreference GenderPreference @default(NONE) // 성별 우선 배정
+  isActive         Boolean          @default(true)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 

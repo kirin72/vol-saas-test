@@ -29,6 +29,7 @@ interface RoleDialogProps {
     description: string | null;
     color: string;
     sortOrder: number;
+    genderPreference: string;
     isActive: boolean;
   } | null;
   onSuccess: () => void;
@@ -59,6 +60,7 @@ export default function RoleDialog({
       description: '',
       color: colorPresets[0].value,
       sortOrder: 0,
+      genderPreference: 'NONE',
       isActive: true,
     },
   });
@@ -74,6 +76,7 @@ export default function RoleDialog({
           description: role.description || '',
           color: role.color,
           sortOrder: role.sortOrder,
+          genderPreference: (role.genderPreference as 'NONE' | 'MALE_PREFERRED' | 'FEMALE_PREFERRED') || 'NONE',
           isActive: role.isActive,
         });
       } else {
@@ -82,6 +85,7 @@ export default function RoleDialog({
           description: '',
           color: colorPresets[0].value,
           sortOrder: 0,
+          genderPreference: 'NONE',
           isActive: true,
         });
       }
@@ -193,6 +197,24 @@ export default function RoleDialog({
             {errors.color && (
               <p className="text-sm text-red-600">{errors.color.message}</p>
             )}
+          </div>
+
+          {/* 성별 우선 배정 */}
+          <div className="space-y-2">
+            <Label htmlFor="genderPreference">성별 우선 배정</Label>
+            <select
+              id="genderPreference"
+              {...register('genderPreference')}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              disabled={loading}
+            >
+              <option value="NONE">성별 무관</option>
+              <option value="MALE_PREFERRED">남성 우선</option>
+              <option value="FEMALE_PREFERRED">여성 우선</option>
+            </select>
+            <p className="text-xs text-gray-500">
+              자동배정 시 해당 성별 봉사자에게 우선 배정됩니다
+            </p>
           </div>
 
           {/* 수정 모드일 때만 정렬 순서와 활성 상태 표시 */}

@@ -32,6 +32,7 @@ interface Volunteer {
   baptismalName: string | null;
   email: string;
   phone: string | null;
+  gender: 'MALE' | 'FEMALE' | null;
   status: 'ACTIVE' | 'INACTIVE' | 'PENDING';
   hasPaidDues: boolean;
   availableThisMonth: boolean | null;
@@ -86,6 +87,7 @@ export default function VolunteerDetailPage() {
             email: volunteerData.email || '',
             phone: volunteerData.phone || '',
             password: '', // 비밀번호는 비워둠
+            gender: volunteerData.gender || undefined,
             status: volunteerData.status,
             hasPaidDues: volunteerData.hasPaidDues ?? false,
             roleIds: volunteerData.userRoles.map((ur: any) => ur.volunteerRole.id),
@@ -266,6 +268,21 @@ export default function VolunteerDetailPage() {
               {errors.baptismalName && (
                 <p className="text-sm text-red-600">{errors.baptismalName.message}</p>
               )}
+            </div>
+
+            {/* 성별 */}
+            <div className="space-y-2">
+              <Label htmlFor="gender">성별</Label>
+              <select
+                id="gender"
+                {...register('gender')}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                disabled={loading}
+              >
+                <option value="">선택 안함</option>
+                <option value="MALE">남성</option>
+                <option value="FEMALE">여성</option>
+              </select>
             </div>
 
             {/* 이메일 */}

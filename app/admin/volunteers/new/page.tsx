@@ -186,6 +186,21 @@ export default function NewVolunteerPage() {
               )}
             </div>
 
+            {/* 성별 */}
+            <div className="space-y-2">
+              <Label htmlFor="gender">성별</Label>
+              <select
+                id="gender"
+                {...register('gender')}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                disabled={loading}
+              >
+                <option value="">선택 안함</option>
+                <option value="MALE">남성</option>
+                <option value="FEMALE">여성</option>
+              </select>
+            </div>
+
             {/* 이메일 */}
             <div className="space-y-2">
               <Label htmlFor="email">이메일</Label>

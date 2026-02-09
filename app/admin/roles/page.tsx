@@ -17,6 +17,7 @@ interface VolunteerRole {
   description: string | null;
   color: string;
   sortOrder: number;
+  genderPreference: string;
   isActive: boolean;
   _count: {
     userRoles: number;

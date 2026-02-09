@@ -72,6 +72,7 @@ export async function PATCH(
         description: validatedData.description || null,
         color: validatedData.color,
         sortOrder: validatedData.sortOrder,
+        genderPreference: validatedData.genderPreference || 'NONE', // 성별 우선 배정
         isActive: validatedData.isActive,
       },
     });
