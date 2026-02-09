@@ -22,6 +22,10 @@ export async function PATCH(
 
     const organizationId = session.user.organizationId;
 
+    if (!organizationId) {
+      return NextResponse.json({ error: 'Organization not found' }, { status: 400 });
+    }
+
     // 역할 존재 및 권한 확인
     const currentRole = await prisma.volunteerRole.findFirst({
       where: {

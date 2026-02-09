@@ -24,6 +24,10 @@ export async function GET(
 
     const organizationId = session.user.organizationId;
 
+    if (!organizationId) {
+      return NextResponse.json({ error: 'Organization not found' }, { status: 400 });
+    }
+
     // 일정 조회
     const schedule = await prisma.massSchedule.findFirst({
       where: {
@@ -86,6 +90,10 @@ export async function PATCH(
     }
 
     const organizationId = session.user.organizationId;
+
+    if (!organizationId) {
+      return NextResponse.json({ error: 'Organization not found' }, { status: 400 });
+    }
 
     // 일정 존재 확인
     const existingSchedule = await prisma.massSchedule.findFirst({
@@ -198,6 +206,10 @@ export async function DELETE(
     }
 
     const organizationId = session.user.organizationId;
+
+    if (!organizationId) {
+      return NextResponse.json({ error: 'Organization not found' }, { status: 400 });
+    }
 
     // 일정 존재 확인
     const schedule = await prisma.massSchedule.findFirst({
