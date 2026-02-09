@@ -10,6 +10,7 @@ import {
   LayoutDashboard,
   Users,
   Tags,
+  Copy,
   CalendarDays,
   CalendarCheck,
   Bell,
@@ -47,6 +48,11 @@ const menuItems: MenuItem[] = [
     href: '/admin/roles',
     label: '역할 관리',
     icon: Tags,
+  },
+  {
+    href: '/admin/templates',
+    label: '미사 템플릿',
+    icon: Copy,
   },
   {
     href: '/admin/schedules',
