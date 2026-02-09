@@ -22,7 +22,7 @@ function isAllowedIP(ip: string | null): boolean {
  * NextAuth 설정
  */
 export const authOptions: NextAuthConfig = {
-  adapter: PrismaAdapter(prisma),
+  adapter: PrismaAdapter(prisma) as any, // Type assertion for adapter compatibility
   session: { strategy: 'jwt' },
   pages: {
     signIn: '/auth/login',
