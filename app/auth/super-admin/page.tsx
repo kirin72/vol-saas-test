@@ -46,12 +46,13 @@ export default function SuperAdminLoginPage() {
 
       if (result?.error) {
         setError(result.error);
-      } else {
-        router.push('/super-admin/dashboard');
+        setLoading(false);
+      } else if (result?.ok) {
+        // 로그인 성공 → 강제 리디렉션
+        window.location.href = '/super-admin/dashboard';
       }
     } catch (err) {
       setError('로그인 중 오류가 발생했습니다.');
-    } finally {
       setLoading(false);
     }
   };

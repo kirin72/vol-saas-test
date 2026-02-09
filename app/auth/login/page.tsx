@@ -106,6 +106,7 @@ export default function LoginPage() {
         email: emailOrName,
         password,
         organizationId: orgId,
+        role: orgId ? 'ADMIN' : undefined, // organizationId가 있으면 ADMIN/VOLUNTEER
         redirect: false,
       });
 
@@ -115,32 +116,49 @@ export default function LoginPage() {
         setError(result.error);
         setLoading(false);
       } else if (result?.ok) {
-        // 로그인 성공 → 세션 확인 후 role에 따라 리다이렉트
+        // 로그인 성공 → 세션을 기다린 후 role에 따라 리다이렉트
+        // NextAuth v5에서는 쿠키가 설정되는데 시간이 필요할 수 있음
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        // 세션 확인
         const sessionRes = await fetch('/api/auth/session');
         const session = await sessionRes.json();
 
+        console.log('세션 정보:', session);
+
+        if (!session?.user) {
+          // 세션이 없으면 강제 리디렉션
+          setLoading(false);
+          window.location.href = '/admin/dashboard';
+          return;
+        }
+
+        const userRole = session.user.role;
+        const isFirstLogin = session.user.isFirstLogin;
+
         // 봉사자의 첫 로그인인 경우에만 비밀번호 변경 유도 알림 표시
-        if (session?.user?.role === 'VOLUNTEER' && session?.user?.isFirstLogin) {
+        if (userRole === 'VOLUNTEER' && isFirstLogin) {
           setShowPasswordChangePrompt(true);
           setLoading(false);
 
           // 2초 후 대시보드로 이동
           setTimeout(() => {
-            router.push('/volunteer/dashboard');
-            router.refresh();
+            window.location.href = '/volunteer/dashboard';
           }, 2000);
         } else {
           // 관리자 또는 이미 로그인한 봉사자는 바로 대시보드로 이동
-          if (session?.user?.role === 'ADMIN') {
-            router.push('/admin/dashboard');
-          } else if (session?.user?.role === 'VOLUNTEER') {
-            router.push('/volunteer/dashboard');
-          } else if (session?.user?.role === 'SUPER_ADMIN') {
-            router.push('/super-admin/dashboard');
-          } else {
-            setError('유효하지 않은 권한입니다.');
+          let dashboardUrl = '/admin/dashboard';
+
+          if (userRole === 'ADMIN') {
+            dashboardUrl = '/admin/dashboard';
+          } else if (userRole === 'VOLUNTEER') {
+            dashboardUrl = '/volunteer/dashboard';
+          } else if (userRole === 'SUPER_ADMIN') {
+            dashboardUrl = '/super-admin/dashboard';
           }
-          router.refresh();
+
+          // 강제 리디렉션 (router.push 대신 window.location 사용)
+          window.location.href = dashboardUrl;
         }
       }
     } catch (err) {
@@ -162,15 +180,21 @@ export default function LoginPage() {
       method: 'POST',
     });
 
+    await new Promise(resolve => setTimeout(resolve, 300));
+
     const sessionRes = await fetch('/api/auth/session');
     const session = await sessionRes.json();
 
+    let dashboardUrl = '/volunteer/dashboard';
+
     if (session?.user?.role === 'ADMIN') {
-      router.push('/admin/dashboard');
+      dashboardUrl = '/admin/dashboard';
     } else if (session?.user?.role === 'VOLUNTEER') {
-      router.push('/volunteer/dashboard');
+      dashboardUrl = '/volunteer/dashboard';
     }
-    router.refresh();
+
+    // 강제 리디렉션
+    window.location.href = dashboardUrl;
   };
 
   // 비밀번호 변경 유도 알림
