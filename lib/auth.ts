@@ -126,30 +126,6 @@ export const authOptions: NextAuthConfig = {
     }),
   ],
   callbacks: {
-    // 미들웨어에서 호출되는 콜백 (NextAuth v5)
-    authorized({ auth, request }) {
-      const { pathname } = request.nextUrl;
-      const isLoggedIn = !!auth?.user;
-
-      // 인증이 필요한 경로
-      const protectedPaths = ['/admin', '/super-admin', '/volunteer'];
-      const isProtectedPath = protectedPaths.some((path) =>
-        pathname.startsWith(path)
-      );
-
-      console.log('=== Authorized Callback ===');
-      console.log('경로:', pathname);
-      console.log('로그인 여부:', isLoggedIn);
-      console.log('사용자:', auth?.user);
-
-      // 보호된 경로는 인증 필요
-      if (isProtectedPath) {
-        return isLoggedIn;
-      }
-
-      // 그 외 경로는 인증 불필요
-      return true;
-    },
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;

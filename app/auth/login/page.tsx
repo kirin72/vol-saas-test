@@ -106,7 +106,7 @@ export default function LoginPage() {
         email: emailOrName,
         password,
         organizationId: orgId,
-        role: orgId ? 'ADMIN' : undefined, // organizationId가 있으면 ADMIN/VOLUNTEER
+        // role은 전달하지 않음 (DB에서 자동으로 조회)
         redirect: false,
       });
 
