@@ -145,9 +145,9 @@ export async function PATCH(
           status: validatedData.status,
           // 봉사 가능 정보
           availableThisMonth: validatedData.availableThisMonth ?? null,
-          preferredDays: validatedData.preferredDays || null,
-          unavailableDays: validatedData.unavailableDays || null,
-          unavailableDates: validatedData.unavailableDates || null,
+          preferredDays: validatedData.preferredDays ?? undefined,
+          unavailableDays: validatedData.unavailableDays ?? undefined,
+          unavailableDates: validatedData.unavailableDates ?? undefined,
         },
         include: {
           userRoles: {
