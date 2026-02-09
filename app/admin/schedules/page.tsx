@@ -29,6 +29,7 @@ interface MassSchedule {
         id: string;
         name: string;
         color: string;
+        sortOrder: number;
       };
     }>;
   } | null;
