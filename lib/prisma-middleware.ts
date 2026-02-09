@@ -6,6 +6,17 @@
 import { Prisma } from '@prisma/client';
 
 /**
+ * Prisma Middleware 파라미터 타입 정의 (Prisma v5에서 MiddlewareParams가 export되지 않음)
+ */
+type MiddlewareParams = {
+  model?: string;
+  action: string;
+  args: any;
+  dataPath: string[];
+  runInTransaction: boolean;
+};
+
+/**
  * Multi-tenancy Middleware 생성
  * @param organizationId - 현재 사용자의 조직 ID (SUPER_ADMIN은 null)
  * @param userRole - 현재 사용자의 역할 (SUPER_ADMIN, ADMIN, VOLUNTEER)
@@ -15,8 +26,8 @@ export function createMultiTenancyMiddleware(
   userRole: string
 ) {
   return async (
-    params: Prisma.MiddlewareParams,
-    next: (params: Prisma.MiddlewareParams) => Promise<any>
+    params: MiddlewareParams,
+    next: (params: MiddlewareParams) => Promise<any>
   ) => {
     // SUPER_ADMIN은 모든 조직 데이터 접근 가능
     if (userRole === 'SUPER_ADMIN') {
