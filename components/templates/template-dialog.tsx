@@ -341,9 +341,9 @@ export default function TemplateDialog({
             )}
           </div>
 
-          {/* 역할별 필요 인원 */}
+          {/* 필요 역할 */}
           <div className="space-y-2">
-            <Label>필요 역할 및 인원 *</Label>
+            <Label>필요 역할 *</Label>
             {roles.length === 0 ? (
               <p className="text-sm text-gray-500 py-2">
                 등록된 역할이 없습니다. 먼저 역할을 추가해주세요.
@@ -379,44 +379,14 @@ export default function TemplateDialog({
                         />
                         <span className="text-sm">{role.name}</span>
                       </label>
-                      {/* 인원수 입력 (선택 시에만 표시) */}
-                      {checked && (
-                        <div className="flex items-center gap-1">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            className="h-7 w-7 p-0"
-                            onClick={() =>
-                              handleCountChange(role.id, (selectedSlots[role.id] || 1) - 1)
-                            }
-                            disabled={loading || (selectedSlots[role.id] || 1) <= 1}
-                          >
-                            -
-                          </Button>
-                          <span className="w-8 text-center text-sm font-medium">
-                            {selectedSlots[role.id] || 1}
-                          </span>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            className="h-7 w-7 p-0"
-                            onClick={() =>
-                              handleCountChange(role.id, (selectedSlots[role.id] || 1) + 1)
-                            }
-                            disabled={loading}
-                          >
-                            +
-                          </Button>
-                          <span className="text-xs text-gray-500 ml-1">명</span>
-                        </div>
-                      )}
                     </div>
                   );
                 })}
               </div>
             )}
+            <p className="text-xs text-gray-500">
+              2명 이상의 인원이 필요할때는 역할관리에서 추가해 주세요
+            </p>
             {errors.slots && (
               <p className="text-sm text-red-600">{errors.slots.message}</p>
             )}
