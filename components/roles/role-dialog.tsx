@@ -217,42 +217,6 @@ export default function RoleDialog({
             </p>
           </div>
 
-          {/* 수정 모드일 때만 정렬 순서와 활성 상태 표시 */}
-          {isEditing && (
-            <>
-              {/* 정렬 순서 */}
-              <div className="space-y-2">
-                <Label htmlFor="sortOrder">정렬 순서</Label>
-                <Input
-                  id="sortOrder"
-                  type="number"
-                  {...register('sortOrder', { valueAsNumber: true })}
-                  placeholder="0"
-                  disabled={loading}
-                />
-                <p className="text-xs text-gray-500">
-                  작은 숫자가 먼저 표시됩니다
-                </p>
-                {errors.sortOrder && (
-                  <p className="text-sm text-red-600">{errors.sortOrder.message}</p>
-                )}
-              </div>
-
-              {/* 활성 상태 */}
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="isActive"
-                  {...register('isActive')}
-                  className="w-4 h-4 rounded border-gray-300"
-                  disabled={loading}
-                />
-                <Label htmlFor="isActive" className="cursor-pointer">
-                  역할 활성화 (비활성화 시 선택 불가)
-                </Label>
-              </div>
-            </>
-          )}
 
           {/* 에러 메시지 */}
           {error && (

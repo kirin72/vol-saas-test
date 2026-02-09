@@ -8,7 +8,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { PlusCircle, Edit, Trash2, Loader2, ChevronUp, ChevronDown, Power } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, Loader2 } from 'lucide-react';
 import RoleDialog from '@/components/roles/role-dialog';
 
 interface VolunteerRole {
@@ -29,8 +29,6 @@ export default function RolesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [deleting, setDeleting] = useState<string | null>(null);
-  const [reordering, setReordering] = useState<string | null>(null);
-  const [toggling, setToggling] = useState<string | null>(null);
 
   // 다이얼로그 상태
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -64,52 +62,6 @@ export default function RolesPage() {
   const handleEdit = (role: VolunteerRole) => {
     setEditingRole(role);
     setDialogOpen(true);
-  };
-
-  // 역할 순서 변경
-  const handleReorder = async (roleId: string, direction: 'up' | 'down') => {
-    setReordering(roleId);
-
-    try {
-      const response = await fetch(`/api/admin/roles/${roleId}/reorder`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ direction }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || '순서 변경 실패');
-      }
-
-      fetchRoles(); // 목록 새로고침
-    } catch (err: any) {
-      alert(`순서 변경 오류: ${err.message}`);
-    } finally {
-      setReordering(null);
-    }
-  };
-
-  // 역할 활성/비활성 토글
-  const handleToggleActive = async (role: VolunteerRole) => {
-    setToggling(role.id);
-
-    try {
-      const response = await fetch(`/api/admin/roles/${role.id}/toggle-active`, {
-        method: 'PATCH',
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || '활성 상태 변경 실패');
-      }
-
-      fetchRoles(); // 목록 새로고침
-    } catch (err: any) {
-      alert(`활성 상태 변경 오류: ${err.message}`);
-    } finally {
-      setToggling(null);
-    }
   };
 
   // 역할 삭제
@@ -212,9 +164,6 @@ export default function RolesPage() {
                       >
                         {role.name}
                       </Badge>
-                      {!role.isActive && (
-                        <Badge variant="secondary">비활성</Badge>
-                      )}
                     </div>
                     {role.description && (
                       <p className="text-sm text-gray-600 mt-2">
@@ -229,51 +178,6 @@ export default function RolesPage() {
                   {/* 통계 */}
                   <div className="text-sm text-gray-600">
                     <p>봉사자 수: {role._count.userRoles}명</p>
-                    <p>정렬 순서: {role.sortOrder}</p>
-                  </div>
-
-                  {/* 순서 변경 및 활성화 버튼 */}
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleReorder(role.id, 'up')}
-                      disabled={
-                        reordering === role.id ||
-                        roles.indexOf(role) === 0
-                      }
-                      className="flex-1"
-                      title="위로 이동"
-                    >
-                      <ChevronUp className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleReorder(role.id, 'down')}
-                      disabled={
-                        reordering === role.id ||
-                        roles.indexOf(role) === roles.length - 1
-                      }
-                      className="flex-1"
-                      title="아래로 이동"
-                    >
-                      <ChevronDown className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant={role.isActive ? 'default' : 'secondary'}
-                      size="sm"
-                      onClick={() => handleToggleActive(role)}
-                      disabled={toggling === role.id}
-                      className="flex-1"
-                    >
-                      <Power className="h-4 w-4 mr-1" />
-                      {toggling === role.id
-                        ? '처리 중...'
-                        : role.isActive
-                        ? '활성'
-                        : '비활성'}
-                    </Button>
                   </div>
 
                   {/* 수정/삭제 버튼 */}

@@ -38,14 +38,10 @@ export const roleUpdateSchema = roleCreateSchema;
 export type RoleCreateInput = z.infer<typeof roleCreateSchema>;
 export type RoleUpdateInput = z.infer<typeof roleUpdateSchema>;
 
-// 색상 프리셋
+// 색상 프리셋 (4가지)
 export const colorPresets = [
   { name: '파란색', value: '#3B82F6' },
-  { name: '초록색', value: '#10B981' },
-  { name: '주황색', value: '#F59E0B' },
-  { name: '보라색', value: '#8B5CF6' },
+  { name: '노란색', value: '#F59E0B' },
   { name: '빨간색', value: '#EF4444' },
-  { name: '분홍색', value: '#EC4899' },
-  { name: '청록색', value: '#14B8A6' },
-  { name: '남색', value: '#6366F1' },
+  { name: '초록색', value: '#10B981' },
 ];

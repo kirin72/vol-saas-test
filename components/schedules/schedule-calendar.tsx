@@ -139,26 +139,6 @@ export default function ScheduleCalendar({
         </Button>
       </div>
 
-      {/* 범례 (모바일에서 축소) */}
-      <div className="flex justify-center flex-wrap gap-2 sm:gap-4 mb-3 sm:mb-4 text-xs sm:text-sm">
-        <div className="flex items-center gap-1 sm:gap-2">
-          <div className="w-3 h-3 rounded bg-purple-500" />
-          <span className="text-gray-600">주일</span>
-        </div>
-        <div className="flex items-center gap-1 sm:gap-2">
-          <div className="w-3 h-3 rounded bg-blue-500" />
-          <span className="text-gray-600">토요일</span>
-        </div>
-        <div className="flex items-center gap-1 sm:gap-2">
-          <div className="w-3 h-3 rounded bg-gray-500" />
-          <span className="text-gray-600">평일</span>
-        </div>
-        <div className="flex items-center gap-1 sm:gap-2">
-          <div className="w-3 h-3 rounded bg-orange-500" />
-          <span className="text-gray-600">특전</span>
-        </div>
-      </div>
-
       {/* 캘린더 그리드 */}
       <div className="grid grid-cols-7 gap-0.5 sm:gap-1">
         {/* 요일 헤더 */}

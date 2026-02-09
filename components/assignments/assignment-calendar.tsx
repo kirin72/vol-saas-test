@@ -163,7 +163,7 @@ export default function AssignmentCalendar({
           <span className="text-gray-600">일부</span>
         </div>
         <div className="flex items-center gap-1 sm:gap-2">
-          <div className="w-3 h-3 rounded bg-gray-200 border border-gray-300" />
+          <div className="w-3 h-3 rounded bg-gray-400 border border-gray-500" />
           <span className="text-gray-600">미배정</span>
         </div>
       </div>
@@ -203,7 +203,7 @@ export default function AssignmentCalendar({
             } else if (completionRate.isPartial) {
               bgColor = 'bg-yellow-50';
             } else if (completionRate.isEmpty) {
-              bgColor = 'bg-gray-200';
+              bgColor = 'bg-gray-400';
             }
           }
 

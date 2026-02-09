@@ -79,7 +79,7 @@ export default function VolunteersPage() {
     return (
       v.name.toLowerCase().includes(query) ||
       (v.baptismalName && v.baptismalName.toLowerCase().includes(query)) ||
-      v.email.toLowerCase().includes(query) ||
+      (v.email && !v.email.includes('@temp.com') && v.email.toLowerCase().includes(query)) ||
       (v.phone && v.phone.includes(query))
     );
   });
@@ -223,7 +223,7 @@ export default function VolunteersPage() {
                           )}
                         </CardTitle>
                         <div className="mt-2 space-y-1">
-                          {volunteer.email && (
+                          {volunteer.email && !volunteer.email.includes('@temp.com') && (
                             <div className="flex items-center text-sm text-gray-600">
                               <Mail className="mr-2 h-3 w-3" />
                               {showEmailMap[volunteer.id] ? (
@@ -330,7 +330,7 @@ export default function VolunteersPage() {
                         </TableCell>
                         <TableCell>
                           <div className="space-y-1">
-                            {volunteer.email && (
+                            {volunteer.email && !volunteer.email.includes('@temp.com') && (
                               <div className="flex items-center text-sm">
                                 <Mail className="mr-2 h-3 w-3 text-gray-400" />
                                 {showEmailMap[volunteer.id] ? (
