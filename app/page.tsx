@@ -45,6 +45,8 @@ export default function Home() {
             <p className="text-gray-600 text-sm">
               수동/자동 배정으로
               <br />
+              3초만에 배정 완료!
+              <br />
               효율적인 관리
             </p>
           </div>
@@ -53,9 +55,11 @@ export default function Home() {
             <div className="text-4xl mb-4">🔔</div>
             <h3 className="text-lg font-semibold mb-2">알림 시스템</h3>
             <p className="text-gray-600 text-sm">
-              봉사자에게 자동으로
+              봉사자 개별 페이지로
               <br />
-              일정 알림을 전송
+              손쉬운 일정 열람/변경
+              <br />
+              봉사 알림 가능
             </p>
           </div>
 
@@ -64,8 +68,10 @@ export default function Home() {
             <h3 className="text-lg font-semibold mb-2">회비 출납 장부</h3>
             <p className="text-gray-600 text-sm">
               자동 계산 장부로
-	       <br />
-	      간편하게 관리
+	            <br />
+              회비등 출납 내역을
+              <br />
+	            간편하게 관리
             </p>
           </div>
         </div>
