@@ -23,10 +23,27 @@ function isAllowedIP(ip: string | null): boolean {
  */
 export const authOptions: NextAuthConfig = {
   // Credentials provider 사용 시 adapter 불필요 (JWT strategy 사용)
-  session: { strategy: 'jwt' },
+  session: {
+    strategy: 'jwt',
+    maxAge: 30 * 24 * 60 * 60, // 30일
+  },
   pages: {
     signIn: '/auth/login',
     error: '/auth/login',
+  },
+  // Vercel 배포 시 필수 (호스트 검증 비활성화)
+  trustHost: true,
+  // 쿠키 설정 명시
+  cookies: {
+    sessionToken: {
+      name: `next-auth.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+      },
+    },
   },
   providers: [
     Credentials({
@@ -128,20 +145,26 @@ export const authOptions: NextAuthConfig = {
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
+        console.log('=== JWT Callback - User 로그인 ===');
+        console.log('User:', user);
         token.id = user.id;
         token.organizationId = user.organizationId;
         token.role = user.role;
         token.isFirstLogin = user.isFirstLogin;
       }
+      console.log('JWT Token:', token);
       return token;
     },
     async session({ session, token }) {
+      console.log('=== Session Callback ===');
+      console.log('Token:', token);
       if (session.user) {
         session.user.id = token.id as string;
         session.user.organizationId = token.organizationId as string | null;
         session.user.role = token.role as string;
         session.user.isFirstLogin = token.isFirstLogin as boolean;
       }
+      console.log('Session:', session);
       return session;
     },
   },
