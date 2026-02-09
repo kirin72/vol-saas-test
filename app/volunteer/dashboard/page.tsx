@@ -134,6 +134,20 @@ export default function VolunteerDashboardPage() {
           </div>
         </CardHeader>
         <CardContent>
+          {/* 자동배정 안내 문구 (배정이 있을 때만 표시) */}
+          {assignments.length > 0 && (
+            <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-sm text-blue-800 leading-relaxed">
+                최근 봉사 기록과 선호 날짜를 고려하여{' '}
+                <strong className="text-blue-900 font-bold">최대한 공평하게</strong>{' '}
+                자동으로 배정되었습니다.
+              </p>
+              <p className="text-sm text-blue-700 mt-1">
+                배정에 문제가 있거나 교체가 필요한 경우, 아래 일정의{' '}
+                <strong>교체 요청</strong>으로 알려주세요.
+              </p>
+            </div>
+          )}
           <AssignmentList
             assignments={assignments}
             viewMode={viewMode}

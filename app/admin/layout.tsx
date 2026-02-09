@@ -31,6 +31,7 @@ export default async function AdminLayout({
     where: { id: session.user.organizationId },
     select: {
       name: true,
+      groupName: true,
       isActive: true,
     },
   });
@@ -45,6 +46,7 @@ export default async function AdminLayout({
       {/* 상단 고정 네비게이션 바 */}
       <AdminNavbar
         organizationName={organization.name}
+        groupName={organization.groupName}
         userName={session.user.name || '관리자'}
       />
 

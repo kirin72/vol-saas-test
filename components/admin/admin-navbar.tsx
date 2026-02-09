@@ -22,6 +22,7 @@ import { signOut } from 'next-auth/react';
 
 interface AdminNavbarProps {
   organizationName: string;
+  groupName: string | null;
   userName: string;
 }
 
@@ -76,20 +77,20 @@ const menuItems: MenuItem[] = [
   },
 ];
 
-export function AdminNavbar({ organizationName, userName }: AdminNavbarProps) {
+export function AdminNavbar({ organizationName, groupName, userName }: AdminNavbarProps) {
   const pathname = usePathname();
 
   return (
     <header className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
       <div className="px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          {/* 왼쪽: 성당 이름 */}
+          {/* 왼쪽: 성당 이름 + 단체명 */}
           <div className="flex items-center gap-3">
             <h1 className="text-xl font-bold text-gray-900">
-              {organizationName}
+              {organizationName}성당
             </h1>
             <span className="hidden sm:block text-sm text-gray-500 font-normal">
-              본당 관리자
+              {groupName ? `${groupName} 관리자` : '관리자'}
             </span>
           </div>
 
