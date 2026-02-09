@@ -6,6 +6,7 @@
 import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { AdminNavbar } from '@/components/admin/admin-navbar';
+import { FeedbackButton } from '@/components/feedback/feedback-button';
 import { prisma } from '@/lib/prisma';
 
 export default async function AdminLayout({
@@ -54,6 +55,9 @@ export default async function AdminLayout({
       <main className="p-4 sm:p-6 lg:p-8">
         <div className="max-w-7xl mx-auto">{children}</div>
       </main>
+
+      {/* 피드백 플로팅 버튼 */}
+      <FeedbackButton />
     </div>
   );
 }

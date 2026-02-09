@@ -67,6 +67,12 @@ export default async function SuperAdminLayout({
             >
               💳 구독 관리
             </Link>
+            <Link
+              href="/super-admin/feedback"
+              className="block px-4 py-2 text-sm font-medium text-gray-700 rounded-md hover:bg-gray-100"
+            >
+              📋 피드백 관리
+            </Link>
           </nav>
         </aside>
 

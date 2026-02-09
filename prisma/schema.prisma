@@ -37,6 +37,7 @@ model Organization {
   assignmentRequests   AssignmentRequest[]
   subscriptions        Subscription[]
   transactions         Transaction[]  // 입출금 내역
+  feedbacks            Feedback[]     // 피드백
 
   @@index([slug])
   @@index([isActive])
@@ -174,6 +175,7 @@ model User {
   assignmentHistories AssignmentHistory[]
   assignmentRequests  AssignmentRequest[]
   transactions        Transaction[]  // 입금 내역 (봉사자가 입금한 거래)
+  feedbacks           Feedback[]     // 피드백
 
   @@index([organizationId])
   @@index([email])
@@ -419,4 +421,28 @@ model Transaction {
   @@index([organizationId, type])              // 본당별 유형별 조회
   @@index([userId])                            // 봉사자별 납부 이력 조회
   @@map("transactions")
+}
+
+// ============================================
+// 15. Feedback (피드백/리포트)
+// ============================================
+model Feedback {
+  id             String    @id @default(cuid())
+  organizationId String    // 소속 조직
+  userId         String    // 작성자
+  category       String    @default("GENERAL") // BUG, IMPROVEMENT, GENERAL
+  content        String    // 피드백 내용
+  status         String    @default("PENDING") // PENDING, REPLIED, CLOSED
+  reply          String?   // 총괄관리자 답장
+  repliedAt      DateTime? // 답장 시간
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([userId])
+  @@index([status])
+  @@map("feedbacks")
 }
