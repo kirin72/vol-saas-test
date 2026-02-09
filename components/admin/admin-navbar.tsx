@@ -30,6 +30,7 @@ import {
   SheetClose,
 } from '@/components/ui/sheet';
 import { signOut } from 'next-auth/react';
+import { InstallButton } from '@/components/pwa/install-prompt';
 
 interface AdminNavbarProps {
   organizationName: string;
@@ -152,8 +153,10 @@ export function AdminNavbar({ organizationName, groupName, userName }: AdminNavb
                   })}
                 </nav>
 
-                {/* 드로어 하단: 로그아웃 버튼 */}
-                <div className="mt-auto border-t border-gray-200 p-4">
+                {/* 드로어 하단: 앱 설치 + 로그아웃 버튼 */}
+                <div className="mt-auto border-t border-gray-200 p-4 space-y-2">
+                  {/* PWA 앱 설치 버튼 */}
+                  <InstallButton />
                   <Button
                     onClick={() => signOut({ callbackUrl: '/auth/login' })}
                     variant="outline"

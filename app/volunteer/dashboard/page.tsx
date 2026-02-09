@@ -11,6 +11,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AvailabilityForm } from '@/components/volunteer/availability-form';
 import { AssignmentList } from '@/components/volunteer/assignment-list';
+import { InstallBanner } from '@/components/pwa/install-prompt';
 import { Loader2, Calendar as CalendarIcon, List } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -87,6 +88,9 @@ export default function VolunteerDashboardPage() {
 
   return (
     <div className="space-y-6">
+      {/* PWA 설치 배너 (모바일에서 미설치 시 표시) */}
+      <InstallBanner />
+
       {/* 페이지 제목 */}
       <div>
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">나의 봉사 현황</h1>
