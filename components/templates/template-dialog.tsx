@@ -174,6 +174,15 @@ export default function TemplateDialog({
     }));
   };
 
+  // selectedSlots가 변경될 때 폼의 slots 필드 동기화
+  useEffect(() => {
+    const slots = Object.entries(selectedSlots).map(([volunteerRoleId, requiredCount]) => ({
+      volunteerRoleId,
+      requiredCount,
+    }));
+    setValue('slots', slots);
+  }, [selectedSlots, setValue]);
+
   // 폼 제출
   const onSubmit = async (data: TemplateCreateInput) => {
     // 슬롯 데이터를 폼 데이터에 반영
