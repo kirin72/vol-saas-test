@@ -37,7 +37,10 @@ export const volunteerCreateSchema = z.object({
   password: z
     .string()
     .min(4, '비밀번호는 최소 4자 이상이어야 합니다')
-    .max(100, '비밀번호는 최대 100자까지 가능합니다'),
+    .max(100, '비밀번호는 최대 100자까지 가능합니다')
+    .optional()
+    .or(z.literal(''))
+    .transform(val => val === '' ? undefined : val), // 빈 문자열 → undefined (전화번호 뒷자리 자동 등록)
 
   status: z.enum(['ACTIVE', 'INACTIVE', 'PENDING'], {
     errorMap: () => ({ message: '올바른 상태를 선택해주세요' }),

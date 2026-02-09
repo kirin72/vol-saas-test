@@ -48,6 +48,14 @@ export default function NewVolunteerPage() {
 
   const selectedRoleIds = watch('roleIds') || [];
 
+  // 전화번호 자동 포맷 (숫자만 입력해도 000-0000-0000 형식으로 변환)
+  const formatPhone = (value: string) => {
+    const digits = value.replace(/\D/g, '').slice(0, 11); // 숫자만, 최대 11자리
+    if (digits.length <= 3) return digits;
+    if (digits.length <= 7) return `${digits.slice(0, 3)}-${digits.slice(3)}`;
+    return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`;
+  };
+
   // 역할 목록 가져오기
   useEffect(() => {
     async function fetchRoles() {
@@ -66,6 +74,14 @@ export default function NewVolunteerPage() {
     fetchRoles();
   }, []);
 
+  // 역할이 없으면 안내 메시지 후 역할 관리 페이지로 이동
+  useEffect(() => {
+    if (!loadingRoles && roles.length === 0) {
+      alert('역할을 먼저 등록해 주세요!');
+      router.push('/admin/roles');
+    }
+  }, [loadingRoles, roles, router]);
+
   // 역할 선택/해제
   const toggleRole = (roleId: string) => {
     const currentRoleIds = selectedRoleIds;
@@ -81,9 +97,22 @@ export default function NewVolunteerPage() {
     setError('');
 
     try {
-      // validation transform이 처리하므로 그대로 전송
+      // 비밀번호 미입력 시 전화번호 010 제외 뒷 8자리로 자동 생성
+      let password = formData.password;
+      if (!password) {
+        const phoneDigits = (formData.phone || '').replace(/\D/g, '');
+        if (phoneDigits.length >= 11) {
+          password = phoneDigits.slice(3);
+        } else {
+          setError('비밀번호를 입력하거나 전화번호를 먼저 입력해주세요');
+          setLoading(false);
+          return;
+        }
+      }
+
       const payload = {
         ...formData,
+        password,
         forceDuplicate: Boolean(forceDuplicate),
       };
 
@@ -201,9 +230,9 @@ export default function NewVolunteerPage() {
               </select>
             </div>
 
-            {/* 이메일 */}
+            {/* 이메일 (옵션) */}
             <div className="space-y-2">
-              <Label htmlFor="email">이메일</Label>
+              <Label htmlFor="email">이메일 (옵션)</Label>
               <Input
                 id="email"
                 type="email"
@@ -216,13 +245,15 @@ export default function NewVolunteerPage() {
               )}
             </div>
 
-            {/* 전화번호 */}
+            {/* 전화번호 (숫자만 입력해도 자동 포맷) */}
             <div className="space-y-2">
               <Label htmlFor="phone">전화번호</Label>
               <Input
                 id="phone"
-                {...register('phone')}
-                placeholder="010-1234-5678"
+                inputMode="numeric"
+                value={watch('phone') || ''}
+                onChange={(e) => setValue('phone', formatPhone(e.target.value))}
+                placeholder="01012345678"
                 disabled={loading}
               />
               {errors.phone && (
@@ -230,16 +261,19 @@ export default function NewVolunteerPage() {
               )}
             </div>
 
-            {/* 비밀번호 */}
+            {/* 비밀번호 (선택사항) */}
             <div className="space-y-2">
-              <Label htmlFor="password">비밀번호 *</Label>
+              <Label htmlFor="password">비밀번호</Label>
               <Input
                 id="password"
                 type="password"
                 {...register('password')}
-                placeholder="최소 4자 이상"
+                placeholder="비밀번호 입력 (선택사항)"
                 disabled={loading}
               />
+              <p className="text-xs text-gray-500">
+                비밀번호를 입력하지 않으면 010을 제외한 휴대폰 번호 뒷 8자리가 비밀번호로 자동 등록됩니다.
+              </p>
               {errors.password && (
                 <p className="text-sm text-red-600">{errors.password.message}</p>
               )}

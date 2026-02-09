@@ -302,15 +302,25 @@ export default function TemplateDialog({
             </p>
           </div>
 
-          {/* 시간 */}
+          {/* 시간 (30분 단위, 06:00~20:00) */}
           <div className="space-y-2">
             <Label htmlFor="time">미사 시간 *</Label>
-            <Input
+            <select
               id="time"
-              type="time"
               {...register('time')}
+              className="w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               disabled={loading}
-            />
+            >
+              {Array.from({ length: 29 }, (_, i) => {
+                // 06:00부터 20:00까지 30분 단위 (29개 옵션)
+                const totalMinutes = 6 * 60 + i * 30;
+                const h = String(Math.floor(totalMinutes / 60)).padStart(2, '0');
+                const m = String(totalMinutes % 60).padStart(2, '0');
+                return `${h}:${m}`;
+              }).map((t) => (
+                <option key={t} value={t}>{t}</option>
+              ))}
+            </select>
             {errors.time && (
               <p className="text-sm text-red-600">{errors.time.message}</p>
             )}

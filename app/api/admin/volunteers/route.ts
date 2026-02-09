@@ -143,8 +143,19 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 비밀번호 해시
-    const hashedPassword = await bcrypt.hash(validatedData.password, 10);
+    // 비밀번호: 미입력 시 전화번호 010 제외 뒷 8자리로 자동 생성
+    let finalPassword = validatedData.password;
+    if (!finalPassword && validatedData.phone) {
+      const digits = validatedData.phone.replace(/\D/g, '');
+      finalPassword = digits.length >= 11 ? digits.slice(3) : digits;
+    }
+    if (!finalPassword) {
+      return NextResponse.json(
+        { error: '비밀번호를 입력하거나 전화번호를 먼저 입력해주세요' },
+        { status: 400 }
+      );
+    }
+    const hashedPassword = await bcrypt.hash(finalPassword, 10);
 
     // 트랜잭션으로 봉사자 생성 + 역할 할당
     const volunteer = await prisma.$transaction(async (tx) => {

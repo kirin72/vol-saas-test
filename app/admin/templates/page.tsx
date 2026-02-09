@@ -5,6 +5,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -49,6 +50,7 @@ interface MassTemplate {
 }
 
 export default function TemplatesPage() {
+  const router = useRouter();
   // 템플릿 목록
   const [templates, setTemplates] = useState<MassTemplate[]>([]);
   // 로딩/에러 상태
@@ -66,9 +68,13 @@ export default function TemplatesPage() {
   const [generateDialogOpen, setGenerateDialogOpen] = useState(false);
   const [generatingTemplate, setGeneratingTemplate] = useState<MassTemplate | null>(null);
 
+  // 역할 목록 (템플릿 추가 시 역할 존재 여부 확인용)
+  const [roles, setRoles] = useState<{ id: string }[]>([]);
+
   // 초기 로드
   useEffect(() => {
     fetchTemplates();
+    fetchRoles();
   }, []);
 
   // 템플릿 목록 조회
@@ -86,8 +92,26 @@ export default function TemplatesPage() {
     }
   };
 
-  // 템플릿 추가 다이얼로그 열기
+  // 역할 목록 조회 (역할 존재 여부 확인용)
+  const fetchRoles = async () => {
+    try {
+      const res = await fetch('/api/admin/roles');
+      if (res.ok) {
+        const data = await res.json();
+        setRoles(data);
+      }
+    } catch (err) {
+      console.error('역할 목록 조회 실패:', err);
+    }
+  };
+
+  // 템플릿 추가 다이얼로그 열기 (역할 존재 여부 확인)
   const handleAdd = () => {
+    if (roles.length === 0) {
+      alert('역할을 먼저 등록해 주세요!');
+      router.push('/admin/roles');
+      return;
+    }
     setEditingTemplate(null);
     setDialogOpen(true);
   };

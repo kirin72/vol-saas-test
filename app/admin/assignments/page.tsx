@@ -207,6 +207,23 @@ export default function AssignmentsPage() {
     setViewMode('list'); // 날짜 선택 시 리스트 뷰로 전환
   };
 
+  // 자동배정 버튼 클릭 시 봉사자 존재 여부 확인
+  const handleAutoAssignClick = async () => {
+    try {
+      const res = await fetch('/api/admin/volunteers');
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length === 0) {
+          alert('봉사자가 등록되어 있지 않습니다.');
+          return;
+        }
+      }
+    } catch (err) {
+      console.error('봉사자 확인 실패:', err);
+    }
+    setAutoAssignDialogOpen(true);
+  };
+
   // 자동배정 실행
   const handleAutoAssign = async () => {
     setAutoAssigning(true);
@@ -277,7 +294,7 @@ export default function AssignmentsPage() {
           {/* 자동배정 버튼 (눈에 잘 띄게) */}
           <Button
             size="default"
-            onClick={() => setAutoAssignDialogOpen(true)}
+            onClick={handleAutoAssignClick}
             className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold shadow-lg"
           >
             <Sparkles className="h-5 w-5 mr-2" />
