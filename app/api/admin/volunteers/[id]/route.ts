@@ -143,6 +143,7 @@ export async function PATCH(
           phone: validatedData.phone || null,
           password: hashedPassword || existingVolunteer.password,
           status: validatedData.status,
+          hasPaidDues: validatedData.hasPaidDues ?? existingVolunteer.hasPaidDues, // 회비 납부 여부
           // 봉사 가능 정보
           availableThisMonth: validatedData.availableThisMonth ?? null,
           preferredDays: validatedData.preferredDays ?? undefined,

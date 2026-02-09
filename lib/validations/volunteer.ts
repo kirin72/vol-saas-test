@@ -46,6 +46,8 @@ export const volunteerCreateSchema = z.object({
   roleIds: z
     .array(z.string())
     .min(1, '최소 1개 이상의 역할을 선택해주세요'),
+
+  hasPaidDues: z.boolean().optional().default(false), // 회비 납부 여부
 });
 
 // 봉사자 수정 스키마 (비밀번호는 선택사항)
@@ -107,6 +109,8 @@ export const volunteerUpdateSchema = z.object({
   unavailableDates: z
     .array(z.string())
     .optional(),
+
+  hasPaidDues: z.boolean().optional(), // 회비 납부 여부
 });
 
 // TypeScript 타입 추출

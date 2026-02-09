@@ -20,6 +20,7 @@ interface Volunteer {
   email: string;
   phone: string | null;
   status: string;
+  hasPaidDues: boolean;
   userRoles: Array<{
     id: string;
     volunteerRole: {
@@ -40,6 +41,17 @@ export default function VolunteersPage() {
 
   // 검색
   const [searchQuery, setSearchQuery] = useState('');
+
+  // 이메일 표시 상태 관리 (봉사자 ID를 키로)
+  const [showEmailMap, setShowEmailMap] = useState<Record<string, boolean>>({});
+
+  // 이메일 토글 함수
+  const toggleEmail = (volunteerId: string) => {
+    setShowEmailMap((prev) => ({
+      ...prev,
+      [volunteerId]: !prev[volunteerId],
+    }));
+  };
 
   useEffect(() => {
     fetchVolunteers();
@@ -199,7 +211,7 @@ export default function VolunteersPage() {
                 >
                   <CardHeader>
                     <div className="flex justify-between items-start">
-                      <div>
+                      <div className="flex-1">
                         <CardTitle className="text-lg">
                           {volunteer.name}
                           {volunteer.baptismalName && (
@@ -212,7 +224,26 @@ export default function VolunteersPage() {
                           {volunteer.email && (
                             <div className="flex items-center text-sm text-gray-600">
                               <Mail className="mr-2 h-3 w-3" />
-                              {volunteer.email}
+                              {showEmailMap[volunteer.id] ? (
+                                <>
+                                  <span>{volunteer.email}</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => toggleEmail(volunteer.id)}
+                                    className="ml-2 text-xs text-gray-400 hover:text-gray-600"
+                                  >
+                                    숨기기
+                                  </button>
+                                </>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => toggleEmail(volunteer.id)}
+                                  className="text-blue-600 hover:text-blue-800 text-xs underline"
+                                >
+                                  이메일 보기
+                                </button>
+                              )}
                             </div>
                           )}
                           {volunteer.phone && (
@@ -223,9 +254,14 @@ export default function VolunteersPage() {
                           )}
                         </div>
                       </div>
-                      <Badge variant={getStatusVariant(volunteer.status)}>
-                        {getStatusLabel(volunteer.status)}
-                      </Badge>
+                      <div className="flex flex-col gap-2">
+                        <Badge variant={getStatusVariant(volunteer.status)}>
+                          {getStatusLabel(volunteer.status)}
+                        </Badge>
+                        <Badge variant={volunteer.hasPaidDues ? 'default' : 'secondary'}>
+                          {volunteer.hasPaidDues ? '납부' : '미납'}
+                        </Badge>
+                      </div>
                     </div>
                   </CardHeader>
                   <CardContent>
@@ -276,6 +312,7 @@ export default function VolunteersPage() {
                       <TableHead>연락처</TableHead>
                       <TableHead>봉사 역할</TableHead>
                       <TableHead>상태</TableHead>
+                      <TableHead>회비 납부</TableHead>
                       <TableHead className="text-right">관리</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -295,7 +332,26 @@ export default function VolunteersPage() {
                             {volunteer.email && (
                               <div className="flex items-center text-sm">
                                 <Mail className="mr-2 h-3 w-3 text-gray-400" />
-                                {volunteer.email}
+                                {showEmailMap[volunteer.id] ? (
+                                  <>
+                                    <span>{volunteer.email}</span>
+                                    <button
+                                      type="button"
+                                      onClick={() => toggleEmail(volunteer.id)}
+                                      className="ml-2 text-xs text-gray-400 hover:text-gray-600"
+                                    >
+                                      숨기기
+                                    </button>
+                                  </>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    onClick={() => toggleEmail(volunteer.id)}
+                                    className="text-blue-600 hover:text-blue-800 text-xs underline"
+                                  >
+                                    이메일 보기
+                                  </button>
+                                )}
                               </div>
                             )}
                             {volunteer.phone && (
@@ -329,6 +385,11 @@ export default function VolunteersPage() {
                         <TableCell>
                           <Badge variant={getStatusVariant(volunteer.status)}>
                             {getStatusLabel(volunteer.status)}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={volunteer.hasPaidDues ? 'default' : 'secondary'}>
+                            {volunteer.hasPaidDues ? '납부' : '미납'}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right">

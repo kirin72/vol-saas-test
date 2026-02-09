@@ -248,6 +248,21 @@ export default function NewVolunteerPage() {
               )}
             </div>
 
+            {/* 회비 납부 여부 */}
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="hasPaidDues"
+                  checked={watch('hasPaidDues') ?? false}
+                  onCheckedChange={(checked) => setValue('hasPaidDues', checked === true)}
+                  disabled={loading}
+                />
+                <Label htmlFor="hasPaidDues" className="font-normal cursor-pointer">
+                  회비 납부 완료
+                </Label>
+              </div>
+            </div>
+
             {/* 봉사 역할 선택 */}
             <div className="space-y-2">
               <Label>봉사 역할 * (최소 1개 선택)</Label>

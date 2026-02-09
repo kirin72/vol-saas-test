@@ -186,7 +186,23 @@ export async function createTransaction(
       },
     });
 
-    // 5. 캐시 갱신
+    // 5. 수입 + 입금자가 있는 경우 회비 자동 업데이트
+    if (validatedData.type === 'income' && validatedData.userId) {
+      try {
+        await prisma.user.update({
+          where: { id: validatedData.userId },
+          data: {
+            hasPaidDues: true,
+            lastPaidDate: new Date(validatedData.date),
+          },
+        });
+      } catch (updateError) {
+        console.error('회비 납부 상태 업데이트 실패:', updateError);
+        // 입출금 기록은 정상 생성되었으므로 계속 진행
+      }
+    }
+
+    // 6. 캐시 갱신
     revalidatePath('/admin/finance');
 
     return {

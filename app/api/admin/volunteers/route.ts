@@ -159,6 +159,7 @@ export async function POST(request: NextRequest) {
           phone: validatedData.phone ?? null,
           role: 'VOLUNTEER',
           status: validatedData.status,
+          hasPaidDues: validatedData.hasPaidDues ?? false, // 회비 납부 여부
         },
       });
 

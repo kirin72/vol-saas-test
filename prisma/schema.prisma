@@ -149,6 +149,8 @@ model User {
   preferredDays       Json?      // 선호 요일 (0-6 배열)
   unavailableDays     Json?      // 불가 요일 (0-6 배열)
   unavailableDates    Json?      // 이번 달 불가 날짜 (날짜 배열)
+  hasPaidDues         Boolean    @default(false) // 회비 납부 여부
+  lastPaidDate        DateTime?  // 마지막 회비 납부일
   createdAt           DateTime   @default(now())
   updatedAt           DateTime   @updatedAt
 

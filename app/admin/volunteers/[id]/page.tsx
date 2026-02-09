@@ -33,6 +33,7 @@ interface Volunteer {
   email: string;
   phone: string | null;
   status: 'ACTIVE' | 'INACTIVE' | 'PENDING';
+  hasPaidDues: boolean;
   availableThisMonth: boolean | null;
   preferredDays: number[] | null;
   unavailableDays: number[] | null;
@@ -86,6 +87,7 @@ export default function VolunteerDetailPage() {
             phone: volunteerData.phone || '',
             password: '', // 비밀번호는 비워둠
             status: volunteerData.status,
+            hasPaidDues: volunteerData.hasPaidDues ?? false,
             roleIds: volunteerData.userRoles.map((ur: any) => ur.volunteerRole.id),
             availableThisMonth: volunteerData.availableThisMonth ?? undefined,
             preferredDays: volunteerData.preferredDays || [],
@@ -328,6 +330,21 @@ export default function VolunteerDetailPage() {
               {errors.status && (
                 <p className="text-sm text-red-600">{errors.status.message}</p>
               )}
+            </div>
+
+            {/* 회비 납부 여부 */}
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="hasPaidDues"
+                  checked={watch('hasPaidDues') ?? false}
+                  onCheckedChange={(checked) => setValue('hasPaidDues', checked === true)}
+                  disabled={loading}
+                />
+                <Label htmlFor="hasPaidDues" className="font-normal cursor-pointer">
+                  회비 납부 완료
+                </Label>
+              </div>
             </div>
 
             {/* 봉사 역할 선택 */}
