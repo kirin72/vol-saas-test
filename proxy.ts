@@ -1,5 +1,5 @@
 /**
- * Next.js Middleware
+ * Next.js Proxy (이전 Middleware)
  * 인증이 필요한 경로 보호
  */
 import { auth } from '@/lib/auth';
@@ -39,7 +39,7 @@ export default auth((req) => {
   return NextResponse.next();
 });
 
-// Middleware가 실행될 경로 설정
+// Proxy가 실행될 경로 설정
 export const config = {
   matcher: [
     '/admin/:path*',
