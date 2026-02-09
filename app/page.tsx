@@ -31,11 +31,9 @@ export default function Home() {
             <div className="text-4xl mb-4">📅</div>
             <h3 className="text-lg font-semibold mb-2">봉사 일정 관리</h3>
             <p className="text-gray-600 text-sm">
-              독서단, 해설단
+              독서단, 제대회 등
               <br />
-	      복사단, 제대회 등
-              <br />
-              자동화 관리
+	            자동화 관리
             </p>
           </div>
 
@@ -45,9 +43,7 @@ export default function Home() {
             <p className="text-gray-600 text-sm">
               수동/자동 배정으로
               <br />
-              <b>3초</b>만에 배정 완료!
-              <br />
-              효율적인 관리
+              <b>3초</b>만에 배정 완료!              
             </p>
           </div>
 
@@ -57,9 +53,7 @@ export default function Home() {
             <p className="text-gray-600 text-sm">
               봉사자 페이지로
               <br />
-              손쉬운 일정 변경
-              <br />
-              봉사일정 알림 가능
+              손쉬운 일정 변경              
             </p>
           </div>
 
@@ -67,11 +61,9 @@ export default function Home() {
             <div className="text-4xl mb-4">💰</div>
             <h3 className="text-lg font-semibold mb-2">회비 출납 장부</h3>
             <p className="text-gray-600 text-sm">
-              자동 계산 장부로
+              자동 정산 장부로
 	            <br />
-              회비등 출납 내역을
-              <br />
-	            간편하게 관리
+              회계기록 간편 관리              
             </p>
           </div>
         </div>
