@@ -160,8 +160,9 @@ model User {
   status              UserStatus @default(ACTIVE)
   isFirstLogin        Boolean    @default(true) // 첫 로그인 여부 (비밀번호 변경 안내용)
   // 봉사자 추가 정보
-  availableThisMonth  Boolean?   // 이번 달 참여 가능 여부
+  availableThisMonth  Boolean?   // 이번 달 봉사 참여 여부 (null=미입력, true=가능, false=불가능)
   preferredDays       Json?      // 선호 요일 (0-6 배열)
+  preferredTimes      Json?      // 선호 시간대 ("상관없음","새벽","오전","오후","저녁" 배열)
   unavailableDays     Json?      // 불가 요일 (0-6 배열)
   unavailableDates    Json?      // 이번 달 불가 날짜 (날짜 배열)
   hasPaidDues         Boolean    @default(false) // 회비 납부 여부

@@ -7,7 +7,7 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
+import { Plus, Download } from 'lucide-react';
 import { MonthNavigator } from './_components/MonthNavigator';
 import { FinanceTable } from './_components/FinanceTable';
 import { FinanceSummary } from './_components/FinanceSummary';
@@ -153,12 +153,17 @@ export default function FinancePage() {
       {/* 헤더 */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <h1 className="text-2xl font-bold text-gray-900">입출금 관리</h1>
-        <div className="flex items-center gap-4 flex-shrink-0">
+        <div className="flex items-center gap-4 flex-shrink-0 flex-wrap">
           {/* 보기 모드 선택 */}
           <ViewModeSelector
             viewMode={viewMode}
             onViewModeChange={handleViewModeChange}
           />
+          {/* 입출금내역 저장 (기능 추가 예정) */}
+          <Button variant="outline" disabled className="flex items-center gap-2">
+            <Download className="w-4 h-4" />
+            <span>입출금내역 저장</span>
+          </Button>
           {/* 입출금 기록 버튼 */}
           <Button onClick={() => setIsModalOpen(true)} className="flex items-center gap-2">
             <Plus className="w-4 h-4" />

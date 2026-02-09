@@ -39,7 +39,13 @@ interface Volunteer {
   baptismalName: string | null;
   phone: string | null;
   assignmentCount?: number; // 이번 달 배정 횟수
+  unavailableDays?: number[] | null; // 불가 요일
+  unavailableDates?: string[] | null; // 불가 날짜
+  availableThisMonth?: boolean | null; // 이번 달 참여 여부
 }
+
+// 요일 이름 매핑 (0=일, 1=월, 2=화, 3=수, 4=목, 5=금, 6=토)
+const DAY_NAMES = ['일', '월', '화', '수', '목', '금', '토'];
 
 export default function AssignmentDialog({
   open,
@@ -137,10 +143,39 @@ export default function AssignmentDialog({
     setFilteredVolunteers(filtered);
   }, [searchQuery, volunteers]);
 
+  // 불가요일 경고 확인
+  const checkUnavailableWarning = (): boolean => {
+    if (!selectedVolunteer) return true;
+
+    // 선택된 봉사자 찾기
+    const volunteer = volunteers.find((v) => v.id === selectedVolunteer);
+    if (!volunteer) return true;
+
+    // 일정 날짜의 요일 확인 (0=일, 1=월, ..., 6=토)
+    const scheduleDate = new Date(schedule.date);
+    const dayOfWeek = scheduleDate.getDay();
+
+    // 불가 요일 확인
+    const unavailableDays = volunteer.unavailableDays || [];
+    if (unavailableDays.includes(dayOfWeek)) {
+      const dayNames = unavailableDays.map((d: number) => DAY_NAMES[d]).join(', ');
+      return confirm(
+        `이 날짜는 봉사자가 불가요일로 지정한 날짜입니다. 그래도 지정하시겠습니까?\n\n- 불가요일: ${dayNames}`
+      );
+    }
+
+    return true;
+  };
+
   // 배정 저장
   const handleSubmit = async () => {
     if (!selectedVolunteer) {
       setError('봉사자를 선택해주세요');
+      return;
+    }
+
+    // 불가요일 경고 확인
+    if (!checkUnavailableWarning()) {
       return;
     }
 

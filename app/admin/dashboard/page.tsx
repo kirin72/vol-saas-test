@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Users, Tags, CalendarDays, TrendingUp } from 'lucide-react';
+import { Users, CalendarCheck, CheckCircle, TrendingUp, Download, Wallet } from 'lucide-react';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { redirect } from 'next/navigation';
@@ -151,12 +151,16 @@ async function getStats(organizationId: string) {
       };
     });
 
-    // 배정 횟수별 통계
+    // 배정된 고유 봉사자 수 (1회 이상 배정된 봉사자)
+    const assignedVolunteerCount = volunteerStats.filter((v) => v.assignmentCount > 0).length;
+
+    // 배정 횟수별 통계 (미배정, 3회이하, 4~5회, 6~7회, 8회이상)
     const distribution = {
       zero: volunteerStats.filter((v) => v.assignmentCount === 0).length,
-      one: volunteerStats.filter((v) => v.assignmentCount === 1).length,
-      two: volunteerStats.filter((v) => v.assignmentCount === 2).length,
-      three: volunteerStats.filter((v) => v.assignmentCount >= 3).length,
+      upToThree: volunteerStats.filter((v) => v.assignmentCount >= 1 && v.assignmentCount <= 3).length,
+      fourToFive: volunteerStats.filter((v) => v.assignmentCount >= 4 && v.assignmentCount <= 5).length,
+      sixToSeven: volunteerStats.filter((v) => v.assignmentCount >= 6 && v.assignmentCount <= 7).length,
+      eightPlus: volunteerStats.filter((v) => v.assignmentCount >= 8).length,
     };
 
     return {
@@ -164,6 +168,9 @@ async function getStats(organizationId: string) {
       roleCount,
       massCount,
       assignmentRate,
+      assignedVolunteerCount,
+      assignedSlots,
+      totalRequiredSlots,
       volunteerStats,
       distribution,
     };
@@ -174,8 +181,11 @@ async function getStats(organizationId: string) {
       roleCount: 0,
       massCount: 0,
       assignmentRate: 0,
+      assignedVolunteerCount: 0,
+      assignedSlots: 0,
+      totalRequiredSlots: 0,
       volunteerStats: [],
-      distribution: { zero: 0, one: 0, two: 0, three: 0 },
+      distribution: { zero: 0, upToThree: 0, fourToFive: 0, sixToSeven: 0, eightPlus: 0 },
     };
   }
 }
@@ -229,35 +239,35 @@ export default async function AdminDashboardPage() {
           </CardContent>
         </Card>
 
-        {/* 2. 전체 역할 수 */}
+        {/* 2. 봉사 배정 (배정된 봉사자 / 전체 봉사자) */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-gray-600">
-              봉사 역할
+              봉사 배정
             </CardTitle>
-            <Tags className="h-5 w-5 text-green-600" />
+            <CalendarCheck className="h-5 w-5 text-green-600" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl sm:text-3xl font-bold text-gray-900">
-              {stats.roleCount}
+              {stats.assignedVolunteerCount}<span className="text-lg text-gray-500">/{stats.volunteerCount}명</span>
             </div>
-            <p className="text-xs text-gray-500 mt-1">정의된 역할 수</p>
+            <p className="text-xs text-gray-500 mt-1">이번 달 배정된 봉사자</p>
           </CardContent>
         </Card>
 
-        {/* 3. 이번 달 미사 수 */}
+        {/* 3. 완료된 봉사 (배정 슬롯 / 전체 필요 슬롯) */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-gray-600">
-              이번 달 미사
+              완료된 봉사
             </CardTitle>
-            <CalendarDays className="h-5 w-5 text-purple-600" />
+            <CheckCircle className="h-5 w-5 text-purple-600" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl sm:text-3xl font-bold text-gray-900">
-              {stats.massCount}
+              {stats.assignedSlots}<span className="text-lg text-gray-500">/{stats.totalRequiredSlots}</span>
             </div>
-            <p className="text-xs text-gray-500 mt-1">예정된 미사 일정</p>
+            <p className="text-xs text-gray-500 mt-1">이번 달 배정 현황</p>
           </CardContent>
         </Card>
 
@@ -284,38 +294,58 @@ export default async function AdminDashboardPage() {
           <CardTitle>빠른 작업</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
             {/* 봉사자 등록 */}
-            <Button asChild className="h-auto py-4">
+            <Button asChild className="min-h-[72px] h-auto py-4">
               <Link
                 href="/admin/volunteers/new"
                 className="flex flex-col items-center gap-2"
               >
-                <Users className="h-6 w-6" />
-                <span className="text-base">봉사자 등록</span>
+                <Users className="h-6 w-6 shrink-0" />
+                <span className="text-sm text-center whitespace-nowrap">봉사자 등록</span>
               </Link>
             </Button>
 
             {/* 일정 추가 */}
-            <Button asChild variant="outline" className="h-auto py-4">
+            <Button asChild variant="outline" className="min-h-[72px] h-auto py-4">
               <Link
                 href="/admin/schedules?action=new"
                 className="flex flex-col items-center gap-2"
               >
-                <CalendarDays className="h-6 w-6" />
-                <span className="text-base">일정 추가</span>
+                <CalendarCheck className="h-6 w-6 shrink-0" />
+                <span className="text-sm text-center whitespace-nowrap">일정 추가</span>
               </Link>
             </Button>
 
             {/* 봉사자 배정 */}
-            <Button asChild variant="outline" className="h-auto py-4">
+            <Button asChild variant="outline" className="min-h-[72px] h-auto py-4">
               <Link
                 href="/admin/assignments"
                 className="flex flex-col items-center gap-2"
               >
-                <TrendingUp className="h-6 w-6" />
-                <span className="text-base">봉사자 배정</span>
+                <TrendingUp className="h-6 w-6 shrink-0" />
+                <span className="text-sm text-center whitespace-nowrap">봉사자 배정</span>
               </Link>
+            </Button>
+
+            {/* 봉사자 배정표 저장 (기능 추가 예정) */}
+            <Button
+              variant="outline"
+              className="min-h-[72px] h-auto py-4 flex flex-col items-center gap-2"
+              disabled
+            >
+              <Download className="h-6 w-6 shrink-0" />
+              <span className="text-sm text-center whitespace-nowrap">배정표 저장</span>
+            </Button>
+
+            {/* 입출금내역 저장 (기능 추가 예정) */}
+            <Button
+              variant="outline"
+              className="min-h-[72px] h-auto py-4 flex flex-col items-center gap-2"
+              disabled
+            >
+              <Wallet className="h-6 w-6 shrink-0" />
+              <span className="text-sm text-center whitespace-nowrap">입출금내역 저장</span>
             </Button>
           </div>
         </CardContent>
@@ -331,20 +361,24 @@ export default async function AdminDashboardPage() {
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex justify-between items-center">
-              <span className="text-sm">미배정 (0회)</span>
+              <span className="text-sm">미배정</span>
               <Badge variant="default">{stats.distribution.zero}명</Badge>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-sm">1회 배정</span>
-              <Badge variant="secondary">{stats.distribution.one}명</Badge>
+              <span className="text-sm">3회 이하</span>
+              <Badge variant="secondary">{stats.distribution.upToThree}명</Badge>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-sm">2회 배정</span>
-              <Badge variant="secondary">{stats.distribution.two}명</Badge>
+              <span className="text-sm">4~5회</span>
+              <Badge variant="secondary">{stats.distribution.fourToFive}명</Badge>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-sm">3회 이상</span>
-              <Badge variant="destructive">{stats.distribution.three}명</Badge>
+              <span className="text-sm">6~7회</span>
+              <Badge variant="secondary">{stats.distribution.sixToSeven}명</Badge>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm">8회 이상</span>
+              <Badge variant="destructive">{stats.distribution.eightPlus}명</Badge>
             </div>
           </CardContent>
         </Card>

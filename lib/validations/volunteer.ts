@@ -101,11 +101,15 @@ export const volunteerUpdateSchema = z.object({
     .min(1, '최소 1개 이상의 역할을 선택해주세요'),
 
   // 봉사자 추가 정보
-  availableThisMonth: z.boolean().optional(),
+  availableThisMonth: z.boolean().nullable().optional(), // null=미입력, true=가능, false=불가능
 
   preferredDays: z
     .array(z.number().min(0).max(6))
     .optional(),
+
+  preferredTimes: z
+    .array(z.string())
+    .optional(), // 선호 시간대 ("상관없음","새벽","오전","오후","저녁")
 
   unavailableDays: z
     .array(z.number().min(0).max(6))

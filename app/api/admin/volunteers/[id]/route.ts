@@ -148,6 +148,7 @@ export async function PATCH(
           // 봉사 가능 정보
           availableThisMonth: validatedData.availableThisMonth ?? null,
           preferredDays: validatedData.preferredDays ?? undefined,
+          preferredTimes: validatedData.preferredTimes ?? undefined,
           unavailableDays: validatedData.unavailableDays ?? undefined,
           unavailableDates: validatedData.unavailableDates ?? undefined,
         },

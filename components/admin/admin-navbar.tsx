@@ -119,7 +119,7 @@ export function AdminNavbar({ organizationName, groupName, userName }: AdminNavb
                 <SheetHeader className="border-b border-gray-200 p-4">
                   <SheetTitle className="text-left">
                     <span className="text-lg font-bold text-gray-900">
-                      {organizationName}성당
+                      {organizationName}
                     </span>
                   </SheetTitle>
                   <p className="text-sm text-gray-500 text-left">
@@ -171,7 +171,7 @@ export function AdminNavbar({ organizationName, groupName, userName }: AdminNavb
 
             {/* 성당 이름 (반응형 크기) */}
             <h1 className="text-lg sm:text-xl font-bold text-gray-900">
-              {organizationName}성당
+              {organizationName}
             </h1>
             {/* 단체명 (sm 이상에서만 표시) */}
             <span className="hidden sm:block text-sm text-gray-500 font-normal">

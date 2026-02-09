@@ -8,7 +8,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ChevronLeft, ChevronRight, Loader2, X, UserPlus, Calendar, List, Sparkles } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Loader2, X, UserPlus, Calendar, List, Sparkles, Download } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -289,8 +289,18 @@ export default function AssignmentsPage() {
           </p>
         </div>
 
-        {/* 뷰 모드 전환 버튼 + 자동배정 버튼 */}
-        <div className="flex gap-3 flex-shrink-0">
+        {/* 뷰 모드 전환 버튼 + 자동배정 버튼 + 저장 버튼 */}
+        <div className="flex gap-3 flex-shrink-0 flex-wrap">
+          {/* 봉사자 배정표 저장 (기능 추가 예정) */}
+          <Button
+            variant="outline"
+            size="default"
+            disabled
+          >
+            <Download className="h-4 w-4 mr-2" />
+            배정표 저장
+          </Button>
+
           {/* 자동배정 버튼 (눈에 잘 띄게) */}
           <Button
             size="default"
