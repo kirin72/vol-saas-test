@@ -99,7 +99,7 @@ export default function Home() {
 
         {/* 푸터 */}
         <footer className="pt-12 text-sm text-gray-500">
-          © 2026 교회 봉사자 관리 시스템. All rights reserved.
+          © 2026 MechInno, Inc. All rights reserved.
         </footer>
       </main>
     </div>
