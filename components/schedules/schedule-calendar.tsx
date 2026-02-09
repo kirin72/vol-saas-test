@@ -120,52 +120,52 @@ export default function ScheduleCalendar({
   const weekDays = ['일', '월', '화', '수', '목', '금', '토'];
 
   return (
-    <Card className="p-6">
+    <Card className="p-3 sm:p-6">
       {/* 헤더 */}
-      <div className="flex justify-between items-center mb-6">
-        <Button variant="outline" size="sm" onClick={onPrevMonth}>
-          <ChevronLeft className="h-4 w-4 mr-1" />
-          이전 달
+      <div className="flex justify-between items-center mb-4 sm:mb-6">
+        <Button variant="outline" size="sm" onClick={onPrevMonth} className="min-h-[44px]">
+          <ChevronLeft className="h-4 w-4 sm:mr-1" />
+          <span className="hidden sm:inline">이전 달</span>
         </Button>
-        <h2 className="text-xl font-bold">
+        <h2 className="text-base sm:text-xl font-bold">
           {currentDate.toLocaleDateString('ko-KR', {
             year: 'numeric',
             month: 'long',
           })}
         </h2>
-        <Button variant="outline" size="sm" onClick={onNextMonth}>
-          다음 달
-          <ChevronRight className="h-4 w-4 ml-1" />
+        <Button variant="outline" size="sm" onClick={onNextMonth} className="min-h-[44px]">
+          <span className="hidden sm:inline">다음 달</span>
+          <ChevronRight className="h-4 w-4 sm:ml-1" />
         </Button>
       </div>
 
-      {/* 범례 */}
-      <div className="flex justify-center gap-4 mb-4 text-sm">
-        <div className="flex items-center gap-2">
+      {/* 범례 (모바일에서 축소) */}
+      <div className="flex justify-center flex-wrap gap-2 sm:gap-4 mb-3 sm:mb-4 text-xs sm:text-sm">
+        <div className="flex items-center gap-1 sm:gap-2">
           <div className="w-3 h-3 rounded bg-purple-500" />
-          <span className="text-gray-600">주일미사</span>
+          <span className="text-gray-600">주일</span>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2">
           <div className="w-3 h-3 rounded bg-blue-500" />
-          <span className="text-gray-600">토요일미사</span>
+          <span className="text-gray-600">토요일</span>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2">
           <div className="w-3 h-3 rounded bg-gray-500" />
-          <span className="text-gray-600">평일미사</span>
+          <span className="text-gray-600">평일</span>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2">
           <div className="w-3 h-3 rounded bg-orange-500" />
-          <span className="text-gray-600">특전미사</span>
+          <span className="text-gray-600">특전</span>
         </div>
       </div>
 
       {/* 캘린더 그리드 */}
-      <div className="grid grid-cols-7 gap-1">
+      <div className="grid grid-cols-7 gap-0.5 sm:gap-1">
         {/* 요일 헤더 */}
         {weekDays.map((day, index) => (
           <div
             key={day}
-            className={`text-center font-semibold py-2 text-sm ${
+            className={`text-center font-semibold py-1 sm:py-2 text-xs sm:text-sm ${
               index === 0 ? 'text-red-600' : index === 6 ? 'text-blue-600' : 'text-gray-700'
             }`}
           >
@@ -183,14 +183,14 @@ export default function ScheduleCalendar({
 
           // 현재 월이 아닌 날짜는 빈 칸으로 표시
           if (!isInCurrentMonth) {
-            return <div key={index} className="min-h-24 p-2 border border-transparent" />;
+            return <div key={index} className="min-h-12 sm:min-h-24 p-1 sm:p-2 border border-transparent" />;
           }
 
           return (
             <div
               key={index}
               className={`
-                min-h-24 p-2 border rounded-lg transition-all flex flex-col justify-between
+                min-h-12 sm:min-h-24 p-1 sm:p-2 border rounded-md sm:rounded-lg transition-all flex flex-col justify-between
                 ${isSelected ? 'ring-2 ring-blue-500 bg-blue-50' : ''}
                 ${hasNoSchedule ? 'bg-gray-100' : 'bg-white'}
                 ${hasNoSchedule ? '' : 'hover:bg-gray-50 cursor-pointer'}
@@ -198,34 +198,41 @@ export default function ScheduleCalendar({
               onClick={hasNoSchedule ? undefined : () => onDateSelect(date)}
             >
               {/* 날짜 */}
-              <div className="flex justify-between items-start mb-1">
+              <div className="flex justify-between items-start">
                 <span
                   className={`
-                    text-sm font-medium
+                    text-xs sm:text-sm font-medium
                     ${index % 7 === 0 ? 'text-red-600' : ''}
                     ${index % 7 === 6 ? 'text-blue-600' : ''}
-                    ${isTodayDate ? 'bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center' : ''}
+                    ${isTodayDate ? 'bg-blue-600 text-white rounded-full w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center text-[10px] sm:text-sm' : ''}
                   `}
                 >
                   {date.getDate()}
                 </span>
               </div>
 
-              {/* 미사 개수 */}
+              {/* 미사 정보: 모바일 도트 / 데스크톱 Badge */}
               {daySchedules.length > 0 && (
-                <Badge variant="outline" className="text-xs">
-                  {daySchedules.length}개 미사
-                </Badge>
+                <>
+                  <div className="sm:hidden flex justify-center mt-1">
+                    <div className="w-1.5 h-1.5 rounded-full bg-purple-500" />
+                  </div>
+                  <div className="hidden sm:block">
+                    <Badge variant="outline" className="text-xs">
+                      {daySchedules.length}개 미사
+                    </Badge>
+                  </div>
+                </>
               )}
 
-              {/* 일정 추가 버튼 */}
+              {/* 일정 추가 버튼 (데스크톱에서만 표시) */}
               {onAddSchedule && (
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     onAddSchedule(date);
                   }}
-                  className="mt-auto pt-1 text-gray-400 hover:text-blue-600 transition-colors flex items-center justify-center gap-1 text-xs"
+                  className="hidden sm:flex mt-auto pt-1 text-gray-400 hover:text-blue-600 transition-colors items-center justify-center gap-1 text-xs"
                 >
                   <Plus className="h-3 w-3" />
                   <span>추가</span>

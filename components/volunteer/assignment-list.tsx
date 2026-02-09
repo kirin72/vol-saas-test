@@ -10,6 +10,7 @@ import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { DesktopTable, MobileCardList, MobileCard, MobileCardHeader, MobileCardRow, MobileCardActions } from '@/components/ui/responsive-table';
 import { RequestDialog } from './request-dialog';
 import { massTypeLabels } from '@/lib/validations/schedule';
 
@@ -100,12 +101,12 @@ export function AssignmentList({
     return (
       <div className="space-y-4">
         {/* 달력 */}
-        <div className="grid grid-cols-7 gap-2">
+        <div className="grid grid-cols-7 gap-0.5 sm:gap-2">
           {/* 요일 헤더 */}
           {['일', '월', '화', '수', '목', '금', '토'].map((day, index) => (
             <div
               key={day}
-              className={`text-center font-semibold text-sm py-2 ${
+              className={`text-center font-semibold text-xs sm:text-sm py-1 sm:py-2 ${
                 index === 0 ? 'text-red-600' : index === 6 ? 'text-blue-600' : 'text-gray-700'
               }`}
             >
@@ -126,30 +127,45 @@ export function AssignmentList({
               return (
                 <div
                   key={`${weekIndex}-${dayIndex}`}
-                  className={`min-h-24 p-2 border rounded-md ${
+                  className={`min-h-10 sm:min-h-24 p-1 sm:p-2 border rounded-md ${
                     date ? 'bg-white' : 'bg-gray-50'
                   }`}
                 >
                   {date && (
                     <>
-                      <div className="text-sm font-medium mb-1">
+                      <div className="text-xs sm:text-sm font-medium mb-0.5 sm:mb-1">
                         {date.getDate()}
                       </div>
                       {dayAssignments.length > 0 && (
-                        <div className="space-y-1">
-                          {dayAssignments.map((assignment) => (
-                            <div
-                              key={assignment.id}
-                              className="text-xs p-1 rounded"
-                              style={{
-                                backgroundColor: assignment.volunteerRole.color || '#6B7280',
-                                color: 'white',
-                              }}
-                            >
-                              {assignment.massSchedule.time} {assignment.volunteerRole.name}
-                            </div>
-                          ))}
-                        </div>
+                        <>
+                          {/* 모바일: 색상 도트 */}
+                          <div className="sm:hidden flex flex-wrap gap-0.5 justify-center">
+                            {dayAssignments.map((assignment) => (
+                              <div
+                                key={assignment.id}
+                                className="w-1.5 h-1.5 rounded-full"
+                                style={{
+                                  backgroundColor: assignment.volunteerRole.color || '#6B7280',
+                                }}
+                              />
+                            ))}
+                          </div>
+                          {/* 데스크톱: 상세 텍스트 */}
+                          <div className="hidden sm:block space-y-1">
+                            {dayAssignments.map((assignment) => (
+                              <div
+                                key={assignment.id}
+                                className="text-xs p-1 rounded"
+                                style={{
+                                  backgroundColor: assignment.volunteerRole.color || '#6B7280',
+                                  color: 'white',
+                                }}
+                              >
+                                {assignment.massSchedule.time} {assignment.volunteerRole.name}
+                              </div>
+                            ))}
+                          </div>
+                        </>
                       )}
                     </>
                   )}
@@ -171,27 +187,116 @@ export function AssignmentList({
     );
   }
 
+  // 상태 뱃지 렌더링 헬퍼
+  const renderStatusBadge = (assignment: Assignment) => {
+    if (assignment.request?.status === 'PENDING') {
+      return (
+        <Badge className="bg-orange-500 text-white text-xs">
+          {assignment.request.type === 'CHANGE' ? '교체 요청됨' : '삭제 요청됨'}
+        </Badge>
+      );
+    } else if (assignment.request?.status === 'REJECTED') {
+      return (
+        <Badge
+          variant="destructive"
+          className="cursor-pointer hover:opacity-80 text-xs"
+          onClick={() => {
+            if (assignment.request?.adminNotes) {
+              alert(`관리자 메모:\n${assignment.request.adminNotes}`);
+            } else {
+              alert('관리자 메모가 없습니다.');
+            }
+          }}
+        >
+          {assignment.request.type === 'CHANGE' ? '교체 거절됨' : '삭제 거절됨'}
+          {assignment.request.adminNotes && ' 📝'}
+        </Badge>
+      );
+    } else if (assignment.status === 'CONFIRMED') {
+      return <Badge className="bg-green-600 text-xs">확인됨</Badge>;
+    } else if (assignment.status === 'REJECTED') {
+      return <Badge variant="destructive" className="text-xs">거절됨</Badge>;
+    }
+    return <Badge variant="secondary" className="text-xs">배정됨</Badge>;
+  };
+
+  const sortedAssignments = assignments.sort(
+    (a, b) => new Date(a.massSchedule.date).getTime() - new Date(b.massSchedule.date).getTime()
+  );
+
   return (
     <>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>날짜</TableHead>
-            <TableHead>시간</TableHead>
-            <TableHead>미사 종류</TableHead>
-            <TableHead>역할</TableHead>
-            <TableHead>상태</TableHead>
-            <TableHead className="text-right">관리</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {assignments
-            .sort(
-              (a, b) =>
-                new Date(a.massSchedule.date).getTime() -
-                new Date(b.massSchedule.date).getTime()
-            )
-            .map((assignment) => (
+      {/* 모바일 카드 뷰 */}
+      <MobileCardList>
+        {sortedAssignments.map((assignment) => (
+          <MobileCard key={assignment.id}>
+            <MobileCardHeader>
+              <div>
+                <span className="font-medium text-sm">
+                  {formatDate(assignment.massSchedule.date)}
+                </span>
+                <span className="text-sm text-gray-500 ml-2">
+                  {assignment.massSchedule.time}
+                </span>
+              </div>
+              {renderStatusBadge(assignment)}
+            </MobileCardHeader>
+            <MobileCardRow label="미사 종류">
+              <Badge variant="outline" className="text-xs">
+                {massTypeLabels[assignment.massSchedule.massTemplate.massType] ||
+                  assignment.massSchedule.massTemplate.massType}
+              </Badge>
+            </MobileCardRow>
+            <MobileCardRow label="역할">
+              <Badge
+                style={{
+                  backgroundColor: assignment.volunteerRole.color || '#6B7280',
+                  color: 'white',
+                }}
+                className="text-xs"
+              >
+                {assignment.volunteerRole.name}
+              </Badge>
+            </MobileCardRow>
+            {assignment.request?.status !== 'PENDING' && (
+              <MobileCardActions>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleRequest(assignment, 'CHANGE')}
+                  className="flex-1"
+                >
+                  교체 요청
+                </Button>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => handleRequest(assignment, 'DELETE')}
+                  className="flex-1"
+                >
+                  삭제 요청
+                </Button>
+              </MobileCardActions>
+            )}
+          </MobileCard>
+        ))}
+      </MobileCardList>
+
+      {/* 데스크톱 테이블 뷰 */}
+      <DesktopTable>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>날짜</TableHead>
+              <TableHead>시간</TableHead>
+              <TableHead>미사 종류</TableHead>
+              <TableHead>역할</TableHead>
+              <TableHead>상태</TableHead>
+              <TableHead className="text-right">관리</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {sortedAssignments.map((assignment) => (
               <TableRow key={assignment.id}>
                 <TableCell className="font-medium">
                   {formatDate(assignment.massSchedule.date)}
@@ -213,34 +318,7 @@ export function AssignmentList({
                     {assignment.volunteerRole.name}
                   </Badge>
                 </TableCell>
-                <TableCell>
-                  {assignment.request?.status === 'PENDING' ? (
-                    <Badge className="bg-orange-500 text-white">
-                      {assignment.request.type === 'CHANGE' ? '교체 요청됨' : '삭제 요청됨'}
-                    </Badge>
-                  ) : assignment.request?.status === 'REJECTED' ? (
-                    <Badge
-                      variant="destructive"
-                      className="cursor-pointer hover:opacity-80"
-                      onClick={() => {
-                        if (assignment.request?.adminNotes) {
-                          alert(`관리자 메모:\n${assignment.request.adminNotes}`);
-                        } else {
-                          alert('관리자 메모가 없습니다.');
-                        }
-                      }}
-                    >
-                      {assignment.request.type === 'CHANGE' ? '교체 거절됨' : '삭제 거절됨'}
-                      {assignment.request.adminNotes && ' 📝'}
-                    </Badge>
-                  ) : assignment.status === 'CONFIRMED' ? (
-                    <Badge className="bg-green-600">확인됨</Badge>
-                  ) : assignment.status === 'REJECTED' ? (
-                    <Badge variant="destructive">거절됨</Badge>
-                  ) : (
-                    <Badge variant="secondary">배정됨</Badge>
-                  )}
-                </TableCell>
+                <TableCell>{renderStatusBadge(assignment)}</TableCell>
                 <TableCell className="text-right space-x-2">
                   {assignment.request?.status !== 'PENDING' && (
                     <>
@@ -263,8 +341,9 @@ export function AssignmentList({
                 </TableCell>
               </TableRow>
             ))}
-        </TableBody>
-      </Table>
+          </TableBody>
+        </Table>
+      </DesktopTable>
 
       {/* 교체/삭제 요청 다이얼로그 */}
       <RequestDialog

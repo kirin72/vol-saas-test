@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Loader2, Check, X, MessageSquare, RefreshCw, User } from 'lucide-react';
 import { RequestDetailDialog } from '@/components/admin/request-detail-dialog';
+import { DesktopTable, MobileCardList, MobileCard, MobileCardHeader, MobileCardRow, MobileCardActions } from '@/components/ui/responsive-table';
 
 // 교체 가능한 봉사자 타입
 interface AvailableVolunteer {
@@ -231,7 +232,7 @@ export default function RequestsPage() {
       {/* 페이지 제목 */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">봉사자 요청 관리</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">봉사자 요청 관리</h1>
           <p className="text-gray-600 mt-2">
             봉사자들의 교체 및 삭제 요청을 확인하고 처리하세요
           </p>
@@ -244,8 +245,8 @@ export default function RequestsPage() {
         )}
       </div>
 
-      {/* 필터 */}
-      <div className="flex gap-2">
+      {/* 필터 (모바일에서 가로 스크롤) */}
+      <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 sm:overflow-visible">
         <Button
           variant={statusFilter === 'PENDING' ? 'default' : 'outline'}
           size="sm"
@@ -289,67 +290,64 @@ export default function RequestsPage() {
                 : '요청이 없습니다'}
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>봉사자</TableHead>
-                  <TableHead>요청 타입</TableHead>
-                  <TableHead>일정</TableHead>
-                  <TableHead>역할</TableHead>
-                  <TableHead>요청일</TableHead>
-                  <TableHead>상태</TableHead>
-                  <TableHead className="text-right">관리</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+            <>
+              {/* 모바일 카드 뷰 */}
+              <MobileCardList>
                 {filteredRequests
                   .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
                   .map((request) => (
-                    <Fragment key={request.id}>
-                      <TableRow>
-                        <TableCell className="font-medium">
-                          {request.user.name}
-                          {request.user.baptismalName && (
-                            <span className="text-gray-500 ml-1">
-                              ({request.user.baptismalName})
-                            </span>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            variant={request.type === 'DELETE' ? 'destructive' : 'default'}
-                          >
-                            {request.type === 'CHANGE' ? '교체 요청' : '삭제 요청'}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          {formatDate(request.assignment.massSchedule.date)}{' '}
-                          {request.assignment.massSchedule.time}
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            style={{
-                              backgroundColor: request.assignment.volunteerRole.color || '#6B7280',
-                              color: 'white',
-                            }}
-                          >
-                            {request.assignment.volunteerRole.name}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-sm text-gray-600">
-                          {new Date(request.createdAt).toLocaleDateString('ko-KR')}
-                        </TableCell>
-                        <TableCell>
-                          {request.status === 'PENDING' ? (
-                            <Badge variant="secondary">대기 중</Badge>
-                          ) : request.status === 'APPROVED' ? (
-                            <Badge className="bg-green-600">승인됨</Badge>
-                          ) : (
-                            <Badge variant="destructive">거절됨</Badge>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right space-x-2">
-                          {/* 메모 보기 */}
+                    <MobileCard key={request.id}>
+                      {/* 카드 헤더: 봉사자명 + 상태 */}
+                      <MobileCardHeader>
+                        <div>
+                          <span className="font-medium">
+                            {request.user.name}
+                            {request.user.baptismalName && (
+                              <span className="text-gray-500 ml-1">
+                                ({request.user.baptismalName})
+                              </span>
+                            )}
+                          </span>
+                          <div className="flex gap-1 mt-1">
+                            <Badge
+                              variant={request.type === 'DELETE' ? 'destructive' : 'default'}
+                              className="text-xs"
+                            >
+                              {request.type === 'CHANGE' ? '교체' : '삭제'}
+                            </Badge>
+                          </div>
+                        </div>
+                        {request.status === 'PENDING' ? (
+                          <Badge variant="secondary">대기 중</Badge>
+                        ) : request.status === 'APPROVED' ? (
+                          <Badge className="bg-green-600">승인됨</Badge>
+                        ) : (
+                          <Badge variant="destructive">거절됨</Badge>
+                        )}
+                      </MobileCardHeader>
+
+                      {/* 일정 정보 */}
+                      <MobileCardRow label="일정">
+                        {formatDate(request.assignment.massSchedule.date)} {request.assignment.massSchedule.time}
+                      </MobileCardRow>
+                      <MobileCardRow label="역할">
+                        <Badge
+                          style={{
+                            backgroundColor: request.assignment.volunteerRole.color || '#6B7280',
+                            color: 'white',
+                          }}
+                          className="text-xs"
+                        >
+                          {request.assignment.volunteerRole.name}
+                        </Badge>
+                      </MobileCardRow>
+                      <MobileCardRow label="요청일">
+                        {new Date(request.createdAt).toLocaleDateString('ko-KR')}
+                      </MobileCardRow>
+
+                      {/* 액션 버튼 */}
+                      {request.status === 'PENDING' && (
+                        <MobileCardActions>
                           {request.notes && (
                             <Button
                               variant="ghost"
@@ -359,110 +357,246 @@ export default function RequestsPage() {
                               <MessageSquare className="h-4 w-4" />
                             </Button>
                           )}
+                          {request.type === 'CHANGE' ? (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() =>
+                                replacingRequestId === request.id
+                                  ? handleCancelReplace()
+                                  : handleStartReplace(request.id)
+                              }
+                              disabled={processing === request.id}
+                              className="text-blue-600 border-blue-600 hover:bg-blue-50 flex-1"
+                            >
+                              <RefreshCw className="h-4 w-4 mr-1" />
+                              {replacingRequestId === request.id ? '취소' : '교체'}
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleApprove(request.id)}
+                              disabled={processing === request.id}
+                              className="text-green-600 border-green-600 hover:bg-green-50 flex-1"
+                            >
+                              <Check className="h-4 w-4 mr-1" />
+                              승인
+                            </Button>
+                          )}
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleReject(request.id)}
+                            disabled={processing === request.id}
+                            className="flex-1"
+                          >
+                            <X className="h-4 w-4 mr-1" />
+                            거절
+                          </Button>
+                        </MobileCardActions>
+                      )}
 
-                          {/* 승인/거절/교체 버튼 (대기 중인 경우만) */}
-                          {request.status === 'PENDING' && (
-                            <>
-                              {request.type === 'CHANGE' ? (
-                                // 교체 요청인 경우 교체 버튼
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() =>
-                                    replacingRequestId === request.id
-                                      ? handleCancelReplace()
-                                      : handleStartReplace(request.id)
-                                  }
+                      {/* 교체 가능한 봉사자 목록 */}
+                      {replacingRequestId === request.id && (
+                        <div className="bg-blue-50 rounded-lg p-3 space-y-2 mt-2">
+                          <div className="flex items-center gap-2">
+                            <User className="h-4 w-4 text-blue-600" />
+                            <span className="font-semibold text-blue-900 text-sm">
+                              교체 가능 ({availableVolunteers.length}명)
+                            </span>
+                          </div>
+                          {loadingVolunteers ? (
+                            <div className="flex justify-center py-2">
+                              <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
+                            </div>
+                          ) : (
+                            <div className="grid grid-cols-2 gap-2">
+                              {availableVolunteers.map((volunteer) => (
+                                <button
+                                  key={volunteer.id}
+                                  onClick={() => handleReplaceVolunteer(request.id, volunteer.id)}
                                   disabled={processing === request.id}
-                                  className="text-blue-600 border-blue-600 hover:bg-blue-50"
+                                  className="flex items-center justify-between p-2 bg-white border border-gray-200 rounded-md text-left disabled:opacity-50 min-h-[44px]"
                                 >
-                                  <RefreshCw className="h-4 w-4 mr-1" />
-                                  {replacingRequestId === request.id ? '취소' : '교체'}
-                                </Button>
+                                  <div>
+                                    <div className="font-medium text-xs">{volunteer.name}</div>
+                                    <div className="text-xs text-gray-500">{volunteer.assignmentCount}회</div>
+                                  </div>
+                                  <RefreshCw className="h-3 w-3 text-blue-600 shrink-0" />
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </MobileCard>
+                  ))}
+              </MobileCardList>
+
+              {/* 데스크톱 테이블 뷰 */}
+              <DesktopTable>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>봉사자</TableHead>
+                      <TableHead>요청 타입</TableHead>
+                      <TableHead>일정</TableHead>
+                      <TableHead>역할</TableHead>
+                      <TableHead>요청일</TableHead>
+                      <TableHead>상태</TableHead>
+                      <TableHead className="text-right">관리</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredRequests
+                      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                      .map((request) => (
+                        <Fragment key={request.id}>
+                          <TableRow>
+                            <TableCell className="font-medium">
+                              {request.user.name}
+                              {request.user.baptismalName && (
+                                <span className="text-gray-500 ml-1">
+                                  ({request.user.baptismalName})
+                                </span>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <Badge
+                                variant={request.type === 'DELETE' ? 'destructive' : 'default'}
+                              >
+                                {request.type === 'CHANGE' ? '교체 요청' : '삭제 요청'}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              {formatDate(request.assignment.massSchedule.date)}{' '}
+                              {request.assignment.massSchedule.time}
+                            </TableCell>
+                            <TableCell>
+                              <Badge
+                                style={{
+                                  backgroundColor: request.assignment.volunteerRole.color || '#6B7280',
+                                  color: 'white',
+                                }}
+                              >
+                                {request.assignment.volunteerRole.name}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-sm text-gray-600">
+                              {new Date(request.createdAt).toLocaleDateString('ko-KR')}
+                            </TableCell>
+                            <TableCell>
+                              {request.status === 'PENDING' ? (
+                                <Badge variant="secondary">대기 중</Badge>
+                              ) : request.status === 'APPROVED' ? (
+                                <Badge className="bg-green-600">승인됨</Badge>
                               ) : (
-                                // 삭제 요청인 경우 승인 버튼
+                                <Badge variant="destructive">거절됨</Badge>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-right space-x-2">
+                              {request.notes && (
                                 <Button
-                                  variant="outline"
+                                  variant="ghost"
                                   size="sm"
-                                  onClick={() => handleApprove(request.id)}
-                                  disabled={processing === request.id}
-                                  className="text-green-600 border-green-600 hover:bg-green-50"
+                                  onClick={() => handleShowDetail(request)}
                                 >
-                                  <Check className="h-4 w-4 mr-1" />
-                                  승인
+                                  <MessageSquare className="h-4 w-4" />
                                 </Button>
                               )}
-                              <Button
-                                variant="destructive"
-                                size="sm"
-                                onClick={() => handleReject(request.id)}
-                                disabled={processing === request.id}
-                              >
-                                <X className="h-4 w-4 mr-1" />
-                                거절
-                              </Button>
-                            </>
-                          )}
-                        </TableCell>
-                      </TableRow>
-
-                      {/* 교체 가능한 봉사자 목록 (교체 모드일 때만 표시) */}
-                      {replacingRequestId === request.id && (
-                        <TableRow>
-                          <TableCell colSpan={7} className="bg-blue-50 p-4">
-                            <div className="space-y-3">
-                              <div className="flex items-center gap-2">
-                                <User className="h-5 w-5 text-blue-600" />
-                                <h3 className="font-semibold text-blue-900">
-                                  교체 가능한 봉사자 ({availableVolunteers.length}명)
-                                </h3>
-                              </div>
-
-                              {loadingVolunteers ? (
-                                <div className="flex justify-center py-4">
-                                  <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
-                                </div>
-                              ) : availableVolunteers.length === 0 ? (
-                                <p className="text-sm text-gray-600">
-                                  교체 가능한 봉사자가 없습니다
-                                </p>
-                              ) : (
-                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-                                  {availableVolunteers.map((volunteer) => (
-                                    <button
-                                      key={volunteer.id}
+                              {request.status === 'PENDING' && (
+                                <>
+                                  {request.type === 'CHANGE' ? (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
                                       onClick={() =>
-                                        handleReplaceVolunteer(request.id, volunteer.id)
+                                        replacingRequestId === request.id
+                                          ? handleCancelReplace()
+                                          : handleStartReplace(request.id)
                                       }
                                       disabled={processing === request.id}
-                                      className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-md hover:bg-blue-50 hover:border-blue-300 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                      className="text-blue-600 border-blue-600 hover:bg-blue-50"
                                     >
-                                      <div className="text-left">
-                                        <div className="font-medium text-sm">
-                                          {volunteer.name}
-                                          {volunteer.baptismalName && (
-                                            <span className="text-gray-500 text-xs ml-1">
-                                              ({volunteer.baptismalName})
-                                            </span>
-                                          )}
-                                        </div>
-                                        <div className="text-xs text-gray-600 mt-1">
-                                          이번 달 {volunteer.assignmentCount}회
-                                        </div>
-                                      </div>
-                                      <RefreshCw className="h-4 w-4 text-blue-600" />
-                                    </button>
-                                  ))}
-                                </div>
+                                      <RefreshCw className="h-4 w-4 mr-1" />
+                                      {replacingRequestId === request.id ? '취소' : '교체'}
+                                    </Button>
+                                  ) : (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => handleApprove(request.id)}
+                                      disabled={processing === request.id}
+                                      className="text-green-600 border-green-600 hover:bg-green-50"
+                                    >
+                                      <Check className="h-4 w-4 mr-1" />
+                                      승인
+                                    </Button>
+                                  )}
+                                  <Button
+                                    variant="destructive"
+                                    size="sm"
+                                    onClick={() => handleReject(request.id)}
+                                    disabled={processing === request.id}
+                                  >
+                                    <X className="h-4 w-4 mr-1" />
+                                    거절
+                                  </Button>
+                                </>
                               )}
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </Fragment>
-                  ))}
-              </TableBody>
-            </Table>
+                            </TableCell>
+                          </TableRow>
+
+                          {replacingRequestId === request.id && (
+                            <TableRow>
+                              <TableCell colSpan={7} className="bg-blue-50 p-4">
+                                <div className="space-y-3">
+                                  <div className="flex items-center gap-2">
+                                    <User className="h-5 w-5 text-blue-600" />
+                                    <h3 className="font-semibold text-blue-900">
+                                      교체 가능한 봉사자 ({availableVolunteers.length}명)
+                                    </h3>
+                                  </div>
+                                  {loadingVolunteers ? (
+                                    <div className="flex justify-center py-4">
+                                      <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+                                    </div>
+                                  ) : availableVolunteers.length === 0 ? (
+                                    <p className="text-sm text-gray-600">교체 가능한 봉사자가 없습니다</p>
+                                  ) : (
+                                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                                      {availableVolunteers.map((volunteer) => (
+                                        <button
+                                          key={volunteer.id}
+                                          onClick={() => handleReplaceVolunteer(request.id, volunteer.id)}
+                                          disabled={processing === request.id}
+                                          className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-md hover:bg-blue-50 hover:border-blue-300 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                          <div className="text-left">
+                                            <div className="font-medium text-sm">
+                                              {volunteer.name}
+                                              {volunteer.baptismalName && (
+                                                <span className="text-gray-500 text-xs ml-1">({volunteer.baptismalName})</span>
+                                              )}
+                                            </div>
+                                            <div className="text-xs text-gray-600 mt-1">이번 달 {volunteer.assignmentCount}회</div>
+                                          </div>
+                                          <RefreshCw className="h-4 w-4 text-blue-600" />
+                                        </button>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </Fragment>
+                      ))}
+                  </TableBody>
+                </Table>
+              </DesktopTable>
+            </>
           )}
         </CardContent>
       </Card>

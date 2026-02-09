@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { PlusCircle, Mail, Phone, Loader2, LayoutGrid, List as ListIcon, Search } from 'lucide-react';
+import { DesktopTable, MobileCardList, MobileCard, MobileCardHeader, MobileCardRow, MobileCardActions } from '@/components/ui/responsive-table';
 
 interface Volunteer {
   id: string;
@@ -130,7 +131,7 @@ export default function VolunteersPage() {
       {/* 헤더 */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">봉사자 관리</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">봉사자 관리</h1>
           <p className="text-gray-600 mt-2">
             총 {volunteers.length}명의 봉사자
             {searchQuery && ` · 검색 결과 ${filteredVolunteers.length}명`}
@@ -138,23 +139,25 @@ export default function VolunteersPage() {
         </div>
 
         <div className="flex gap-2 flex-shrink-0">
-          {/* 뷰 모드 전환 */}
-          <Button
-            variant={viewMode === 'card' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setViewMode('card')}
-          >
-            <LayoutGrid className="h-4 w-4 mr-1" />
-            카드
-          </Button>
-          <Button
-            variant={viewMode === 'list' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setViewMode('list')}
-          >
-            <ListIcon className="h-4 w-4 mr-1" />
-            리스트
-          </Button>
+          {/* 뷰 모드 전환 (데스크톱에서만 표시, 모바일은 항상 카드뷰) */}
+          <div className="hidden sm:flex gap-2">
+            <Button
+              variant={viewMode === 'card' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setViewMode('card')}
+            >
+              <LayoutGrid className="h-4 w-4 mr-1" />
+              카드
+            </Button>
+            <Button
+              variant={viewMode === 'list' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setViewMode('list')}
+            >
+              <ListIcon className="h-4 w-4 mr-1" />
+              리스트
+            </Button>
+          </div>
 
           {/* 등록 버튼 */}
           <Button asChild>
@@ -201,9 +204,8 @@ export default function VolunteersPage() {
         </Card>
       ) : (
         <>
-          {/* 카드 뷰 */}
-          {viewMode === 'card' && (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {/* 카드 뷰 (모바일에서는 항상 표시, 데스크톱에서는 viewMode가 card일 때만) */}
+          <div className={`grid gap-4 md:grid-cols-2 lg:grid-cols-3 ${viewMode === 'card' ? '' : 'sm:hidden'}`}>
               {filteredVolunteers.map((volunteer) => (
                 <Card
                   key={volunteer.id}
@@ -298,12 +300,11 @@ export default function VolunteersPage() {
                   </CardContent>
                 </Card>
               ))}
-            </div>
-          )}
+          </div>
 
-          {/* 리스트 뷰 */}
+          {/* 리스트 뷰 (데스크톱 전용) */}
           {viewMode === 'list' && (
-            <Card>
+            <Card className="hidden sm:block">
               <CardContent className="p-0">
                 <Table>
                   <TableHeader>

@@ -12,6 +12,7 @@ import { PlusCircle, Edit, Trash2, Loader2, ChevronLeft, ChevronRight, Calendar,
 import ScheduleDialog from '@/components/schedules/schedule-dialog';
 import ScheduleCalendar from '@/components/schedules/schedule-calendar';
 import { massTypeLabels } from '@/lib/validations/schedule';
+import { DesktopTable, MobileCardList, MobileCard, MobileCardHeader, MobileCardRow, MobileCardActions } from '@/components/ui/responsive-table';
 
 interface MassSchedule {
   id: string;
@@ -200,7 +201,7 @@ export default function SchedulesPage() {
       {/* 헤더 */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">봉사 일정 관리</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">봉사 일정 관리</h1>
           <p className="text-gray-600 mt-2">
             {currentDate.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long' })} · 총 {schedules.length}개 일정
             {selectedDate && (
@@ -309,105 +310,156 @@ export default function SchedulesPage() {
                 </Button>
               </div>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>날짜</TableHead>
-                    <TableHead>시간</TableHead>
-                    <TableHead>미사 종류</TableHead>
-                    <TableHead>필요 역할</TableHead>
-                    <TableHead>배정 현황</TableHead>
-                    <TableHead className="text-right">관리</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredSchedules.map((schedule, index) => {
-                  const totalRequired = schedule.massTemplate?.slots.reduce((sum, slot) => sum + slot.requiredCount, 0) || 0;
-                  const assignedCount = schedule._count.assignments;
-                  const isFullyAssigned = assignedCount >= totalRequired;
+              <>
+                {/* 모바일 카드 뷰 */}
+                <MobileCardList>
+                  {filteredSchedules.map((schedule) => {
+                    const totalRequired = schedule.massTemplate?.slots.reduce((sum, slot) => sum + slot.requiredCount, 0) || 0;
+                    const assignedCount = schedule._count.assignments;
+                    const isFullyAssigned = assignedCount >= totalRequired;
 
-                  // 날짜 그룹화 로직
-                  const currentDate = formatDate(schedule.date);
-                  const prevSchedule = index > 0 ? filteredSchedules[index - 1] : null;
-                  const prevDate = prevSchedule ? formatDate(prevSchedule.date) : null;
-                  const isSameDate = currentDate === prevDate;
-
-                  // 같은 날짜의 일정 개수 계산 (rowspan용)
-                  const sameDateSchedules = filteredSchedules.filter(s =>
-                    formatDate(s.date) === currentDate
-                  );
-                  const isFirstOfDate = !isSameDate;
-                  const rowSpan = isFirstOfDate ? sameDateSchedules.length : 0;
-
-                  return (
-                    <TableRow key={schedule.id}>
-                      {/* 같은 날짜의 첫 번째 일정에만 날짜 표시 */}
-                      {isFirstOfDate && (
-                        <TableCell className="font-medium align-top" rowSpan={rowSpan}>
-                          {currentDate}
-                        </TableCell>
-                      )}
-                      <TableCell>{schedule.time}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline">
-                          {massTypeLabels[schedule.massTemplate?.massType || 'WEEKDAY']}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
+                    return (
+                      <MobileCard key={schedule.id}>
+                        <MobileCardHeader>
+                          <div>
+                            <span className="font-medium text-sm">
+                              {formatDate(schedule.date)}
+                            </span>
+                            <span className="text-sm text-gray-500 ml-2">{schedule.time}</span>
+                          </div>
+                          <Badge variant={isFullyAssigned ? 'default' : 'secondary'} className="text-xs">
+                            {assignedCount}/{totalRequired}명
+                          </Badge>
+                        </MobileCardHeader>
+                        <MobileCardRow label="미사 종류">
+                          <Badge variant="outline" className="text-xs">
+                            {massTypeLabels[schedule.massTemplate?.massType || 'WEEKDAY']}
+                          </Badge>
+                        </MobileCardRow>
                         <div className="flex flex-wrap gap-1">
                           {schedule.massTemplate?.slots
-                            .sort((a, b) => {
-                              // sortOrder가 있으면 그것으로 정렬, 없으면 이름으로 정렬
-                              const orderA = a.volunteerRole.sortOrder ?? 999;
-                              const orderB = b.volunteerRole.sortOrder ?? 999;
-                              if (orderA !== orderB) {
-                                return orderA - orderB;
-                              }
-                              return a.volunteerRole.name.localeCompare(b.volunteerRole.name);
-                            })
+                            .sort((a, b) => (a.volunteerRole.sortOrder ?? 999) - (b.volunteerRole.sortOrder ?? 999))
                             .map((slot) => (
                               <Badge
                                 key={slot.id}
-                                style={{
-                                  backgroundColor: slot.volunteerRole.color,
-                                  color: 'white',
-                                }}
+                                style={{ backgroundColor: slot.volunteerRole.color, color: 'white' }}
                                 className="text-xs"
                               >
                                 {slot.volunteerRole.name}
                               </Badge>
                             ))}
                         </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={isFullyAssigned ? 'default' : 'secondary'}>
-                          {assignedCount}/{totalRequired}명
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right space-x-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleEdit(schedule)}
-                        >
-                          <Edit className="h-4 w-4 mr-1" />
-                          수정
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => handleDelete(schedule)}
-                          disabled={deleting === schedule.id}
-                        >
-                          <Trash2 className="h-4 w-4 mr-1" />
-                          {deleting === schedule.id ? '삭제 중...' : '삭제'}
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-                </TableBody>
-              </Table>
+                        <MobileCardActions>
+                          <Button variant="outline" size="sm" onClick={() => handleEdit(schedule)} className="flex-1">
+                            <Edit className="h-4 w-4 mr-1" />
+                            수정
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleDelete(schedule)}
+                            disabled={deleting === schedule.id}
+                            className="flex-1"
+                          >
+                            <Trash2 className="h-4 w-4 mr-1" />
+                            {deleting === schedule.id ? '삭제 중...' : '삭제'}
+                          </Button>
+                        </MobileCardActions>
+                      </MobileCard>
+                    );
+                  })}
+                </MobileCardList>
+
+                {/* 데스크톱 테이블 뷰 */}
+                <DesktopTable>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>날짜</TableHead>
+                        <TableHead>시간</TableHead>
+                        <TableHead>미사 종류</TableHead>
+                        <TableHead>필요 역할</TableHead>
+                        <TableHead>배정 현황</TableHead>
+                        <TableHead className="text-right">관리</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredSchedules.map((schedule, index) => {
+                      const totalRequired = schedule.massTemplate?.slots.reduce((sum, slot) => sum + slot.requiredCount, 0) || 0;
+                      const assignedCount = schedule._count.assignments;
+                      const isFullyAssigned = assignedCount >= totalRequired;
+
+                      const currentDate = formatDate(schedule.date);
+                      const prevSchedule = index > 0 ? filteredSchedules[index - 1] : null;
+                      const prevDate = prevSchedule ? formatDate(prevSchedule.date) : null;
+                      const isSameDate = currentDate === prevDate;
+
+                      const sameDateSchedules = filteredSchedules.filter(s =>
+                        formatDate(s.date) === currentDate
+                      );
+                      const isFirstOfDate = !isSameDate;
+                      const rowSpan = isFirstOfDate ? sameDateSchedules.length : 0;
+
+                      return (
+                        <TableRow key={schedule.id}>
+                          {isFirstOfDate && (
+                            <TableCell className="font-medium align-top" rowSpan={rowSpan}>
+                              {currentDate}
+                            </TableCell>
+                          )}
+                          <TableCell>{schedule.time}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline">
+                              {massTypeLabels[schedule.massTemplate?.massType || 'WEEKDAY']}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex flex-wrap gap-1">
+                              {schedule.massTemplate?.slots
+                                .sort((a, b) => {
+                                  const orderA = a.volunteerRole.sortOrder ?? 999;
+                                  const orderB = b.volunteerRole.sortOrder ?? 999;
+                                  if (orderA !== orderB) return orderA - orderB;
+                                  return a.volunteerRole.name.localeCompare(b.volunteerRole.name);
+                                })
+                                .map((slot) => (
+                                  <Badge
+                                    key={slot.id}
+                                    style={{ backgroundColor: slot.volunteerRole.color, color: 'white' }}
+                                    className="text-xs"
+                                  >
+                                    {slot.volunteerRole.name}
+                                  </Badge>
+                                ))}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={isFullyAssigned ? 'default' : 'secondary'}>
+                              {assignedCount}/{totalRequired}명
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right space-x-2">
+                            <Button variant="outline" size="sm" onClick={() => handleEdit(schedule)}>
+                              <Edit className="h-4 w-4 mr-1" />
+                              수정
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => handleDelete(schedule)}
+                              disabled={deleting === schedule.id}
+                            >
+                              <Trash2 className="h-4 w-4 mr-1" />
+                              {deleting === schedule.id ? '삭제 중...' : '삭제'}
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                    </TableBody>
+                  </Table>
+                </DesktopTable>
+              </>
             )}
           </CardContent>
         </Card>

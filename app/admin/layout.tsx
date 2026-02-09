@@ -51,7 +51,7 @@ export default async function AdminLayout({
       />
 
       {/* 메인 컨텐츠 */}
-      <main className="p-8">
+      <main className="p-4 sm:p-6 lg:p-8">
         <div className="max-w-7xl mx-auto">{children}</div>
       </main>
     </div>

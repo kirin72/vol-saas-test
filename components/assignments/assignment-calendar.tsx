@@ -133,48 +133,48 @@ export default function AssignmentCalendar({
   const weekDays = ['일', '월', '화', '수', '목', '금', '토'];
 
   return (
-    <Card className="p-6">
+    <Card className="p-3 sm:p-6">
       {/* 헤더 */}
-      <div className="flex justify-between items-center mb-6">
-        <Button variant="outline" size="sm" onClick={onPrevMonth}>
-          <ChevronLeft className="h-4 w-4 mr-1" />
-          이전 달
+      <div className="flex justify-between items-center mb-4 sm:mb-6">
+        <Button variant="outline" size="sm" onClick={onPrevMonth} className="min-h-[44px]">
+          <ChevronLeft className="h-4 w-4 sm:mr-1" />
+          <span className="hidden sm:inline">이전 달</span>
         </Button>
-        <h2 className="text-xl font-bold">
+        <h2 className="text-base sm:text-xl font-bold">
           {currentDate.toLocaleDateString('ko-KR', {
             year: 'numeric',
             month: 'long',
           })}
         </h2>
-        <Button variant="outline" size="sm" onClick={onNextMonth}>
-          다음 달
-          <ChevronRight className="h-4 w-4 ml-1" />
+        <Button variant="outline" size="sm" onClick={onNextMonth} className="min-h-[44px]">
+          <span className="hidden sm:inline">다음 달</span>
+          <ChevronRight className="h-4 w-4 sm:ml-1" />
         </Button>
       </div>
 
-      {/* 범례 */}
-      <div className="flex justify-center gap-4 mb-4 text-sm">
-        <div className="flex items-center gap-2">
+      {/* 범례 (모바일에서 축소) */}
+      <div className="flex justify-center gap-2 sm:gap-4 mb-3 sm:mb-4 text-xs sm:text-sm">
+        <div className="flex items-center gap-1 sm:gap-2">
           <div className="w-3 h-3 rounded bg-sky-100 border border-sky-200" />
-          <span className="text-gray-600">배정 완료</span>
+          <span className="text-gray-600">완료</span>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2">
           <div className="w-3 h-3 rounded bg-yellow-50 border border-yellow-200" />
-          <span className="text-gray-600">일부 배정</span>
+          <span className="text-gray-600">일부</span>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2">
           <div className="w-3 h-3 rounded bg-gray-200 border border-gray-300" />
           <span className="text-gray-600">미배정</span>
         </div>
       </div>
 
       {/* 캘린더 그리드 */}
-      <div className="grid grid-cols-7 gap-1">
+      <div className="grid grid-cols-7 gap-0.5 sm:gap-1">
         {/* 요일 헤더 */}
         {weekDays.map((day, index) => (
           <div
             key={day}
-            className={`text-center font-semibold py-2 text-sm ${
+            className={`text-center font-semibold py-1 sm:py-2 text-xs sm:text-sm ${
               index === 0 ? 'text-red-600' : index === 6 ? 'text-blue-600' : 'text-gray-700'
             }`}
           >
@@ -192,7 +192,7 @@ export default function AssignmentCalendar({
 
           // 현재 월이 아닌 날짜는 빈 칸으로 표시
           if (!isInCurrentMonth) {
-            return <div key={index} className="min-h-20 p-2 border border-transparent" />;
+            return <div key={index} className="min-h-12 sm:min-h-20 p-1 sm:p-2 border border-transparent" />;
           }
 
           // 배경색 결정
@@ -213,33 +213,42 @@ export default function AssignmentCalendar({
               onClick={() => onDateSelect(date)}
               disabled={daySchedules.length === 0}
               className={`
-                min-h-20 p-2 border rounded-lg transition-all
+                min-h-12 sm:min-h-20 p-1 sm:p-2 border rounded-md sm:rounded-lg transition-all
                 ${isSelected ? 'ring-2 ring-blue-500' : ''}
                 ${daySchedules.length === 0 ? 'cursor-default bg-white' : `cursor-pointer hover:opacity-80 ${bgColor}`}
               `}
             >
               {/* 날짜 */}
-              <div className="flex justify-between items-start mb-1">
+              <div className="flex justify-between items-start">
                 <span
                   className={`
-                    text-sm font-medium
+                    text-xs sm:text-sm font-medium
                     ${index % 7 === 0 ? 'text-red-600' : ''}
                     ${index % 7 === 6 ? 'text-blue-600' : ''}
-                    ${isTodayDate ? 'bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center' : ''}
+                    ${isTodayDate ? 'bg-blue-600 text-white rounded-full w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center text-[10px] sm:text-sm' : ''}
                   `}
                 >
                   {date.getDate()}
                 </span>
               </div>
 
-              {/* 미사 정보 */}
+              {/* 미사 정보: 모바일에서는 도트, 데스크톱에서는 Badge */}
               {daySchedules.length > 0 && (
-                <div>
-                  {/* 미사 개수 */}
-                  <Badge variant="outline" className="text-xs">
-                    {daySchedules.length}개 미사
-                  </Badge>
-                </div>
+                <>
+                  {/* 모바일: 색상 도트 */}
+                  <div className="sm:hidden flex justify-center mt-1">
+                    <div className={`w-1.5 h-1.5 rounded-full ${
+                      completionRate?.isComplete ? 'bg-sky-500' :
+                      completionRate?.isPartial ? 'bg-yellow-500' : 'bg-gray-400'
+                    }`} />
+                  </div>
+                  {/* 데스크톱: Badge */}
+                  <div className="hidden sm:block mt-1">
+                    <Badge variant="outline" className="text-xs">
+                      {daySchedules.length}개 미사
+                    </Badge>
+                  </div>
+                </>
               )}
             </button>
           );

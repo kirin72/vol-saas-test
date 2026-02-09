@@ -169,14 +169,14 @@ export default function RolesPage() {
   return (
     <div className="space-y-6">
       {/* 헤더 */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">봉사 역할 관리</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">봉사 역할 관리</h1>
           <p className="text-gray-600 mt-2">
             총 {roles.length}개의 역할이 등록되어 있습니다
           </p>
         </div>
-        <Button onClick={handleAdd}>
+        <Button onClick={handleAdd} className="shrink-0">
           <PlusCircle className="mr-2 h-4 w-4" />
           역할 추가
         </Button>

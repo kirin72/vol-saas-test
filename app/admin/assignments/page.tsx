@@ -261,7 +261,7 @@ export default function AssignmentsPage() {
       {/* 헤더 */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">봉사자 배정</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">봉사자 배정</h1>
           <p className="text-gray-600 mt-2">
             {currentDate.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long' })} · 총 {schedules.length}개 일정
             {selectedDate && (
@@ -408,7 +408,7 @@ export default function AssignmentsPage() {
                         return (
                           <div
                             key={slot.id}
-                            className={`border rounded-lg p-4 ${
+                            className={`border rounded-lg p-3 sm:p-4 ${
                               isFull ? 'bg-green-50 border-green-200' : 'bg-orange-50 border-orange-200'
                             }`}
                           >
@@ -460,12 +460,12 @@ export default function AssignmentsPage() {
                                     <button
                                       onClick={() => handleDeleteAssignment(assignment.id)}
                                       disabled={deleting === assignment.id}
-                                      className="ml-1 text-red-600 hover:text-red-800 disabled:opacity-50"
+                                      className="ml-1 p-1 min-h-[28px] min-w-[28px] flex items-center justify-center text-red-600 hover:text-red-800 disabled:opacity-50"
                                     >
                                       {deleting === assignment.id ? (
-                                        <Loader2 className="h-3 w-3 animate-spin" />
+                                        <Loader2 className="h-4 w-4 animate-spin" />
                                       ) : (
-                                        <X className="h-3 w-3" />
+                                        <X className="h-4 w-4" />
                                       )}
                                     </button>
                                   </div>

@@ -89,7 +89,7 @@ export default function VolunteerDashboardPage() {
     <div className="space-y-6">
       {/* 페이지 제목 */}
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">나의 봉사 현황</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">나의 봉사 현황</h1>
         <p className="text-gray-600 mt-2">
           이번 달 배정된 봉사 일정을 확인하고 관리하세요
         </p>

@@ -147,7 +147,7 @@ export function AvailabilityForm({ initialData, onUpdate }: AvailabilityFormProp
               (클릭하여 선택/해제)
             </span>
           </Label>
-          <div className="flex flex-wrap gap-2">
+          <div className="grid grid-cols-4 sm:flex sm:flex-wrap gap-2">
             {dayNames.map((name, index) => {
               const isSelected = preferredDays.includes(index);
               return (
@@ -155,7 +155,7 @@ export function AvailabilityForm({ initialData, onUpdate }: AvailabilityFormProp
                   key={index}
                   type="button"
                   onClick={() => toggleDay(index, 'preferred')}
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition-all cursor-pointer ${
+                  className={`px-3 py-2.5 sm:px-4 sm:py-2 min-h-[44px] rounded-md text-sm font-medium transition-all cursor-pointer ${
                     isSelected
                       ? 'bg-blue-600 text-white shadow-md scale-105'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:scale-105'
@@ -176,7 +176,7 @@ export function AvailabilityForm({ initialData, onUpdate }: AvailabilityFormProp
               (클릭하여 선택/해제)
             </span>
           </Label>
-          <div className="flex flex-wrap gap-2">
+          <div className="grid grid-cols-4 sm:flex sm:flex-wrap gap-2">
             {dayNames.map((name, index) => {
               const isSelected = unavailableDays.includes(index);
               return (
@@ -184,7 +184,7 @@ export function AvailabilityForm({ initialData, onUpdate }: AvailabilityFormProp
                   key={index}
                   type="button"
                   onClick={() => toggleDay(index, 'unavailable')}
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition-all cursor-pointer ${
+                  className={`px-3 py-2.5 sm:px-4 sm:py-2 min-h-[44px] rounded-md text-sm font-medium transition-all cursor-pointer ${
                     isSelected
                       ? 'bg-red-600 text-white shadow-md scale-105'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:scale-105'
