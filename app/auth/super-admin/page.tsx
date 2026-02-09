@@ -37,6 +37,8 @@ export default function SuperAdminLoginPage() {
     setLoading(true);
 
     try {
+      console.log('Super Admin 로그인 시도:', email);
+
       const result = await signIn('credentials', {
         email,
         password,
@@ -44,14 +46,33 @@ export default function SuperAdminLoginPage() {
         redirect: false,
       });
 
+      console.log('Super Admin 로그인 결과:', result);
+
       if (result?.error) {
+        console.error('Super Admin 로그인 에러:', result.error);
         setError(result.error);
         setLoading(false);
       } else if (result?.ok) {
+        console.log('Super Admin 로그인 성공 → 세션 확인 대기');
+
+        // 세션 생성 대기
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        // 세션 확인
+        const sessionRes = await fetch('/api/auth/session');
+        const session = await sessionRes.json();
+
+        console.log('Super Admin 세션 정보:', session);
+
+        if (!session?.user) {
+          console.log('세션 없음 → 강제 리디렉션');
+        }
+
         // 로그인 성공 → 강제 리디렉션
         window.location.href = '/super-admin/dashboard';
       }
     } catch (err) {
+      console.error('Super Admin 로그인 오류:', err);
       setError('로그인 중 오류가 발생했습니다.');
       setLoading(false);
     }
