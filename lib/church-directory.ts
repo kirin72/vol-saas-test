@@ -196,11 +196,77 @@ function parseWeekdayMassDetailed(weekdayMass: string): Map<string, string[]> {
 }
 
 /**
+ * 요일별 상세 파싱 결과를 템플릿 데이터로 변환하는 헬퍼
+ * timeToDays Map에서 요일별 적절한 MassType을 결정하여 템플릿 배열 생성
+ * - SUNDAY → 주일미사
+ * - SATURDAY → 토요미사
+ * - MONDAY~FRIDAY → 평일미사 (같은 시간대 요일 그룹핑)
+ */
+function convertTimeToDaysToTemplates(
+  timeToDays: Map<string, string[]>,
+): TemplateCreateData[] {
+  const templates: TemplateCreateData[] = [];
+
+  for (const [time, days] of timeToDays) {
+    // 주일(일요일) 분리
+    const hasSunday = days.includes('SUNDAY');
+    // 토요일 분리
+    const hasSaturday = days.includes('SATURDAY');
+    // 평일 (월~금)
+    const weekdays = days.filter((d) => d !== 'SATURDAY' && d !== 'SUNDAY');
+
+    // 주일 템플릿 생성
+    if (hasSunday) {
+      templates.push({
+        name: `주일 ${time} 미사`,
+        massType: 'SUNDAY' as MassType,
+        dayOfWeek: ['SUNDAY'],
+        time,
+      });
+    }
+
+    // 토요일 별도 템플릿 생성
+    if (hasSaturday) {
+      templates.push({
+        name: `토요 ${time} 미사`,
+        massType: 'SATURDAY' as MassType,
+        dayOfWeek: ['SATURDAY'],
+        time,
+      });
+    }
+
+    // 평일 템플릿 생성 (월~금 중 해당 요일만)
+    if (weekdays.length > 0) {
+      // 요일 라벨 생성 (예: "월,수,금" 또는 전체면 생략)
+      const allWeekdays = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY'];
+      const isAllWeekdays = allWeekdays.every((d) => weekdays.includes(d));
+      const dayLabel = isAllWeekdays
+        ? '' // 전체 평일이면 라벨 생략
+        : ` (${weekdays.map((d) => englishDayToKorean[d]).join(',')})`;
+
+      templates.push({
+        name: `평일 ${time} 미사${dayLabel}`,
+        massType: 'WEEKDAY' as MassType,
+        dayOfWeek: weekdays,
+        time,
+      });
+    }
+  }
+
+  return templates;
+}
+
+/**
  * 파싱된 미사시간 → MassTemplate 생성 데이터로 변환
- * - sundayMass → MassType.SUNDAY, dayOfWeek: ["SUNDAY"]
- * - weekdayMass → 요일별 상세 파싱 지원
- *   예: 월,수,금 06:00 / 화,목 10:00 → 별도 템플릿 생성
- *   토요일은 별도 MassType.SATURDAY로 분리
+ *
+ * 주일미사 (sundayMass):
+ *   "토: 18:00(특전)\n일: 07:00(새벽) 11:00(교중) 18:00(청년)" 형식
+ *   → 토요 18:00 미사 (SATURDAY), 주일 07:00/11:00/18:00 미사 (SUNDAY) 각각 생성
+ *
+ * 평일미사 (weekdayMass):
+ *   "월: 06:00(새벽)\n화: 10:00(오전) 19:00(저녁)" 형식
+ *   → 같은 시간대의 요일을 그룹핑하여 템플릿 생성
+ *   예: 월,수,금 06:00 / 화,목 10:00 → 별도 템플릿
  */
 export function buildTemplateData(
   sundayMass: string | null,
@@ -209,62 +275,40 @@ export function buildTemplateData(
 ): TemplateCreateData[] {
   const templates: TemplateCreateData[] = [];
 
-  // 주일미사 파싱
+  // 주일미사 파싱 (토요 특전미사 포함)
   if (sundayMass) {
-    const sundayTimes = parseMassTimes(sundayMass);
-    for (const t of sundayTimes) {
-      templates.push({
-        name: `주일 ${t.label || t.time} 미사`,
-        massType: 'SUNDAY' as MassType,
-        dayOfWeek: ['SUNDAY'],
-        time: t.time,
-      });
+    // 요일 접두사 형식인지 확인 (토:, 일: 등)
+    const hasDayPrefix = /^[월화수목금토일]\s*[:：]/m.test(sundayMass);
+
+    if (hasDayPrefix) {
+      // 요일별 상세 파싱 → 시간별 요일 그룹핑 → 템플릿 변환
+      const timeToDays = parseWeekdayMassDetailed(sundayMass);
+      templates.push(...convertTimeToDaysToTemplates(timeToDays));
+    } else {
+      // 폴백: 단순 시간 나열 (비구조화 데이터)
+      const sundayTimes = parseMassTimes(sundayMass);
+      for (const t of sundayTimes) {
+        templates.push({
+          name: `주일 ${t.label || t.time} 미사`,
+          massType: 'SUNDAY' as MassType,
+          dayOfWeek: ['SUNDAY'],
+          time: t.time,
+        });
+      }
     }
   }
 
   // 평일미사 파싱 (요일별 상세 구분)
   if (weekdayMass) {
-    // 데이터가 요일 접두사 형식인지 확인 (예: "월:", "화:")
+    // 요일 접두사 형식인지 확인 (월:, 화: 등)
     const hasDayPrefix = /^[월화수목금토일]\s*[:：]/m.test(weekdayMass);
 
     if (hasDayPrefix) {
-      // 요일별 상세 파싱: 시간 → 요일[] 그룹핑
+      // 요일별 상세 파싱 → 시간별 요일 그룹핑 → 템플릿 변환
       const timeToDays = parseWeekdayMassDetailed(weekdayMass);
-
-      for (const [time, days] of timeToDays) {
-        // 토요일과 평일 분리
-        const weekdays = days.filter((d) => d !== 'SATURDAY');
-        const hasSaturday = days.includes('SATURDAY');
-
-        // 평일 템플릿 생성 (월~금 중 해당 요일만)
-        if (weekdays.length > 0) {
-          // 요일 라벨 생성 (예: "월,수,금" 또는 전체면 생략)
-          const allWeekdays = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY'];
-          const isAllWeekdays = allWeekdays.every((d) => weekdays.includes(d));
-          const dayLabel = isAllWeekdays
-            ? '' // 전체 평일이면 라벨 생략
-            : ` (${weekdays.map((d) => englishDayToKorean[d]).join(',')})`;
-
-          templates.push({
-            name: `평일 ${time} 미사${dayLabel}`,
-            massType: 'WEEKDAY' as MassType,
-            dayOfWeek: weekdays,
-            time,
-          });
-        }
-
-        // 토요일 별도 템플릿 생성
-        if (hasSaturday) {
-          templates.push({
-            name: `토요 ${time} 미사`,
-            massType: 'SATURDAY' as MassType,
-            dayOfWeek: ['SATURDAY'],
-            time,
-          });
-        }
-      }
+      templates.push(...convertTimeToDaysToTemplates(timeToDays));
     } else {
-      // 폴백: 요일 접두사 없는 비구조화 데이터 → 기존 로직 (전체 평일 적용)
+      // 폴백: 단순 시간 나열 → 전체 평일 적용
       const weekdayTimes = parseMassTimes(weekdayMass);
       for (const t of weekdayTimes) {
         templates.push({

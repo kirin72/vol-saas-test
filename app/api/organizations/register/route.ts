@@ -197,13 +197,20 @@ export async function POST(request: NextRequest) {
 
           templatesCreated++;
 
-          // 현재 월 일정 자동 생성
+          // 365일(12개월) 일정 자동 생성 — 오늘부터 1년간 모든 해당 요일에 일정 생성
           for (const day of tData.dayOfWeek) {
             const dayNum = dayOfWeekToNumber[day];
             if (dayNum !== undefined) {
-              const dates = getDatesForDayOfWeek(currentYear, currentMonth, dayNum);
-              // 오늘 이후 날짜만 생성
-              const futureDates = dates.filter(d => d >= now);
+              // 12개월 순회하며 해당 요일의 모든 날짜 수집
+              const allDates: Date[] = [];
+              for (let m = 0; m < 12; m++) {
+                const targetMonth = ((currentMonth - 1 + m) % 12) + 1; // 1~12
+                const targetYear = currentYear + Math.floor((currentMonth - 1 + m) / 12);
+                const dates = getDatesForDayOfWeek(targetYear, targetMonth, dayNum);
+                allDates.push(...dates);
+              }
+              // 오늘 이후 날짜만 필터
+              const futureDates = allDates.filter(d => d >= now);
 
               if (futureDates.length > 0) {
                 await tx.massSchedule.createMany({
