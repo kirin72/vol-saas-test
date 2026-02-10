@@ -291,6 +291,9 @@ export default function RolesPage() {
         <p className="text-gray-600">
           역할을 클릭하여 활성/비활성을 전환하세요
         </p>
+        <p className="text-sm text-gray-500">
+          자동 배정을 위한 남녀 선호 등 역할의 수정 및 추가/삭제는 &apos;역할관리&apos;를 눌러주세요
+        </p>
       </div>
 
       {/* 수정 모드 안내 */}

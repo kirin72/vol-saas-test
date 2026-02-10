@@ -289,23 +289,10 @@ export default function NewVolunteerPage() {
               )}
             </div>
 
-            {/* 비밀번호 (선택사항) */}
-            <div className="space-y-2">
-              <Label htmlFor="password">비밀번호</Label>
-              <Input
-                id="password"
-                type="password"
-                {...register('password')}
-                placeholder="비밀번호 입력 (선택사항)"
-                disabled={loading}
-              />
-              <p className="text-xs text-gray-500">
-                비밀번호를 입력하지 않으면 010을 제외한 휴대폰 번호 뒷 8자리가 비밀번호로 자동 등록됩니다.
-              </p>
-              {errors.password && (
-                <p className="text-sm text-red-600">{errors.password.message}</p>
-              )}
-            </div>
+            {/* 비밀번호 안내 (등록 시 자동 생성, 수정은 개별 페이지에서) */}
+            <p className="text-xs text-gray-500">
+              비밀번호는 010을 제외한 휴대폰 번호 뒷 8자리로 자동 등록됩니다.
+            </p>
 
             {/* 봉사 역할 선택 */}
             <div className="space-y-2">
