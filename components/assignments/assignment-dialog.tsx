@@ -15,7 +15,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Search, User } from 'lucide-react';
+import { Loader2, Search, User, UserPlus } from 'lucide-react';
+import Link from 'next/link';
 
 interface AssignmentDialogProps {
   open: boolean;
@@ -245,12 +246,21 @@ export default function AssignmentDialog({
                 <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
               </div>
             ) : filteredVolunteers.length === 0 ? (
-              <div className="text-center py-12">
+              <div className="text-center py-12 space-y-4">
                 <p className="text-gray-500">
                   {searchQuery
                     ? '검색 결과가 없습니다'
                     : '이 역할을 할 수 있는 봉사자가 없습니다'}
                 </p>
+                {/* 봉사자가 아예 없는 경우 등록 페이지로 이동 버튼 */}
+                {!searchQuery && (
+                  <Link href="/admin/volunteers/new">
+                    <Button variant="outline" size="sm">
+                      <UserPlus className="h-4 w-4 mr-2" />
+                      봉사자 입력
+                    </Button>
+                  </Link>
+                )}
               </div>
             ) : (
               <div className="divide-y">

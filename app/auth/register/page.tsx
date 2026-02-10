@@ -23,15 +23,21 @@ interface ChurchDirectoryResult {
   weekdayMass: string | null;
 }
 
+// 성당 이름에 "성당" 접미사를 붙여주는 헬퍼
+// "명동" → "명동성당", "명동성당" → "명동성당" (중복 방지)
+function ensureChurchSuffix(name: string): string {
+  if (!name) return '';
+  return name.endsWith('성당') ? name : `${name}성당`;
+}
+
 export default function RegisterPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   // 조직 정보
-  const [orgName, setOrgName] = useState('');
+  const [orgName, setOrgName] = useState(''); // 사용자가 입력하는 원본 값
   const [orgGroupName, setOrgGroupName] = useState(''); // 조직이름 (예: 독서단)
-  const [orgSlug, setOrgSlug] = useState('');
   const [orgPhone, setOrgPhone] = useState('');
   const [orgEmail, setOrgEmail] = useState('');
   const [orgAddress, setOrgAddress] = useState('');
@@ -87,15 +93,9 @@ export default function RegisterPage() {
     }
   }, []);
 
-  // 조직명에서 자동으로 slug 생성 + 성당 검색
+  // 조직명 변경 핸들러 + 성당 검색
   const handleOrgNameChange = (value: string) => {
     setOrgName(value);
-    // 한글 → 영문 변환은 추후 구현, 일단 소문자 + 하이픈으로 변환
-    const slug = value
-      .toLowerCase()
-      .replace(/\s+/g, '-')
-      .replace(/[^a-z0-9-]/g, '');
-    setOrgSlug(slug);
 
     // 매칭 상태 초기화 (직접 타이핑 시)
     if (isMatched) {
@@ -114,18 +114,11 @@ export default function RegisterPage() {
 
   // 성당 선택 시 자동 입력
   const handleSelectChurch = (church: ChurchDirectoryResult) => {
-    // 성당 이름 설정
+    // 성당 이름 설정 (그대로 저장)
     setOrgName(church.name);
     setChurchDirectoryId(church.id);
     setIsMatched(true);
     setShowDropdown(false);
-
-    // slug 자동 생성
-    const slug = church.name
-      .toLowerCase()
-      .replace(/\s+/g, '-')
-      .replace(/[^a-z0-9-]/g, '');
-    setOrgSlug(slug);
 
     // 주소와 전화번호 자동 입력 (데이터가 있는 경우만)
     if (church.address) {
@@ -134,6 +127,18 @@ export default function RegisterPage() {
     if (church.phone) {
       setOrgPhone(church.phone);
     }
+  };
+
+  // slug 자동 생성 (본당 이름 + 조직이름 기반, 타임스탬프로 고유성 보장)
+  const generateSlug = () => {
+    const base = `${orgName}-${orgGroupName}`.trim();
+    const slug = base
+      .toLowerCase()
+      .replace(/\s+/g, '-')
+      .replace(/[^a-z0-9가-힣-]/g, '');
+    // 한글이 포함된 경우 랜덤 문자열 추가
+    const suffix = Date.now().toString(36).slice(-4);
+    return slug ? `${slug}-${suffix}` : `org-${suffix}`;
   };
 
   // 회원가입 처리
@@ -152,6 +157,9 @@ export default function RegisterPage() {
       return;
     }
 
+    // 본당 이름에 "성당" 접미사 보장
+    const finalOrgName = ensureChurchSuffix(orgName);
+
     setLoading(true);
 
     try {
@@ -160,11 +168,11 @@ export default function RegisterPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           organization: {
-            name: orgName,
+            name: finalOrgName,
             groupName: orgGroupName,
-            slug: orgSlug,
+            slug: generateSlug(),
             phone: orgPhone,
-            email: orgEmail,
+            email: orgEmail || undefined,
             address: orgAddress,
           },
           admin: {
@@ -175,6 +183,8 @@ export default function RegisterPage() {
           },
           // 성당 디렉토리 매칭 ID (매칭된 경우에만)
           churchDirectoryId: churchDirectoryId || undefined,
+          // 조직이름 (역할 자동 선택용)
+          groupName: orgGroupName,
         }),
       });
 
@@ -194,6 +204,9 @@ export default function RegisterPage() {
     }
   };
 
+  // 표시용 본당 이름 (왼쪽 상단 표시)
+  const displayOrgName = orgName ? ensureChurchSuffix(orgName) : '';
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-12">
       <Card className="w-full max-w-2xl">
@@ -209,7 +222,15 @@ export default function RegisterPage() {
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* 조직 정보 섹션 */}
             <div>
-              <h3 className="text-lg font-semibold mb-4">조직 정보</h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold">조직 정보</h3>
+                {/* 본당 이름 미리보기 (성당 접미사 포함) */}
+                {displayOrgName && (
+                  <span className="text-sm font-medium text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
+                    {displayOrgName}
+                  </span>
+                )}
+              </div>
               <div className="space-y-4">
                 {/* 본당 이름 + 자동완성 드롭다운 */}
                 <div className="space-y-2 relative" ref={dropdownRef}>
@@ -218,7 +239,7 @@ export default function RegisterPage() {
                     <Input
                       id="orgName"
                       type="text"
-                      placeholder="명동성당"
+                      placeholder="명동 또는 명동성당"
                       value={orgName}
                       onChange={(e) => handleOrgNameChange(e.target.value)}
                       required
@@ -233,6 +254,9 @@ export default function RegisterPage() {
                       </div>
                     )}
                   </div>
+                  <p className="text-xs text-gray-500">
+                    &apos;성당&apos;을 입력하지 않아도 자동으로 붙여집니다
+                  </p>
 
                   {/* 자동완성 드롭다운 */}
                   {showDropdown && searchResults.length > 0 && (
@@ -267,26 +291,13 @@ export default function RegisterPage() {
                   <Input
                     id="orgGroupName"
                     type="text"
-                    placeholder="예)독서단"
+                    placeholder="예) 독서단, 복사단, 제대봉사단"
                     value={orgGroupName}
                     onChange={(e) => setOrgGroupName(e.target.value)}
                     disabled={loading}
                   />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="orgSlug">URL 식별자 *</Label>
-                  <Input
-                    id="orgSlug"
-                    type="text"
-                    placeholder="myeongdong"
-                    value={orgSlug}
-                    onChange={(e) => setOrgSlug(e.target.value)}
-                    required
-                    disabled={loading}
-                  />
                   <p className="text-xs text-gray-500">
-                    영문 소문자, 숫자, 하이픈만 사용 가능
+                    조직이름에 따라 관련 봉사 역할이 자동 선택됩니다
                   </p>
                 </div>
 
@@ -305,7 +316,7 @@ export default function RegisterPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="orgEmail">이메일</Label>
+                    <Label htmlFor="orgEmail">이메일 (옵션)</Label>
                     <Input
                       id="orgEmail"
                       type="email"
@@ -365,7 +376,12 @@ export default function RegisterPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="adminEmail">이메일 *</Label>
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="adminEmail">이메일 *</Label>
+                    <span className="text-xs text-blue-600 bg-blue-50 px-2 py-0.5 rounded">
+                      로그인 할때 이 이메일을 사용합니다
+                    </span>
+                  </div>
                   <Input
                     id="adminEmail"
                     type="email"

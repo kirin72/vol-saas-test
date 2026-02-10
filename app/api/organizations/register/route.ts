@@ -2,6 +2,7 @@
  * 조직 회원가입 API
  * Organization + Admin User + Free Subscription + 기본 역할 + 미사 템플릿/일정 동시 생성
  * 성당 디렉토리 매칭 시 자동으로 미사시간 데이터를 기반으로 템플릿과 일정을 생성
+ * 조직이름(groupName) 기반 역할 자동 선택 지원
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
@@ -13,6 +14,29 @@ import {
   getDatesForDayOfWeek,
   dayOfWeekToNumber,
 } from '@/lib/church-directory';
+
+/**
+ * 조직이름(groupName) 키워드 → 활성화할 역할 이름 배열 반환
+ * 매칭되는 키워드가 없으면 null (= 모든 역할 활성화)
+ */
+function getActiveRolesForGroup(groupName: string | null | undefined): string[] | null {
+  if (!groupName || !groupName.trim()) return null; // 조직이름 없으면 전체 활성
+  const name = groupName.trim();
+  const activeRoles: string[] = [];
+
+  // 키워드 매핑: 조직이름에 포함된 단어 → 활성화할 역할
+  if (name.includes('독서')) activeRoles.push('1독서', '2독서');
+  if (name.includes('해설')) activeRoles.push('해설');
+  if (name.includes('반주')) activeRoles.push('반주');
+  if (name.includes('복사')) activeRoles.push('복사');
+  if (name.includes('제대')) activeRoles.push('제대');
+  if (name.includes('성체')) activeRoles.push('성체분배');
+  if (name.includes('주차')) activeRoles.push('주차');
+  if (name.includes('운전')) activeRoles.push('운전');
+
+  // 매칭된 역할이 없으면 전체 활성화
+  return activeRoles.length > 0 ? activeRoles : null;
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -111,9 +135,12 @@ export async function POST(request: NextRequest) {
         },
       });
 
-      // 5. 기본 봉사 역할 9개 생성
+      // 5. 기본 봉사 역할 9개 생성 (조직이름 기반 활성/비활성 결정)
+      const activeRoleNames = getActiveRolesForGroup(organization.groupName);
       const createdRoles = [];
       for (const role of DEFAULT_VOLUNTEER_ROLES) {
+        // activeRoleNames가 null이면 전체 활성, 아니면 매칭된 역할만 활성
+        const isActive = activeRoleNames ? activeRoleNames.includes(role.name) : true;
         const created = await tx.volunteerRole.create({
           data: {
             organizationId: newOrg.id,
@@ -122,7 +149,7 @@ export async function POST(request: NextRequest) {
             color: role.color,
             sortOrder: role.sortOrder,
             genderPreference: 'NONE',
-            isActive: true,
+            isActive,
           },
         });
         createdRoles.push(created);
@@ -158,9 +185,10 @@ export async function POST(request: NextRequest) {
             },
           });
 
-          // 각 템플릿에 9개 역할 슬롯 생성 (각 역할 1명씩)
+          // 활성 역할에 대해서만 슬롯 생성 (각 역할 1명씩)
+          const activeRoles = createdRoles.filter((r) => r.isActive);
           await tx.templateSlot.createMany({
-            data: createdRoles.map((role) => ({
+            data: activeRoles.map((role) => ({
               massTemplateId: template.id,
               volunteerRoleId: role.id,
               requiredCount: 1,

@@ -313,6 +313,11 @@ export default function AssignmentsPage() {
               </span>
             )}
           </p>
+          {/* 배정 안내 문구 */}
+          <div className="mt-2 inline-flex items-center gap-2 bg-blue-50 border border-blue-200 text-blue-700 text-sm px-3 py-1.5 rounded-md">
+            <Calendar className="h-4 w-4 shrink-0" />
+            <span>봉사자 배정은 각 날짜를 누르면 됩니다.</span>
+          </div>
         </div>
 
         {/* 뷰 모드 전환 버튼 + 자동배정 버튼 + 저장 버튼 */}

@@ -266,21 +266,6 @@ export default function NewVolunteerPage() {
               </select>
             </div>
 
-            {/* 이메일 (옵션) */}
-            <div className="space-y-2">
-              <Label htmlFor="email">이메일 (옵션)</Label>
-              <Input
-                id="email"
-                type="email"
-                {...register('email')}
-                placeholder="volunteer@example.com"
-                disabled={loading}
-              />
-              {errors.email && (
-                <p className="text-sm text-red-600">{errors.email.message}</p>
-              )}
-            </div>
-
             {/* 전화번호 (숫자만 입력해도 자동 포맷 + 중복 체크) */}
             <div className="space-y-2">
               <Label htmlFor="phone">전화번호</Label>
