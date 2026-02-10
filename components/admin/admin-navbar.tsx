@@ -16,6 +16,7 @@ import {
   CalendarCheck,
   Bell,
   Wallet,
+  HelpCircle,
   Menu,
   LogOut,
 } from 'lucide-react';
@@ -45,7 +46,7 @@ interface MenuItem {
   icon: React.ComponentType<{ className?: string }>;
 }
 
-// 메뉴 목록
+// 메뉴 목록 (역할 관리 → 봉사자 관리 순서)
 const menuItems: MenuItem[] = [
   {
     href: '/admin/dashboard',
@@ -53,14 +54,14 @@ const menuItems: MenuItem[] = [
     icon: LayoutDashboard,
   },
   {
-    href: '/admin/volunteers',
-    label: '봉사자 관리',
-    icon: Users,
-  },
-  {
     href: '/admin/roles',
     label: '역할 관리',
     icon: Tags,
+  },
+  {
+    href: '/admin/volunteers',
+    label: '봉사자 관리',
+    icon: Users,
   },
   {
     href: '/admin/templates',
@@ -86,6 +87,11 @@ const menuItems: MenuItem[] = [
     href: '/admin/finance',
     label: '입출금 관리',
     icon: Wallet,
+  },
+  {
+    href: '/admin/setup-guide',
+    label: '초기 설정 방법',
+    icon: HelpCircle,
   },
 ];
 

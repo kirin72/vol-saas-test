@@ -13,6 +13,7 @@ import { prisma } from '@/lib/prisma';
 import { redirect } from 'next/navigation';
 import { DesktopTable, MobileCardList, MobileCard, MobileCardHeader, MobileCardRow } from '@/components/ui/responsive-table';
 import { QuickActionPdfButtons } from './_components/QuickActionPdfButtons';
+import { WelcomeBanner } from './_components/WelcomeBanner';
 
 // 통계 데이터 가져오기 함수 (직접 DB 쿼리)
 async function getStats(organizationId: string) {
@@ -267,6 +268,11 @@ export default async function AdminDashboardPage() {
           {organization?.groupName || '본당'}의 전체 현황을 한눈에 확인하세요
         </p>
       </div>
+
+      {/* 첫 로그인 관리자 웰컴 배너 (isFirstLogin이 true일 때만 표시) */}
+      {session.user.role === 'ADMIN' && (
+        <WelcomeBanner isFirstLogin={session.user.isFirstLogin} />
+      )}
 
       {/* 통계 카드 4개 */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
