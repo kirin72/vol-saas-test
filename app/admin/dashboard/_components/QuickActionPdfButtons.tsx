@@ -46,7 +46,8 @@ export function QuickActionPdfButtons({
       await generateAssignmentPdf(schedules, year, month);
     } catch (err) {
       console.error('배정표 PDF 생성 오류:', err);
-      alert('배정표 PDF 생성 중 오류가 발생했습니다.');
+      const message = err instanceof Error ? err.message : String(err);
+      alert(`배정표 PDF 생성 중 오류가 발생했습니다.\n\n${message}`);
     } finally {
       setGeneratingAssignment(false);
     }
@@ -66,7 +67,8 @@ export function QuickActionPdfButtons({
       await generateFinancePdf(transactions, summary, year, month);
     } catch (err) {
       console.error('입출금내역 PDF 생성 오류:', err);
-      alert('입출금내역 PDF 생성 중 오류가 발생했습니다.');
+      const message = err instanceof Error ? err.message : String(err);
+      alert(`입출금내역 PDF 생성 중 오류가 발생했습니다.\n\n${message}`);
     } finally {
       setGeneratingFinance(false);
     }

@@ -268,7 +268,8 @@ export default function AssignmentsPage() {
       );
     } catch (err) {
       console.error('PDF 생성 오류:', err);
-      alert('PDF 생성 중 오류가 발생했습니다');
+      const message = err instanceof Error ? err.message : String(err);
+      alert(`배정표 PDF 생성 중 오류가 발생했습니다.\n\n${message}`);
     } finally {
       setGeneratingPdf(false);
     }

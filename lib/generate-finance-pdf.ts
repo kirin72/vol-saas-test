@@ -158,6 +158,42 @@ const buildFinanceSheetHtml = (
 };
 
 /**
+ * html2canvas 모듈 동적 로드
+ * webpack/turbopack의 ESM/CJS 호환성 차이를 자동 처리
+ */
+async function loadHtml2Canvas(): Promise<(element: HTMLElement, options?: object) => Promise<HTMLCanvasElement>> {
+  const mod = await import('html2canvas');
+  // ESM default export 또는 CJS module.exports 대응
+  const fn = typeof mod.default === 'function'
+    ? mod.default
+    : typeof mod === 'function'
+      ? mod
+      : (mod as any).default?.default;
+  if (typeof fn !== 'function') {
+    throw new Error(
+      `html2canvas 모듈 로드 실패: default=${typeof mod.default}, mod=${typeof mod}`
+    );
+  }
+  return fn as (element: HTMLElement, options?: object) => Promise<HTMLCanvasElement>;
+}
+
+/**
+ * jsPDF 생성자 동적 로드
+ * webpack/turbopack의 ESM/CJS 호환성 차이를 자동 처리
+ */
+async function loadJsPDF(): Promise<any> {
+  const mod = await import('jspdf');
+  // named export 'jsPDF' 또는 default export 대응
+  const JsPDF = (mod as any).jsPDF || mod.default;
+  if (typeof JsPDF !== 'function') {
+    throw new Error(
+      `jsPDF 모듈 로드 실패: jsPDF=${typeof (mod as any).jsPDF}, default=${typeof mod.default}`
+    );
+  }
+  return JsPDF;
+}
+
+/**
  * 입출금내역 PDF 생성 및 다운로드
  * @param transactions 거래 내역 배열
  * @param summary 월별 요약 정보 (이월금, 수입합계, 지출합계, 잔액)
@@ -176,45 +212,85 @@ export async function generateFinancePdf(
     return;
   }
 
-  // 0. 라이브러리 동적 import (Next.js ESM/CJS 호환)
-  const html2canvasModule = await import('html2canvas');
-  const html2canvas = html2canvasModule.default;
-  const { jsPDF } = await import('jspdf');
+  // 0. 라이브러리 동적 로드
+  let html2canvas: (element: HTMLElement, options?: object) => Promise<HTMLCanvasElement>;
+  let JsPDF: any;
 
-  // 1. 숨겨진 div 생성 (html2canvas가 캡처할 수 있도록 absolute 위치)
+  try {
+    html2canvas = await loadHtml2Canvas();
+  } catch (err) {
+    throw new Error(`[1단계] html2canvas 로드 실패: ${err instanceof Error ? err.message : err}`);
+  }
+
+  try {
+    JsPDF = await loadJsPDF();
+  } catch (err) {
+    throw new Error(`[1단계] jsPDF 로드 실패: ${err instanceof Error ? err.message : err}`);
+  }
+
+  // 1. 숨겨진 div 생성
+  //    opacity:0 + pointer-events:none 방식 (off-screen보다 렌더링 안정적)
   const container = document.createElement('div');
-  container.style.position = 'absolute';
-  container.style.left = '-9999px';
-  container.style.top = `${window.scrollY}px`;
-  container.style.zIndex = '-1';
+  container.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 900px;
+    opacity: 0;
+    pointer-events: none;
+    z-index: -9999;
+  `;
   container.innerHTML = buildFinanceSheetHtml(transactions, summary, year, month);
   document.body.appendChild(container);
 
   try {
-    // 브라우저 렌더링 대기
-    await new Promise((resolve) => setTimeout(resolve, 200));
+    // 브라우저 레이아웃 + 페인트 완료 대기
+    await new Promise((resolve) => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          resolve(undefined);
+        });
+      });
+    });
 
-    // 2. html2canvas로 캡처 (2배 스케일로 고화질)
+    // 2. html2canvas로 캡처
     const target = container.firstElementChild as HTMLElement;
     if (!target) {
-      throw new Error('캡처 대상 요소를 찾을 수 없습니다.');
+      throw new Error('[2단계] 캡처 대상 요소를 찾을 수 없습니다.');
     }
 
-    const canvas = await html2canvas(target, {
-      scale: 2,
-      useCORS: true,
-      backgroundColor: '#ffffff',
-      logging: false,
-      width: target.scrollWidth,
-      height: target.scrollHeight,
-    });
+    // 요소 크기 확인
+    const targetWidth = target.scrollWidth || target.offsetWidth;
+    const targetHeight = target.scrollHeight || target.offsetHeight;
+    if (targetWidth === 0 || targetHeight === 0) {
+      throw new Error(`[2단계] 요소 크기가 0입니다: ${targetWidth}x${targetHeight}`);
+    }
+
+    let canvas: HTMLCanvasElement;
+    try {
+      canvas = await html2canvas(target, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+        logging: false,
+        width: targetWidth,
+        height: targetHeight,
+      });
+    } catch (err) {
+      throw new Error(`[3단계] html2canvas 캡처 실패: ${err instanceof Error ? err.message : err}`);
+    }
 
     // 3. jsPDF로 PDF 생성 (A4 세로)
-    const pdf = new jsPDF({
-      orientation: 'portrait',
-      unit: 'mm',
-      format: 'a4',
-    });
+    let pdf: any;
+    try {
+      pdf = new JsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+      });
+    } catch (err) {
+      throw new Error(`[4단계] jsPDF 생성 실패: ${err instanceof Error ? err.message : err}`);
+    }
 
     // A4 세로 크기: 210mm x 297mm
     const pageWidth = 210;
@@ -226,40 +302,56 @@ export async function generateFinancePdf(
     const imgWidth = contentWidth;
     const imgHeight = (canvas.height * contentWidth) / canvas.width;
 
-    // 이미지 삽입
-    const imgData = canvas.toDataURL('image/png');
+    // 캔버스를 PNG 데이터 URL로 변환
+    let imgData: string;
+    try {
+      imgData = canvas.toDataURL('image/png');
+    } catch (err) {
+      throw new Error(`[5단계] Canvas→PNG 변환 실패: ${err instanceof Error ? err.message : err}`);
+    }
 
-    if (imgHeight <= pageHeight - margin * 2) {
-      // 한 페이지에 들어가는 경우
-      pdf.addImage(imgData, 'PNG', margin, margin, imgWidth, imgHeight);
-    } else {
-      // 여러 페이지로 분할
-      let remainingHeight = imgHeight;
-      let position = 0;
+    // PDF에 이미지 삽입
+    try {
+      if (imgHeight <= pageHeight - margin * 2) {
+        // 한 페이지에 들어가는 경우
+        pdf.addImage(imgData, 'PNG', margin, margin, imgWidth, imgHeight);
+      } else {
+        // 여러 페이지로 분할
+        let remainingHeight = imgHeight;
+        let position = 0;
 
-      while (remainingHeight > 0) {
-        if (position > 0) {
-          pdf.addPage();
+        while (remainingHeight > 0) {
+          if (position > 0) {
+            pdf.addPage();
+          }
+
+          pdf.addImage(
+            imgData,
+            'PNG',
+            margin,
+            margin - position,
+            imgWidth,
+            imgHeight
+          );
+
+          position += pageHeight - margin * 2;
+          remainingHeight -= pageHeight - margin * 2;
         }
-
-        pdf.addImage(
-          imgData,
-          'PNG',
-          margin,
-          margin - position,
-          imgWidth,
-          imgHeight
-        );
-
-        position += pageHeight - margin * 2;
-        remainingHeight -= pageHeight - margin * 2;
       }
+    } catch (err) {
+      throw new Error(`[6단계] PDF 이미지 삽입 실패: ${err instanceof Error ? err.message : err}`);
     }
 
     // 4. PDF 다운로드
-    pdf.save(`${year}년_${month}월_입출금내역.pdf`);
+    try {
+      pdf.save(`${year}년_${month}월_입출금내역.pdf`);
+    } catch (err) {
+      throw new Error(`[7단계] PDF 저장 실패: ${err instanceof Error ? err.message : err}`);
+    }
   } finally {
     // 5. 임시 div 정리
-    document.body.removeChild(container);
+    if (container.parentNode) {
+      document.body.removeChild(container);
+    }
   }
 }
