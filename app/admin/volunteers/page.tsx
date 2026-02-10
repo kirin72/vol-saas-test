@@ -10,8 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Input } from '@/components/ui/input';
-import { PlusCircle, Mail, Phone, Loader2, LayoutGrid, List as ListIcon, Search } from 'lucide-react';
+import { PlusCircle, Mail, Phone, Loader2, LayoutGrid, List as ListIcon } from 'lucide-react';
 import { DesktopTable, MobileCardList, MobileCard, MobileCardHeader, MobileCardRow, MobileCardActions } from '@/components/ui/responsive-table';
 
 interface Volunteer {
@@ -39,9 +38,6 @@ export default function VolunteersPage() {
 
   // 뷰 모드 (card / list)
   const [viewMode, setViewMode] = useState<'card' | 'list'>('list');
-
-  // 검색
-  const [searchQuery, setSearchQuery] = useState('');
 
   // 이메일 표시 상태 관리 (봉사자 ID를 키로)
   const [showEmailMap, setShowEmailMap] = useState<Record<string, boolean>>({});
@@ -71,18 +67,6 @@ export default function VolunteersPage() {
       setLoading(false);
     }
   };
-
-  // 검색 필터링
-  const filteredVolunteers = volunteers.filter((v) => {
-    if (!searchQuery) return true;
-    const query = searchQuery.toLowerCase();
-    return (
-      v.name.toLowerCase().includes(query) ||
-      (v.baptismalName && v.baptismalName.toLowerCase().includes(query)) ||
-      (v.email && !v.email.includes('@temp.com') && v.email.toLowerCase().includes(query)) ||
-      (v.phone && v.phone.includes(query))
-    );
-  });
 
   // 상태 레이블
   const getStatusLabel = (status: string) => {
@@ -134,7 +118,6 @@ export default function VolunteersPage() {
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">봉사자 관리</h1>
           <p className="text-gray-600 mt-2">
             총 {volunteers.length}명의 봉사자
-            {searchQuery && ` · 검색 결과 ${filteredVolunteers.length}명`}
           </p>
         </div>
 
@@ -169,44 +152,26 @@ export default function VolunteersPage() {
         </div>
       </div>
 
-      {/* 검색 */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <Input
-              type="text"
-              placeholder="이름, 세례명, 이메일, 전화번호로 검색"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-        </CardContent>
-      </Card>
-
       {/* 봉사자 목록 */}
-      {filteredVolunteers.length === 0 ? (
+      {volunteers.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <p className="text-gray-500 mb-4">
-              {searchQuery ? '검색 결과가 없습니다' : '아직 등록된 봉사자가 없습니다'}
+              아직 등록된 봉사자가 없습니다
             </p>
-            {!searchQuery && (
-              <Button asChild>
-                <Link href="/admin/volunteers/new">
-                  <PlusCircle className="mr-2 h-4 w-4" />
-                  첫 번째 봉사자 등록하기
-                </Link>
-              </Button>
-            )}
+            <Button asChild>
+              <Link href="/admin/volunteers/new">
+                <PlusCircle className="mr-2 h-4 w-4" />
+                첫 번째 봉사자 등록하기
+              </Link>
+            </Button>
           </CardContent>
         </Card>
       ) : (
         <>
           {/* 카드 뷰 (모바일에서는 항상 표시, 데스크톱에서는 viewMode가 card일 때만) */}
           <div className={`grid gap-4 md:grid-cols-2 lg:grid-cols-3 ${viewMode === 'card' ? '' : 'sm:hidden'}`}>
-              {filteredVolunteers.map((volunteer) => (
+              {volunteers.map((volunteer) => (
                 <Card
                   key={volunteer.id}
                   className="hover:shadow-lg transition-shadow"
@@ -318,7 +283,7 @@ export default function VolunteersPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredVolunteers.map((volunteer) => (
+                    {volunteers.map((volunteer) => (
                       <TableRow key={volunteer.id}>
                         <TableCell className="font-medium">
                           {volunteer.name}

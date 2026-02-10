@@ -22,6 +22,7 @@ interface VolunteerRole {
   id: string;
   name: string;
   color: string;
+  isActive: boolean;
 }
 
 export default function NewVolunteerPage() {
@@ -110,13 +111,16 @@ export default function NewVolunteerPage() {
     fetchRoles();
   }, []);
 
-  // 역할이 없으면 안내 메시지 후 역할 관리 페이지로 이동
+  // 활성 역할만 필터링
+  const activeRoles = roles.filter((r) => r.isActive);
+
+  // 활성 역할이 없으면 안내 메시지 후 역할 관리 페이지로 이동
   useEffect(() => {
-    if (!loadingRoles && roles.length === 0) {
-      alert('역할을 먼저 등록해 주세요!');
+    if (!loadingRoles && activeRoles.length === 0) {
+      alert('활성화된 역할이 없습니다. 역할을 먼저 등록/활성화해 주세요!');
       router.push('/admin/roles');
     }
-  }, [loadingRoles, roles, router]);
+  }, [loadingRoles, activeRoles.length, router]);
 
   // 역할 선택/해제
   const toggleRole = (roleId: string) => {
@@ -303,51 +307,18 @@ export default function NewVolunteerPage() {
               )}
             </div>
 
-            {/* 상태 */}
-            <div className="space-y-2">
-              <Label htmlFor="status">상태 *</Label>
-              <select
-                id="status"
-                {...register('status')}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                disabled={loading}
-              >
-                <option value="ACTIVE">활성</option>
-                <option value="INACTIVE">비활성</option>
-                <option value="PENDING">대기</option>
-              </select>
-              {errors.status && (
-                <p className="text-sm text-red-600">{errors.status.message}</p>
-              )}
-            </div>
-
-            {/* 회비 납부 여부 */}
-            <div className="space-y-2">
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="hasPaidDues"
-                  checked={watch('hasPaidDues') ?? false}
-                  onCheckedChange={(checked) => setValue('hasPaidDues', checked === true)}
-                  disabled={loading}
-                />
-                <Label htmlFor="hasPaidDues" className="font-normal cursor-pointer">
-                  회비 납부 완료
-                </Label>
-              </div>
-            </div>
-
             {/* 봉사 역할 선택 */}
             <div className="space-y-2">
               <Label>봉사 역할 * (최소 1개 선택)</Label>
               {loadingRoles ? (
                 <p className="text-sm text-gray-500">역할 목록 로딩 중...</p>
-              ) : roles.length === 0 ? (
+              ) : activeRoles.length === 0 ? (
                 <p className="text-sm text-red-600">
-                  먼저 역할을 생성해주세요
+                  활성화된 역할이 없습니다. 역할 관리에서 역할을 활성화해주세요.
                 </p>
               ) : (
                 <div className="space-y-2 border rounded-md p-4">
-                  {roles.map((role) => (
+                  {activeRoles.map((role) => (
                     <div key={role.id} className="flex items-center">
                       <Checkbox
                         id={`role-${role.id}`}
