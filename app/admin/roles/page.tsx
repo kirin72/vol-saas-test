@@ -1,13 +1,15 @@
 /**
  * 역할 관리 페이지
  * 토글 방식 역할 활성/비활성 + 역할 관리 메뉴 (추가/수정/삭제)
+ * - 수정: 역할 선택 → 수정 다이얼로그
+ * - 삭제: 역할 체크 선택 → 삭제 버튼으로 일괄 삭제
  */
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Settings, Loader2, Plus, Edit, Trash2 } from 'lucide-react';
+import { Settings, Loader2, Plus, Edit, Trash2, Check, X } from 'lucide-react';
 import RoleDialog from '@/components/roles/role-dialog';
 
 // 역할 타입
@@ -24,12 +26,15 @@ interface VolunteerRole {
   };
 }
 
+// 모드 타입: 기본(토글) / 수정 선택 / 삭제 선택
+type PageMode = 'default' | 'edit' | 'delete';
+
 export default function RolesPage() {
   const [roles, setRoles] = useState<VolunteerRole[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [toggling, setToggling] = useState<string | null>(null); // 토글 중인 역할 ID
-  const [deleting, setDeleting] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false); // 삭제 진행 중
 
   // 역할 관리 드롭다운 상태
   const [menuOpen, setMenuOpen] = useState(false);
@@ -39,8 +44,11 @@ export default function RolesPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingRole, setEditingRole] = useState<VolunteerRole | null>(null);
 
-  // 삭제 모드 (역할 관리 > 삭제 선택 시)
-  const [deleteMode, setDeleteMode] = useState(false);
+  // 페이지 모드: 기본 / 수정 / 삭제
+  const [mode, setMode] = useState<PageMode>('default');
+
+  // 삭제 모드에서 선택된 역할 ID 목록
+  const [selectedForDelete, setSelectedForDelete] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     fetchRoles();
@@ -104,49 +112,110 @@ export default function RolesPage() {
     setMenuOpen(false);
   };
 
-  // 역할 수정 모드 → 역할 클릭 시 수정 다이얼로그
+  // 수정 모드 진입
+  const handleEnterEditMode = () => {
+    setMode('edit');
+    setMenuOpen(false);
+  };
+
+  // 수정 모드에서 역할 클릭 → 수정 다이얼로그
   const handleEdit = (role: VolunteerRole) => {
     setEditingRole(role);
     setDialogOpen(true);
+    setMode('default'); // 수정 다이얼로그 열면 모드 복귀
   };
 
-  // 역할 삭제
-  const handleDelete = async (role: VolunteerRole) => {
-    // 봉사자가 있는 역할은 삭제 불가
-    if (role._count.userRoles > 0) {
-      alert(`이 역할을 가진 봉사자가 ${role._count.userRoles}명 있어 삭제할 수 없습니다.\n먼저 봉사자의 역할을 변경해주세요.`);
+  // 삭제 모드 진입
+  const handleEnterDeleteMode = () => {
+    setMode('delete');
+    setSelectedForDelete(new Set());
+    setMenuOpen(false);
+  };
+
+  // 삭제 모드에서 역할 체크/해제 토글
+  const toggleDeleteSelection = (roleId: string) => {
+    setSelectedForDelete((prev) => {
+      const next = new Set(prev);
+      if (next.has(roleId)) {
+        next.delete(roleId);
+      } else {
+        next.add(roleId);
+      }
+      return next;
+    });
+  };
+
+  // 선택된 역할 일괄 삭제
+  const handleBulkDelete = async () => {
+    if (selectedForDelete.size === 0) {
+      alert('삭제할 역할을 선택해주세요.');
       return;
     }
 
-    if (!confirm(`정말 "${role.name}" 역할을 삭제하시겠습니까?`)) {
+    // 봉사자가 있는 역할 확인
+    const selectedRoles = roles.filter((r) => selectedForDelete.has(r.id));
+    const hasVolunteers = selectedRoles.filter((r) => r._count.userRoles > 0);
+
+    if (hasVolunteers.length > 0) {
+      const names = hasVolunteers.map((r) => `${r.name}(${r._count.userRoles}명)`).join(', ');
+      alert(`봉사자가 배정된 역할은 삭제할 수 없습니다.\n해당 역할: ${names}\n\n먼저 봉사자의 역할을 변경해주세요.`);
       return;
     }
 
-    setDeleting(role.id);
+    // 삭제 확인
+    const names = selectedRoles.map((r) => r.name).join(', ');
+    if (!confirm(`다음 역할을 삭제하시겠습니까?\n\n${names}`)) {
+      return;
+    }
+
+    setDeleting(true);
 
     try {
-      const response = await fetch(`/api/admin/roles/${role.id}`, {
-        method: 'DELETE',
-      });
+      // 선택된 역할 순차 삭제
+      for (const roleId of selectedForDelete) {
+        const response = await fetch(`/api/admin/roles/${roleId}`, {
+          method: 'DELETE',
+        });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || '역할 삭제 실패');
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || '역할 삭제 실패');
+        }
       }
 
-      alert('역할이 삭제되었습니다');
+      alert(`${selectedForDelete.size}개 역할이 삭제되었습니다.`);
+      // 삭제 완료 후 기본 모드로 돌아가고 목록 새로고침
+      setMode('default');
+      setSelectedForDelete(new Set());
       fetchRoles();
     } catch (err: any) {
       alert(`삭제 오류: ${err.message}`);
     } finally {
-      setDeleting(null);
+      setDeleting(false);
     }
+  };
+
+  // 모드 취소 → 기본 모드로 복귀
+  const handleCancelMode = () => {
+    setMode('default');
+    setSelectedForDelete(new Set());
   };
 
   // 다이얼로그 저장 완료 후
   const handleDialogSuccess = () => {
     setDialogOpen(false);
     fetchRoles();
+  };
+
+  // 역할 클릭 핸들러 (모드별 분기)
+  const handleRoleClick = (role: VolunteerRole) => {
+    if (mode === 'delete') {
+      toggleDeleteSelection(role.id);
+    } else if (mode === 'edit') {
+      handleEdit(role);
+    } else {
+      handleToggle(role);
+    }
   };
 
   if (loading) {
@@ -168,79 +237,115 @@ export default function RolesPage() {
   return (
     <div className="space-y-6">
       {/* 헤더 */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
+      <div className="space-y-3">
+        {/* 제목 + 역할 관리 버튼 (같은 줄) */}
+        <div className="flex items-center justify-between">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">봉사 역할 관리</h1>
-          <p className="text-gray-600 mt-2">
-            역할을 클릭하여 활성/비활성을 전환하세요
-          </p>
-        </div>
 
-        {/* 역할 관리 드롭다운 버튼 */}
-        <div className="relative" ref={menuRef}>
-          <Button
-            variant="outline"
-            onClick={() => {
-              setMenuOpen(!menuOpen);
-              setDeleteMode(false);
-            }}
-            className="shrink-0"
-          >
-            <Settings className="mr-2 h-4 w-4" />
-            역할 관리
-          </Button>
+          {/* 역할 관리 드롭다운 버튼 — 기본 모드에서만 표시 */}
+          {mode === 'default' && (
+            <div className="relative" ref={menuRef}>
+              <Button
+                variant="outline"
+                onClick={() => setMenuOpen(!menuOpen)}
+                className="shrink-0"
+              >
+                <Settings className="mr-2 h-4 w-4" />
+                역할 관리
+              </Button>
 
-          {/* 드롭다운 메뉴 */}
-          {menuOpen && (
-            <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
-              {/* 역할 추가 */}
-              <button
-                className="w-full px-4 py-3 text-left text-sm hover:bg-blue-50 flex items-center gap-2 rounded-t-lg transition-colors"
-                onClick={handleAdd}
-              >
-                <Plus className="h-4 w-4 text-blue-600" />
-                <span>역할 추가</span>
-              </button>
-              {/* 역할 수정 안내 */}
-              <button
-                className="w-full px-4 py-3 text-left text-sm hover:bg-yellow-50 flex items-center gap-2 border-t border-gray-100 transition-colors"
-                onClick={() => {
-                  setMenuOpen(false);
-                  setDeleteMode(false);
-                  alert('수정할 역할의 이름을 길게 누르거나 더블클릭하세요.');
-                }}
-              >
-                <Edit className="h-4 w-4 text-yellow-600" />
-                <span>역할 수정</span>
-              </button>
-              {/* 역할 삭제 모드 토글 */}
-              <button
-                className="w-full px-4 py-3 text-left text-sm hover:bg-red-50 flex items-center gap-2 border-t border-gray-100 rounded-b-lg transition-colors"
-                onClick={() => {
-                  setDeleteMode(!deleteMode);
-                  setMenuOpen(false);
-                }}
-              >
-                <Trash2 className="h-4 w-4 text-red-600" />
-                <span>{deleteMode ? '삭제 모드 끄기' : '역할 삭제'}</span>
-              </button>
+              {/* 드롭다운 메뉴 */}
+              {menuOpen && (
+                <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+                  {/* 역할 추가 */}
+                  <button
+                    className="w-full px-4 py-3 text-left text-sm hover:bg-blue-50 flex items-center gap-2 rounded-t-lg transition-colors"
+                    onClick={handleAdd}
+                  >
+                    <Plus className="h-4 w-4 text-blue-600" />
+                    <span>역할 추가</span>
+                  </button>
+                  {/* 역할 수정 */}
+                  <button
+                    className="w-full px-4 py-3 text-left text-sm hover:bg-yellow-50 flex items-center gap-2 border-t border-gray-100 transition-colors"
+                    onClick={handleEnterEditMode}
+                  >
+                    <Edit className="h-4 w-4 text-yellow-600" />
+                    <span>역할 수정</span>
+                  </button>
+                  {/* 역할 삭제 */}
+                  <button
+                    className="w-full px-4 py-3 text-left text-sm hover:bg-red-50 flex items-center gap-2 border-t border-gray-100 rounded-b-lg transition-colors"
+                    onClick={handleEnterDeleteMode}
+                  >
+                    <Trash2 className="h-4 w-4 text-red-600" />
+                    <span>역할 삭제</span>
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
+
+        {/* 안내 문구 (제목 아래 별도 줄) */}
+        <p className="text-gray-600">
+          역할을 클릭하여 활성/비활성을 전환하세요
+        </p>
       </div>
 
-      {/* 삭제 모드 안내 */}
-      {deleteMode && (
-        <div className="bg-red-50 border border-red-200 rounded-md p-3 text-sm text-red-700 flex items-center justify-between">
-          <span>삭제할 역할을 클릭하세요. 봉사자가 배정된 역할은 삭제할 수 없습니다.</span>
+      {/* 수정 모드 안내 */}
+      {mode === 'edit' && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3 text-sm text-yellow-700 flex items-center justify-between">
+          <span>수정할 역할을 선택하세요.</span>
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => setDeleteMode(false)}
-            className="text-red-700 hover:text-red-900"
+            onClick={handleCancelMode}
+            className="text-yellow-700 hover:text-yellow-900"
           >
+            <X className="h-4 w-4 mr-1" />
             취소
           </Button>
+        </div>
+      )}
+
+      {/* 삭제 모드 안내 */}
+      {mode === 'delete' && (
+        <div className="bg-red-50 border border-red-200 rounded-md p-3 text-sm text-red-700 flex items-center justify-between">
+          <span>
+            삭제할 역할을 선택하세요.
+            {selectedForDelete.size > 0 && (
+              <strong className="ml-1">{selectedForDelete.size}개 선택됨</strong>
+            )}
+          </span>
+          <div className="flex gap-2">
+            {/* 선택된 항목이 있으면 삭제 버튼 표시 */}
+            {selectedForDelete.size > 0 && (
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={handleBulkDelete}
+                disabled={deleting}
+              >
+                {deleting ? (
+                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                ) : (
+                  <Trash2 className="h-4 w-4 mr-1" />
+                )}
+                {deleting ? '삭제 중...' : `${selectedForDelete.size}개 삭제`}
+              </Button>
+            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleCancelMode}
+              className="text-red-700 hover:text-red-900"
+              disabled={deleting}
+            >
+              <X className="h-4 w-4 mr-1" />
+              취소
+            </Button>
+          </div>
         </div>
       )}
 
@@ -259,37 +364,30 @@ export default function RolesPage() {
         <div className="flex flex-wrap gap-3">
           {roles.map((role) => {
             const isToggling = toggling === role.id;
-            const isDeleting = deleting === role.id;
+            const isSelectedForDelete = selectedForDelete.has(role.id);
 
             return (
               <button
                 key={role.id}
-                // 삭제 모드: 클릭 시 삭제, 일반 모드: 클릭 시 토글
-                onClick={() => {
-                  if (deleteMode) {
-                    handleDelete(role);
-                  } else {
-                    handleToggle(role);
-                  }
-                }}
-                // 더블클릭으로 수정
-                onDoubleClick={() => {
-                  if (!deleteMode) handleEdit(role);
-                }}
-                disabled={isToggling || isDeleting}
+                onClick={() => handleRoleClick(role)}
+                disabled={isToggling || deleting}
                 className={`
                   relative px-4 py-2.5 rounded-lg font-medium text-sm
                   transition-all duration-200 border-2 cursor-pointer
                   disabled:opacity-50 disabled:cursor-not-allowed
-                  ${deleteMode
-                    ? 'border-red-300 hover:border-red-500 hover:bg-red-50'
-                    : role.isActive
-                      ? 'text-white shadow-md hover:shadow-lg hover:scale-105'
-                      : 'bg-gray-100 text-gray-400 border-gray-200 hover:border-gray-400'
+                  ${mode === 'delete'
+                    ? isSelectedForDelete
+                      ? 'border-red-500 bg-red-100 text-red-800 ring-2 ring-red-300'
+                      : 'border-red-200 hover:border-red-400 hover:bg-red-50'
+                    : mode === 'edit'
+                      ? 'border-yellow-300 hover:border-yellow-500 hover:bg-yellow-50'
+                      : role.isActive
+                        ? 'text-white shadow-md hover:shadow-lg hover:scale-105'
+                        : 'bg-gray-100 text-gray-400 border-gray-200 hover:border-gray-400'
                   }
                 `}
                 style={
-                  !deleteMode && role.isActive
+                  mode === 'default' && role.isActive
                     ? { backgroundColor: role.color, borderColor: role.color }
                     : undefined
                 }
@@ -297,11 +395,14 @@ export default function RolesPage() {
                 {/* 역할 이름 */}
                 <span className="flex items-center gap-2">
                   {isToggling && <Loader2 className="h-3 w-3 animate-spin" />}
-                  {isDeleting && <Loader2 className="h-3 w-3 animate-spin" />}
                   {role.name}
-                  {/* 삭제 모드 X 표시 */}
-                  {deleteMode && (
-                    <Trash2 className="h-3 w-3 text-red-500" />
+                  {/* 삭제 모드: 체크 표시 */}
+                  {mode === 'delete' && isSelectedForDelete && (
+                    <Check className="h-3 w-3 text-red-600" />
+                  )}
+                  {/* 수정 모드: 편집 아이콘 */}
+                  {mode === 'edit' && (
+                    <Edit className="h-3 w-3 text-yellow-600" />
                   )}
                 </span>
               </button>
@@ -310,8 +411,8 @@ export default function RolesPage() {
         </div>
       )}
 
-      {/* 활성/비활성 역할 요약 */}
-      {roles.length > 0 && (
+      {/* 활성/비활성 역할 요약 — 기본 모드에서만 표시 */}
+      {roles.length > 0 && mode === 'default' && (
         <div className="text-sm text-gray-500 flex gap-4">
           <span>
             활성: {roles.filter((r) => r.isActive).length}개
