@@ -139,6 +139,17 @@ const koreanDayToEnglish: Record<string, string> = {
   '일': 'SUNDAY',
 };
 
+// 한글 요일 풀네임 → 영문 요일 이름 매핑
+const koreanFullDayToEnglish: Record<string, string> = {
+  '월요일': 'MONDAY',
+  '화요일': 'TUESDAY',
+  '수요일': 'WEDNESDAY',
+  '목요일': 'THURSDAY',
+  '금요일': 'FRIDAY',
+  '토요일': 'SATURDAY',
+  '일요일': 'SUNDAY',
+};
+
 // 영문 요일 이름 → 한글 약어 (템플릿 이름용)
 const englishDayToKorean: Record<string, string> = {
   MONDAY: '월',
@@ -152,7 +163,9 @@ const englishDayToKorean: Record<string, string> = {
 
 /**
  * 요일별 미사시간 상세 파싱
- * "월: 06:00(설명)\n화: 10:00(설명) 19:00(설명)" 형식 지원
+ * 지원 형식:
+ *   1) 풀네임: "월요일 06:00\n화요일 10:00" (정규화된 새 포맷)
+ *   2) 약어:   "월: 06:00(설명)\n화: 10:00(설명) 19:00(설명)" (레거시)
  * 반환: Map<time(HH:mm), dayOfWeek[]> — 같은 시간대의 요일을 그룹핑
  */
 function parseWeekdayMassDetailed(weekdayMass: string): Map<string, string[]> {
@@ -163,16 +176,25 @@ function parseWeekdayMassDetailed(weekdayMass: string): Map<string, string[]> {
     const trimmedLine = line.trim();
     if (!trimmedLine) continue;
 
-    // 줄 시작에서 요일 약어 추출 (예: "월:", "화:", "토:")
-    const dayMatch = trimmedLine.match(/^([월화수목금토일])\s*[:：]/);
-    if (!dayMatch) continue;
+    let dayOfWeek: string | undefined;
+    let timePart: string;
 
-    const koreanDay = dayMatch[1];
-    const dayOfWeek = koreanDayToEnglish[koreanDay];
+    // 1) 풀네임 형식: "월요일 06:00", "토요일 18:00" 등
+    const fullDayMatch = trimmedLine.match(/^([월화수목금토일]요일)\s+/);
+    if (fullDayMatch) {
+      dayOfWeek = koreanFullDayToEnglish[fullDayMatch[1]];
+      timePart = trimmedLine.substring(fullDayMatch[0].length);
+    } else {
+      // 2) 약어 형식: "월:", "화:", "토:" 등 (레거시 호환)
+      const abbrDayMatch = trimmedLine.match(/^([월화수목금토일])\s*[:：]/);
+      if (!abbrDayMatch) continue;
+      dayOfWeek = koreanDayToEnglish[abbrDayMatch[1]];
+      timePart = trimmedLine.substring(abbrDayMatch[0].length);
+    }
+
     if (!dayOfWeek) continue;
 
     // 요일 접두사 이후의 시간 부분 추출
-    const timePart = trimmedLine.substring(dayMatch[0].length);
     // HH:mm 형식의 시간을 모두 추출 (괄호 안의 설명 텍스트는 무시)
     // bare number(예: "17")도 HH:00으로 처리
     const timeMatches = [...timePart.matchAll(/(\d{1,2}):(\d{2})/g)];
@@ -289,8 +311,9 @@ export function buildTemplateData(
 
   // 주일미사 파싱 (토요 특전미사 포함)
   if (sundayMass) {
-    // 요일 접두사 형식인지 확인 (토:, 일: 등)
-    const hasDayPrefix = /^[월화수목금토일]\s*[:：]/m.test(sundayMass);
+    // 요일 접두사 형식인지 확인: 풀네임("토요일 18:00") 또는 약어("토: 18:00")
+    const hasDayPrefix = /^[월화수목금토일]요일\s+\d/m.test(sundayMass)
+      || /^[월화수목금토일]\s*[:：]/m.test(sundayMass);
 
     if (hasDayPrefix) {
       // 요일별 상세 파싱 → 시간별 요일 그룹핑 → 템플릿 변환
@@ -312,8 +335,9 @@ export function buildTemplateData(
 
   // 평일미사 파싱 (요일별 상세 구분)
   if (weekdayMass) {
-    // 요일 접두사 형식인지 확인 (월:, 화: 등)
-    const hasDayPrefix = /^[월화수목금토일]\s*[:：]/m.test(weekdayMass);
+    // 요일 접두사 형식인지 확인: 풀네임("월요일 06:00") 또는 약어("월: 06:00")
+    const hasDayPrefix = /^[월화수목금토일]요일\s+\d/m.test(weekdayMass)
+      || /^[월화수목금토일]\s*[:：]/m.test(weekdayMass);
 
     if (hasDayPrefix) {
       // 요일별 상세 파싱 → 시간별 요일 그룹핑 → 템플릿 변환
