@@ -127,6 +127,7 @@ export async function POST(request: NextRequest) {
           name: `${validatedData.date} ${validatedData.time} 미사`,
           massType: validatedData.massType,
           time: validatedData.time,
+          vestmentColor: validatedData.vestmentColor || null,
           isActive: true,
         },
       });

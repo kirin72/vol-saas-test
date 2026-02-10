@@ -21,6 +21,13 @@ export const scheduleCreateSchema = z.object({
 
   notes: z.string().max(500, '메모는 최대 500자까지 가능합니다').optional().or(z.literal('')),
 
+  // 제의 색상 (선택사항)
+  vestmentColor: z
+    .enum(['WHITE', 'RED', 'GREEN', 'PURPLE', 'ROSE', 'BLACK', 'GOLD'])
+    .nullable()
+    .optional()
+    .default(null),
+
   requiredRoles: z
     .array(roleRequirementSchema)
     .optional()

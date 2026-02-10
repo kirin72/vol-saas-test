@@ -136,13 +136,14 @@ export async function PATCH(
           })),
         });
 
-        // 3. 템플릿 수정
+        // 3. 템플릿 수정 (제의 색상 포함)
         await tx.massTemplate.update({
           where: { id: templateId },
           data: {
             name: `${validatedData.date} ${validatedData.time} 미사`,
             massType: validatedData.massType,
             time: validatedData.time,
+            vestmentColor: validatedData.vestmentColor || null,
           },
         });
       }
