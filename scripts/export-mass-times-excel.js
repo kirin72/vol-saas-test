@@ -330,8 +330,15 @@ async function main() {
   }
 
   // ─── 파일 저장 ───
-  const outputPath = path.join(__dirname, '..', `정규화_미사시간_${withMass.length}개_성당.xlsx`);
-  await workbook.xlsx.writeFile(outputPath);
+  let outputPath = path.join(__dirname, '..', `정규화_미사시간_${withMass.length}개_성당.xlsx`);
+  try {
+    await workbook.xlsx.writeFile(outputPath);
+  } catch {
+    // 파일이 잠겨있으면 타임스탬프 붙여서 저장
+    const ts = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    outputPath = path.join(__dirname, '..', `정규화_미사시간_${withMass.length}개_성당_${ts}.xlsx`);
+    await workbook.xlsx.writeFile(outputPath);
+  }
 
   console.log('=== 엑셀 생성 완료 ===');
   console.log(`  파일: ${outputPath}`);
