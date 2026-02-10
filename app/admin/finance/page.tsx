@@ -7,12 +7,13 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { Plus, Download } from 'lucide-react';
+import { Plus, Download, Loader2 } from 'lucide-react';
 import { MonthNavigator } from './_components/MonthNavigator';
 import { FinanceTable } from './_components/FinanceTable';
 import { FinanceSummary } from './_components/FinanceSummary';
 import { FinanceRecordModal } from './_components/FinanceRecordModal';
 import { ViewModeSelector, type ViewMode } from './_components/ViewModeSelector';
+import { generateFinancePdf } from '@/lib/generate-finance-pdf';
 import {
   getMonthlyTransactions,
   getYearlyTransactions,
@@ -61,6 +62,9 @@ export default function FinancePage() {
   // 로딩 및 에러 상태
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // PDF 생성 상태
+  const [generatingPdf, setGeneratingPdf] = useState(false);
 
   // 모달 상태
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -143,6 +147,33 @@ export default function FinancePage() {
     setMonth(newMonth);
   };
 
+  // PDF 입출금내역 다운로드
+  const handleDownloadPdf = async () => {
+    // 월별 보기 모드에서만 PDF 생성
+    if (viewMode !== 'monthly') return;
+
+    setGeneratingPdf(true);
+    try {
+      const monthlySummary = summary as MonthlyFinanceSummary;
+      await generateFinancePdf(transactions, monthlySummary, year, month);
+    } catch (err) {
+      console.error('PDF 생성 오류:', err);
+      alert('PDF 생성 중 오류가 발생했습니다');
+    } finally {
+      setGeneratingPdf(false);
+    }
+  };
+
+  // PDF 버튼 비활성 조건: 월별 보기가 아니거나, 데이터가 전혀 없는 경우
+  const isPdfDisabled = (() => {
+    if (viewMode !== 'monthly') return true;
+    if (isLoading) return true;
+    if (generatingPdf) return true;
+    // 이월금이 있거나 거래 내역이 있으면 활성화
+    const balanceForward = 'balanceForward' in summary ? summary.balanceForward : 0;
+    return transactions.length === 0 && balanceForward === 0;
+  })();
+
   // 모달 성공 핸들러 (저장 후 리스트 새로고침)
   const handleModalSuccess = () => {
     loadData();
@@ -159,10 +190,19 @@ export default function FinancePage() {
             viewMode={viewMode}
             onViewModeChange={handleViewModeChange}
           />
-          {/* 입출금내역 저장 (기능 추가 예정) */}
-          <Button variant="outline" disabled className="flex items-center gap-2">
-            <Download className="w-4 h-4" />
-            <span>입출금내역 저장</span>
+          {/* 입출금내역 PDF 다운로드 */}
+          <Button
+            variant="outline"
+            disabled={isPdfDisabled}
+            onClick={handleDownloadPdf}
+            className="flex items-center gap-2"
+          >
+            {generatingPdf ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Download className="w-4 h-4" />
+            )}
+            <span>{generatingPdf ? 'PDF 생성 중...' : '입출금내역 저장'}</span>
           </Button>
           {/* 입출금 기록 버튼 */}
           <Button onClick={() => setIsModalOpen(true)} className="flex items-center gap-2">
