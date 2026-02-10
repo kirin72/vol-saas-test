@@ -178,6 +178,7 @@ export default function RegisterPage() {
                       value={orgEmail}
                       onChange={(e) => setOrgEmail(e.target.value)}
                       disabled={loading}
+                      autoComplete="off"
                     />
                   </div>
                 </div>
@@ -237,6 +238,7 @@ export default function RegisterPage() {
                     onChange={(e) => setAdminEmail(e.target.value)}
                     required
                     disabled={loading}
+                    autoComplete="username"
                   />
                 </div>
 
@@ -251,6 +253,7 @@ export default function RegisterPage() {
                       onChange={(e) => setAdminPassword(e.target.value)}
                       required
                       disabled={loading}
+                      autoComplete="new-password"
                     />
                   </div>
 
@@ -264,6 +267,7 @@ export default function RegisterPage() {
                       onChange={(e) => setAdminPasswordConfirm(e.target.value)}
                       required
                       disabled={loading}
+                      autoComplete="new-password"
                     />
                   </div>
                 </div>
