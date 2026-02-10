@@ -1,7 +1,7 @@
 /**
  * 봉사자 배정표 PDF 생성 유틸리티
  * jspdf + jspdf-autotable로 직접 테이블 PDF 생성
- * 전치 레이아웃: 날짜가 가로(컬럼), 역할이 세로(행)
+ * 기본 레이아웃: 날짜가 왼쪽(행), 역할이 오른쪽(컬럼)
  */
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -44,22 +44,6 @@ interface ScheduleForPdf {
       color: string;
     };
   }>;
-}
-
-// 날짜별 그룹 (같은 날짜 병합용)
-interface DateGroup {
-  date: string;              // '2025-02-01'
-  dateLabel: string;         // '2/1(일)'
-  schedules: ScheduleForPdf[];
-}
-
-// 컬럼 메타데이터 (각 일정의 정보)
-interface ColumnMeta {
-  schedule: ScheduleForPdf;
-  dateGroup: DateGroup;
-  timeLabel: string;         // '오전 10시'
-  massType: string;          // 'SUNDAY' | 'SATURDAY' | 'WEEKDAY' | 'SPECIAL'
-  isSundayOrSpecial: boolean; // 굵은 테두리 적용 여부
 }
 
 // hex 색상 → RGB 배열 변환 (예: '#2563eb' → [37, 99, 235])
@@ -126,197 +110,34 @@ const NO_SLOT_BG = hexToRgb('#f0f0f0');    // 슬롯 없음 배경
 const RED = hexToRgb('#cc0000');            // 미배정 텍스트
 const GRAY_TEXT = hexToRgb('#999999');      // 비활성 텍스트
 
-// ─── 전치 레이아웃 헬퍼 함수 ───
-
 /**
- * 날짜별 그룹화 (같은 날짜 병합용)
- * 같은 날짜의 일정들을 그룹으로 묶어 colSpan 계산에 사용
+ * 날짜별 그룹화 (같은 날짜 rowSpan 병합용)
+ * 같은 날짜의 일정들을 묶어 rowSpan 계산에 사용
  */
-function groupSchedulesByDate(schedules: ScheduleForPdf[]): DateGroup[] {
-  const groups = new Map<string, ScheduleForPdf[]>();
+function groupSchedulesByDate(schedules: ScheduleForPdf[]) {
+  const groups: { date: string; schedules: ScheduleForPdf[] }[] = [];
+  let currentDate = '';
+  let currentGroup: ScheduleForPdf[] = [];
 
-  // 날짜별로 일정 그룹화
+  // 이미 날짜순 정렬되어 있다고 가정
   schedules.forEach((schedule) => {
-    const dateKey = schedule.date;
-    if (!groups.has(dateKey)) {
-      groups.set(dateKey, []);
-    }
-    groups.get(dateKey)!.push(schedule);
-  });
-
-  // 날짜순 정렬 후 DateGroup 배열 생성
-  return Array.from(groups.entries())
-    .sort((a, b) => a[0].localeCompare(b[0]))
-    .map(([date, scheds]) => ({
-      date,
-      dateLabel: formatDateShort(date),
-      // 같은 날짜 내에서 시간순 정렬
-      schedules: scheds.sort((a, b) => a.time.localeCompare(b.time)),
-    }));
-}
-
-/**
- * 컬럼 메타데이터 생성
- * 각 일정(컬럼)의 massType, 시간 등 정보를 미리 계산
- */
-function buildColumnMetas(dateGroups: DateGroup[]): ColumnMeta[] {
-  const metas: ColumnMeta[] = [];
-
-  dateGroups.forEach((dateGroup) => {
-    dateGroup.schedules.forEach((schedule) => {
-      metas.push({
-        schedule,
-        dateGroup,
-        timeLabel: formatTime12Hour(schedule.time),
-        massType: schedule.massTemplate?.massType || 'WEEKDAY',
-        // 일요일 또는 특전미사 → 굵은 테두리 적용
-        isSundayOrSpecial:
-          schedule.massTemplate?.massType === 'SUNDAY' ||
-          schedule.massTemplate?.massType === 'SPECIAL',
-      });
-    });
-  });
-
-  return metas;
-}
-
-/**
- * 헤더 1행: 날짜 (같은 날짜는 colSpan 병합)
- * 예: ['', { content: '2/1(일)', colSpan: 2 }, '2/2(월)', ...]
- */
-function buildDateHeaderRow(dateGroups: DateGroup[]): any[] {
-  // 첫 번째 셀: 빈 라벨 영역 (rowSpan=2로 시간 행까지 병합)
-  const row: any[] = [
-    { content: '', rowSpan: 2, styles: { fillColor: HEADER_BG } },
-  ];
-
-  dateGroups.forEach((dateGroup) => {
-    const colSpan = dateGroup.schedules.length;
-    // 날짜 셀 (같은 날 미사가 여러 개면 colSpan 적용)
-    row.push({
-      content: dateGroup.dateLabel,
-      colSpan: colSpan > 1 ? colSpan : undefined,
-      styles: {
-        fillColor: HEADER_BG,
-        halign: 'center' as const,
-        valign: 'middle' as const,
-        fontSize: 10,
-        fontStyle: 'normal' as const,
-      },
-    });
-    // colSpan 빈 셀 추가 (autoTable 내부 처리용)
-    for (let i = 1; i < colSpan; i++) {
-      row.push('');
-    }
-  });
-
-  return row;
-}
-
-/**
- * 헤더 2행: 시간
- * 예: ['', '오전10시', '오후6시', '오전7시', ...]
- */
-function buildTimeHeaderRow(columnMetas: ColumnMeta[]): any[] {
-  // 첫 번째 셀은 rowSpan=2로 이미 병합됨 → 빈 셀
-  const row: any[] = [''];
-
-  columnMetas.forEach((meta) => {
-    row.push({
-      content: meta.timeLabel,
-      styles: {
-        fillColor: HEADER_BG,
-        halign: 'center' as const,
-        fontSize: 8,
-        fontStyle: 'normal' as const,
-      },
-    });
-  });
-
-  return row;
-}
-
-/**
- * Body 행 생성: 제의색상 행 + 역할별 봉사자 행
- * 역할 라벨 셀에는 해당 역할의 hex color를 배경색으로 적용
- */
-function buildBodyRows(
-  columnMetas: ColumnMeta[],
-  roles: Array<{ id: string; name: string; color: string }>
-): any[][] {
-  const bodyRows: any[][] = [];
-
-  // ─── 제의색상 행 ───
-  const vestmentRow: any[] = [
-    { content: '제의색상', styles: { fillColor: HEADER_BG, halign: 'center' as const, fontSize: 9 } },
-  ];
-  columnMetas.forEach((meta) => {
-    const vestmentColor = meta.schedule.massTemplate?.vestmentColor;
-    vestmentRow.push({
-      content: vestmentColor ? vestmentColorLabels[vestmentColor] || '' : '',
-      styles: { halign: 'center' as const, fontSize: 8 },
-    });
-  });
-  bodyRows.push(vestmentRow);
-
-  // ─── 역할별 행 ───
-  roles.forEach((role) => {
-    const roleRow: any[] = [
-      // 역할 라벨 (역할 색상 배경 + 흰색 텍스트)
-      {
-        content: role.name,
-        styles: {
-          fillColor: hexToRgb(role.color),
-          textColor: [255, 255, 255] as [number, number, number],
-          halign: 'center' as const,
-          fontSize: 9,
-          fontStyle: 'normal' as const,
-        },
-      },
-    ];
-
-    // 각 컬럼(일정)별 봉사자 셀
-    columnMetas.forEach((meta) => {
-      const schedule = meta.schedule;
-
-      // 해당 역할에 배정된 봉사자들
-      const assignedVolunteers = schedule.assignments
-        .filter((a) => a.volunteerRoleId === role.id)
-        .map((a) => formatVolunteerName(a.user));
-
-      // 해당 역할 슬롯이 있는지 확인
-      const hasSlot = schedule.massTemplate?.slots.some(
-        (s) => s.volunteerRole.id === role.id
-      );
-
-      if (!hasSlot) {
-        // 슬롯 없음 → 회색 배경 "-"
-        roleRow.push({
-          content: '-',
-          styles: { halign: 'center' as const, fillColor: NO_SLOT_BG, textColor: GRAY_TEXT, fontSize: 8 },
-        });
-      } else if (assignedVolunteers.length === 0) {
-        // 미배정 → 빨간색 텍스트
-        roleRow.push({
-          content: '(미배정)',
-          styles: { halign: 'center' as const, textColor: RED, fontSize: 8 },
-        });
-      } else {
-        // 봉사자 이름 (줄바꿈으로 구분)
-        roleRow.push({
-          content: assignedVolunteers.join('\n'),
-          styles: { halign: 'center' as const, fontSize: 8 },
-        });
+    if (schedule.date !== currentDate) {
+      if (currentGroup.length > 0) {
+        groups.push({ date: currentDate, schedules: currentGroup });
       }
-    });
-
-    bodyRows.push(roleRow);
+      currentDate = schedule.date;
+      currentGroup = [schedule];
+    } else {
+      currentGroup.push(schedule);
+    }
   });
+  // 마지막 그룹 추가
+  if (currentGroup.length > 0) {
+    groups.push({ date: currentDate, schedules: currentGroup });
+  }
 
-  return bodyRows;
+  return groups;
 }
-
-// ─── 메인 PDF 생성 함수 ───
 
 /**
  * 배정표 PDF 내부 생성 (jsPDF 인스턴스 반환)
@@ -395,26 +216,104 @@ async function buildAssignmentPdf(
   doc.setTextColor(17, 17, 17);
   doc.text(`${year}년 ${month}월 봉사자 배정표`, pageWidth / 2, 20, { align: 'center' });
 
-  // 6. 데이터 준비 (전치 레이아웃용)
-  const dateGroups = groupSchedulesByDate(schedules);
-  const columnMetas = buildColumnMetas(dateGroups);
+  // 6. 고유 역할 목록 추출
   const roles = extractUniqueRoles(schedules);
 
-  // 7. 헤더 행 생성 (2행: 날짜 + 시간)
-  const dateHeaderRow = buildDateHeaderRow(dateGroups);
-  const timeHeaderRow = buildTimeHeaderRow(columnMetas);
+  // 7. 메인 테이블 헤더 구성 (날짜, 시간, 제의색상, ...역할명들)
+  const headRow = ['날짜', '시간', '제의색상', ...roles.map((r) => r.name)];
 
-  // 8. Body 행 생성 (제의색상 + 역할별)
-  const bodyRows = buildBodyRows(columnMetas, roles);
+  // 8. 날짜별 그룹화 (같은 날짜 rowSpan 병합용)
+  const dateGroups = groupSchedulesByDate(schedules);
 
-  // 9. 메인 테이블 startY (결재란과 겹치지 않게)
+  // 9. 각 일정의 massType 기록 (일요일/특전미사 굵은 테두리용)
+  const rowMassTypes: string[] = [];
+  schedules.forEach((schedule) => {
+    rowMassTypes.push(schedule.massTemplate?.massType || 'WEEKDAY');
+  });
+
+  // 10. 메인 테이블 body 구성 (같은 날짜 rowSpan 적용)
+  const body: any[][] = [];
+  let globalRowIndex = 0;
+
+  dateGroups.forEach((group) => {
+    group.schedules.forEach((schedule, indexInGroup) => {
+      const row: any[] = [];
+
+      // ─── 날짜 셀 (같은 날짜 첫 번째 행에만 rowSpan 적용) ───
+      if (indexInGroup === 0) {
+        row.push({
+          content: formatDateShort(schedule.date),
+          rowSpan: group.schedules.length > 1 ? group.schedules.length : undefined,
+          styles: {
+            halign: 'center' as const,
+            valign: 'middle' as const,
+            fontSize: 10,
+            fontStyle: 'normal' as const,
+          },
+        });
+      }
+      // rowSpan으로 병합된 행에서는 날짜 셀 생략 (autoTable이 자동 처리)
+
+      // ─── 시간 셀 ───
+      row.push({
+        content: formatTime12Hour(schedule.time),
+        styles: { halign: 'center' as const, fontSize: 8 },
+      });
+
+      // ─── 제의색상 셀 ───
+      row.push({
+        content: schedule.massTemplate?.vestmentColor
+          ? vestmentColorLabels[schedule.massTemplate.vestmentColor] || ''
+          : '',
+        styles: { halign: 'center' as const, fontSize: 8 },
+      });
+
+      // ─── 각 역할별 봉사자 셀 ───
+      roles.forEach((role) => {
+        // 이 일정에서 해당 역할에 배정된 봉사자들
+        const assignedVolunteers = schedule.assignments
+          .filter((a) => a.volunteerRoleId === role.id)
+          .map((a) => formatVolunteerName(a.user));
+
+        // 이 일정에 해당 역할 슬롯이 있는지 확인
+        const hasSlot = schedule.massTemplate?.slots.some(
+          (s) => s.volunteerRole.id === role.id
+        );
+
+        if (!hasSlot) {
+          // 슬롯 없음 → 회색 배경 "-"
+          row.push({
+            content: '-',
+            styles: { halign: 'center' as const, fillColor: NO_SLOT_BG, textColor: GRAY_TEXT },
+          });
+        } else if (assignedVolunteers.length === 0) {
+          // 미배정 → 빨간색 텍스트
+          row.push({
+            content: '(미배정)',
+            styles: { halign: 'center' as const, textColor: RED, fontSize: 8 },
+          });
+        } else {
+          // 봉사자 이름 (줄바꿈으로 구분)
+          row.push({
+            content: assignedVolunteers.join('\n'),
+            styles: { halign: 'center' as const, fontSize: 8 },
+          });
+        }
+      });
+
+      body.push(row);
+      globalRowIndex++;
+    });
+  });
+
+  // 11. 메인 테이블 startY (결재란과 겹치지 않게)
   const mainTableStartY = Math.max(28, approvalFinalY + 3);
 
-  // 10. 메인 테이블 autoTable 호출
+  // 12. autoTable 호출
   autoTable(doc, {
     startY: mainTableStartY,
-    head: [dateHeaderRow, timeHeaderRow],
-    body: bodyRows,
+    head: [headRow],
+    body: body,
     theme: 'grid',
     styles: {
       font: 'NotoSansKR',
@@ -432,19 +331,29 @@ async function buildAssignmentPdf(
       halign: 'center',
       fontSize: 9,
     },
-    // 첫 번째 컬럼(라벨) 고정 너비
+    // 컬럼별 스타일 (기본 3개 + 역할별)
     columnStyles: {
-      0: { cellWidth: 22 },
+      0: { cellWidth: 22 },  // 날짜
+      1: { cellWidth: 24 },  // 시간
+      2: { cellWidth: 18 },  // 제의색상
     },
     didParseCell: (data) => {
-      // ─── 일요일/특전미사 굵은 테두리 ───
-      // 데이터 컬럼(index >= 1)에 대해 massType 확인
-      if (data.column.index >= 1) {
-        const metaIndex = data.column.index - 1;
-        if (metaIndex < columnMetas.length) {
-          const meta = columnMetas[metaIndex];
-          if (meta.isSundayOrSpecial) {
-            // 상하좌우 모두 굵은 테두리 (기본 0.3 → 0.8)
+      // ─── 역할 헤더에 각 역할의 color를 배경색으로 적용 ───
+      if (data.section === 'head' && data.column.index >= 3) {
+        const roleIndex = data.column.index - 3;
+        if (roleIndex < roles.length) {
+          const roleColor = hexToRgb(roles[roleIndex].color);
+          data.cell.styles.fillColor = roleColor;
+          data.cell.styles.textColor = [255, 255, 255];
+        }
+      }
+
+      // ─── 일요일/특전미사 행 굵은 테두리 ───
+      if (data.section === 'body') {
+        const rowIdx = data.row.index;
+        if (rowIdx < rowMassTypes.length) {
+          const massType = rowMassTypes[rowIdx];
+          if (massType === 'SUNDAY' || massType === 'SPECIAL') {
             data.cell.styles.lineWidth = {
               top: 0.8,
               bottom: 0.8,
@@ -457,13 +366,9 @@ async function buildAssignmentPdf(
     },
     // 매 페이지 헤더 반복
     showHead: 'everyPage',
-    // 가로 페이지 넘김 (컬럼이 많을 때)
-    horizontalPageBreak: true,
-    // 첫 번째 컬럼(라벨)을 페이지마다 반복
-    horizontalPageBreakRepeat: 0,
   });
 
-  // 11. 하단 생성일
+  // 13. 하단 생성일
   const pageHeight = doc.internal.pageSize.getHeight();
   doc.setFontSize(8);
   doc.setTextColor(136, 136, 136);
