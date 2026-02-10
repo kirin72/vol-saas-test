@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 import { templateCreateSchema } from '@/lib/validations/template';
 
 // GET: 템플릿 목록 조회
@@ -111,7 +112,9 @@ export async function POST(request: NextRequest) {
           organizationId,
           name: validatedData.name,
           massType: validatedData.massType,
-          dayOfWeek: validatedData.dayOfWeek || null,
+          dayOfWeek: validatedData.dayOfWeek && validatedData.dayOfWeek.length > 0
+            ? validatedData.dayOfWeek
+            : Prisma.JsonNull,
           time: validatedData.time,
           isActive: true,
         },

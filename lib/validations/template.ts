@@ -25,9 +25,9 @@ export const templateCreateSchema = z.object({
     errorMap: () => ({ message: '미사 종류를 선택해주세요' }),
   }),
 
-  // 반복 요일 (선택사항 - null이면 특정 요일 없음)
+  // 반복 요일 배열 (선택사항 - 빈 배열이면 특정 요일 없음)
   dayOfWeek: z
-    .enum(['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'])
+    .array(z.enum(['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY']))
     .nullable()
     .optional()
     .default(null),

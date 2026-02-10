@@ -35,10 +35,9 @@ export type ScheduleCreateInput = z.infer<typeof scheduleCreateSchema>;
 export type ScheduleUpdateInput = z.infer<typeof scheduleUpdateSchema>;
 export type RoleRequirement = z.infer<typeof roleRequirementSchema>;
 
-// 미사 종류 한글 변환
+// 미사 종류 한글 변환 (순서: 주일미사, 평일미사, 특전미사)
 export const massTypeLabels: Record<string, string> = {
-  WEEKDAY: '평일미사',
-  SATURDAY: '토요일미사',
   SUNDAY: '주일미사',
-  SPECIAL: '특전미사',
+  WEEKDAY: '평일미사',
+  SATURDAY: '특전미사',
 };

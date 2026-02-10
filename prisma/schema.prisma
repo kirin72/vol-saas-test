@@ -252,7 +252,7 @@ model MassTemplate {
   organizationId String
   name           String     // "주일 오전 10시 미사"
   massType       MassType
-  dayOfWeek      DayOfWeek?
+  dayOfWeek      Json?      // 반복 요일 배열 (예: ["MONDAY","WEDNESDAY","FRIDAY"])
   time           String     // "10:00"
   isActive       Boolean    @default(true)
   createdAt      DateTime   @default(now())

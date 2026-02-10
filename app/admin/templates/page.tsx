@@ -29,7 +29,7 @@ interface MassTemplate {
   id: string;
   name: string;
   massType: string;
-  dayOfWeek: string | null;
+  dayOfWeek: string | string[] | null;
   time: string;
   isActive: boolean;
   createdAt: string;
@@ -284,7 +284,11 @@ export default function TemplatesPage() {
                   {template.dayOfWeek && (
                     <div className="flex items-center gap-1">
                       <Repeat className="h-4 w-4" />
-                      <span>매주 {dayOfWeekLabels[template.dayOfWeek]}</span>
+                      <span>매주 {
+                        Array.isArray(template.dayOfWeek)
+                          ? template.dayOfWeek.map((d) => dayOfWeekLabels[d] || d).join(', ')
+                          : dayOfWeekLabels[template.dayOfWeek] || template.dayOfWeek
+                      }</span>
                     </div>
                   )}
                   <div className="flex items-center gap-1">
@@ -318,7 +322,7 @@ export default function TemplatesPage() {
                 </div>
 
                 {/* 월간 일정 생성 버튼 */}
-                {template.isActive && template.dayOfWeek && (
+                {template.isActive && template.dayOfWeek && (Array.isArray(template.dayOfWeek) ? template.dayOfWeek.length > 0 : true) && (
                   <Button
                     variant="outline"
                     size="sm"

@@ -23,7 +23,7 @@ interface TemplateData {
   id: string;
   name: string;
   massType: string;
-  dayOfWeek: string | null;
+  dayOfWeek: string | string[] | null;
   time: string;
   slots: Array<{
     requiredCount: number;
@@ -167,7 +167,11 @@ export default function GenerateSchedulesDialog({
                 </Badge>
                 {template.dayOfWeek && (
                   <Badge variant="secondary">
-                    매주 {dayOfWeekLabels[template.dayOfWeek]}
+                    매주 {
+                      Array.isArray(template.dayOfWeek)
+                        ? template.dayOfWeek.map((d) => dayOfWeekLabels[d] || d).join(', ')
+                        : dayOfWeekLabels[template.dayOfWeek] || template.dayOfWeek
+                    }
                   </Badge>
                 )}
                 <span>{template.time}</span>
@@ -227,7 +231,13 @@ export default function GenerateSchedulesDialog({
               </div>
               <p className="text-xs text-gray-500 text-center">
                 {year}년 {month}월의 모든{' '}
-                <strong>{dayOfWeekLabels[template.dayOfWeek]}</strong>에 일정이
+                <strong>{
+                  template.dayOfWeek
+                    ? Array.isArray(template.dayOfWeek)
+                      ? template.dayOfWeek.map((d) => dayOfWeekLabels[d] || d).join(', ')
+                      : dayOfWeekLabels[template.dayOfWeek] || template.dayOfWeek
+                    : ''
+                }</strong>에 일정이
                 생성됩니다
               </p>
             </div>

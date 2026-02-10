@@ -53,17 +53,25 @@ export async function POST(request: NextRequest) {
     }
 
     // 반복 요일이 설정되어 있지 않으면 에러
-    if (!template.dayOfWeek) {
+    const dayOfWeekArray = template.dayOfWeek as string[] | null;
+    if (!dayOfWeekArray || dayOfWeekArray.length === 0) {
       return NextResponse.json(
         { error: '이 템플릿에 반복 요일이 설정되어 있지 않습니다. 먼저 템플릿을 수정해주세요.' },
         { status: 400 }
       );
     }
 
-    // 해당 월의 모든 해당 요일 날짜 계산
-    const targetDayNumber = dayOfWeekToNumber[template.dayOfWeek];
+    // 해당 월의 모든 해당 요일 날짜 계산 (여러 요일 지원)
     const { year, month } = validatedData;
-    const dates = getDatesForDayOfWeek(year, month, targetDayNumber);
+    const dates: Date[] = [];
+    for (const day of dayOfWeekArray) {
+      const targetDayNumber = dayOfWeekToNumber[day];
+      if (targetDayNumber !== undefined) {
+        dates.push(...getDatesForDayOfWeek(year, month, targetDayNumber));
+      }
+    }
+    // 날짜순 정렬
+    dates.sort((a, b) => a.getTime() - b.getTime());
 
     // 이미 존재하는 일정 조회 (중복 방지)
     const existingSchedules = await prisma.massSchedule.findMany({

@@ -1,6 +1,6 @@
 /**
  * 미사 템플릿 추가/수정 다이얼로그
- * 템플릿 이름, 미사 종류, 반복 요일, 시간, 역할별 필요 인원 설정
+ * 템플릿 이름, 미사 종류, 반복 요일, 시간, 역할 설정
  */
 'use client';
 
@@ -39,7 +39,7 @@ interface TemplateData {
   id: string;
   name: string;
   massType: string;
-  dayOfWeek: string | null;
+  dayOfWeek: string | string[] | null;
   time: string;
   isActive: boolean;
   slots: Array<{
@@ -60,6 +60,15 @@ interface TemplateDialogProps {
   onSuccess: () => void;
 }
 
+// 평일미사에서 선택 가능한 요일 (월~금)
+const WEEKDAY_OPTIONS: Array<{ value: string; label: string }> = [
+  { value: 'MONDAY', label: '월' },
+  { value: 'TUESDAY', label: '화' },
+  { value: 'WEDNESDAY', label: '수' },
+  { value: 'THURSDAY', label: '목' },
+  { value: 'FRIDAY', label: '금' },
+];
+
 export default function TemplateDialog({
   open,
   onOpenChange,
@@ -72,6 +81,8 @@ export default function TemplateDialog({
   const [roles, setRoles] = useState<VolunteerRole[]>([]);
   // 선택된 역할과 인원수
   const [selectedSlots, setSelectedSlots] = useState<Record<string, number>>({});
+  // 평일미사용 선택된 요일 배열
+  const [selectedDays, setSelectedDays] = useState<string[]>([]);
 
   const isEditing = !!template;
 
@@ -93,6 +104,9 @@ export default function TemplateDialog({
     },
   });
 
+  // 현재 선택된 미사 종류
+  const currentMassType = watch('massType');
+
   // 역할 목록 가져오기
   useEffect(() => {
     if (open) {
@@ -105,10 +119,17 @@ export default function TemplateDialog({
     if (open) {
       if (template) {
         // 수정 모드: 기존 값으로 초기화
+        // dayOfWeek가 배열인지 단일값인지 확인하여 배열로 변환
+        const existingDays = template.dayOfWeek
+          ? Array.isArray(template.dayOfWeek)
+            ? template.dayOfWeek
+            : [template.dayOfWeek]
+          : [];
+
         reset({
           name: template.name,
           massType: template.massType as any,
-          dayOfWeek: (template.dayOfWeek as any) || null,
+          dayOfWeek: existingDays.length > 0 ? existingDays as any : null,
           time: template.time,
           slots: template.slots.map((s) => ({
             volunteerRoleId: s.volunteerRoleId,
@@ -121,6 +142,7 @@ export default function TemplateDialog({
           slotsMap[s.volunteerRoleId] = s.requiredCount;
         });
         setSelectedSlots(slotsMap);
+        setSelectedDays(existingDays);
       } else {
         // 추가 모드: 빈 값으로 초기화
         reset({
@@ -131,10 +153,37 @@ export default function TemplateDialog({
           slots: [],
         });
         setSelectedSlots({});
+        setSelectedDays([]);
       }
       setError('');
     }
   }, [open, template, reset]);
+
+  // 미사 종류 변경 시 요일 자동 설정
+  useEffect(() => {
+    if (currentMassType === 'SUNDAY') {
+      // 주일미사: 자동으로 일요일 설정
+      setSelectedDays(['SUNDAY']);
+      setValue('dayOfWeek', ['SUNDAY']);
+    } else if (currentMassType === 'SATURDAY') {
+      // 특전미사: 자동으로 토요일 설정
+      setSelectedDays(['SATURDAY']);
+      setValue('dayOfWeek', ['SATURDAY']);
+    } else if (currentMassType === 'WEEKDAY') {
+      // 평일미사: 수정 모드가 아닌 경우 초기화
+      if (!template) {
+        setSelectedDays([]);
+        setValue('dayOfWeek', null);
+      }
+    }
+  }, [currentMassType, setValue, template]);
+
+  // selectedDays 변경 시 폼의 dayOfWeek 필드 동기화
+  useEffect(() => {
+    if (currentMassType === 'WEEKDAY') {
+      setValue('dayOfWeek', selectedDays.length > 0 ? selectedDays as any : null);
+    }
+  }, [selectedDays, currentMassType, setValue]);
 
   // 역할 목록 API 호출
   const fetchRoles = async () => {
@@ -165,15 +214,6 @@ export default function TemplateDialog({
     });
   };
 
-  // 인원수 변경
-  const handleCountChange = (roleId: string, count: number) => {
-    if (count < 1) return;
-    setSelectedSlots((prev) => ({
-      ...prev,
-      [roleId]: count,
-    }));
-  };
-
   // selectedSlots가 변경될 때 폼의 slots 필드 동기화
   useEffect(() => {
     const slots = Object.entries(selectedSlots).map(([volunteerRoleId, requiredCount]) => ({
@@ -182,6 +222,20 @@ export default function TemplateDialog({
     }));
     setValue('slots', slots);
   }, [selectedSlots, setValue]);
+
+  // 평일미사 요일 체크박스 토글
+  const handleDayToggle = (day: string, checked: boolean) => {
+    setSelectedDays((prev) => {
+      if (checked) {
+        return [...prev, day].sort((a, b) => {
+          const order = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY'];
+          return order.indexOf(a) - order.indexOf(b);
+        });
+      } else {
+        return prev.filter((d) => d !== day);
+      }
+    });
+  };
 
   // 폼 제출
   const onSubmit = async (data: TemplateCreateInput) => {
@@ -196,6 +250,12 @@ export default function TemplateDialog({
       return;
     }
 
+    // 평일미사인데 요일 미선택 시 에러
+    if (data.massType === 'WEEKDAY' && selectedDays.length === 0) {
+      setError('평일미사는 최소 1개 이상의 요일을 선택해주세요');
+      return;
+    }
+
     setLoading(true);
     setError('');
 
@@ -205,12 +265,22 @@ export default function TemplateDialog({
         : '/api/admin/templates';
       const method = isEditing ? 'PATCH' : 'POST';
 
+      // dayOfWeek 결정
+      let dayOfWeek: string[] | null = null;
+      if (data.massType === 'SUNDAY') {
+        dayOfWeek = ['SUNDAY'];
+      } else if (data.massType === 'SATURDAY') {
+        dayOfWeek = ['SATURDAY'];
+      } else if (data.massType === 'WEEKDAY') {
+        dayOfWeek = selectedDays.length > 0 ? selectedDays : null;
+      }
+
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...data,
-          dayOfWeek: data.dayOfWeek || null,
+          dayOfWeek,
           slots,
         }),
       });
@@ -229,10 +299,8 @@ export default function TemplateDialog({
     }
   };
 
-  // 미사 종류 옵션
+  // 미사 종류 옵션 (순서: 주일미사, 평일미사, 특전미사)
   const massTypeOptions = Object.entries(massTypeLabels);
-  // 요일 옵션
-  const dayOfWeekOptions = Object.entries(dayOfWeekLabels);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -264,11 +332,11 @@ export default function TemplateDialog({
           {/* 미사 종류 */}
           <div className="space-y-2">
             <Label>미사 종류 *</Label>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-3 gap-2">
               {massTypeOptions.map(([value, label]) => (
                 <label
                   key={value}
-                  className={`flex items-center gap-2 p-3 rounded-md border cursor-pointer transition-colors ${
+                  className={`flex items-center justify-center gap-2 p-3 rounded-md border cursor-pointer transition-colors ${
                     watch('massType') === value
                       ? 'border-blue-500 bg-blue-50'
                       : 'border-gray-200 hover:border-gray-300'
@@ -285,31 +353,44 @@ export default function TemplateDialog({
                 </label>
               ))}
             </div>
+            <p className="text-xs text-gray-500">
+              대축일 및 특수목적 미사는 봉사일정관리에서 일정추가를 해주세요
+            </p>
             {errors.massType && (
               <p className="text-sm text-red-600">{errors.massType.message}</p>
             )}
           </div>
 
-          {/* 반복 요일 */}
-          <div className="space-y-2">
-            <Label htmlFor="dayOfWeek">반복 요일</Label>
-            <select
-              id="dayOfWeek"
-              {...register('dayOfWeek')}
-              className="w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              disabled={loading}
-            >
-              <option value="">선택 안 함 (일회성)</option>
-              {dayOfWeekOptions.map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </select>
-            <p className="text-xs text-gray-500">
-              요일을 선택하면 월간 일정 자동 생성이 가능합니다
-            </p>
-          </div>
+          {/* 반복 요일 (평일미사일 때만 표시) */}
+          {currentMassType === 'WEEKDAY' && (
+            <div className="space-y-2">
+              <Label>반복 요일 * (복수 선택 가능)</Label>
+              <div className="flex gap-2">
+                {WEEKDAY_OPTIONS.map(({ value, label }) => (
+                  <label
+                    key={value}
+                    className={`flex items-center justify-center w-12 h-10 rounded-md border cursor-pointer transition-colors ${
+                      selectedDays.includes(value)
+                        ? 'border-blue-500 bg-blue-50 text-blue-700 font-semibold'
+                        : 'border-gray-200 hover:border-gray-300 text-gray-600'
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      className="sr-only"
+                      checked={selectedDays.includes(value)}
+                      onChange={(e) => handleDayToggle(value, e.target.checked)}
+                      disabled={loading}
+                    />
+                    <span className="text-sm">{label}</span>
+                  </label>
+                ))}
+              </div>
+              <p className="text-xs text-gray-500">
+                요일을 선택하면 월간 일정 자동 생성이 가능합니다
+              </p>
+            </div>
+          )}
 
           {/* 시간 (30분 단위, 06:00~20:00) */}
           <div className="space-y-2">
