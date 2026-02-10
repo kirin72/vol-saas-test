@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/dialog';
 import AssignmentDialog from '@/components/assignments/assignment-dialog';
 import AssignmentCalendar from '@/components/assignments/assignment-calendar';
+import { generateAssignmentPdf } from '@/lib/generate-assignment-pdf';
 
 // 미사 일정 타입
 interface MassSchedule {
@@ -28,6 +29,7 @@ interface MassSchedule {
   massTemplate: {
     id: string;
     massType: string;
+    vestmentColor: string | null;
     slots: Array<{
       id: string;
       requiredCount: number;
@@ -81,6 +83,9 @@ export default function AssignmentsPage() {
     roleName: string;
     roleColor: string;
   } | null>(null);
+
+  // PDF 생성 상태
+  const [generatingPdf, setGeneratingPdf] = useState(false);
 
   // 자동배정 다이얼로그 상태
   const [autoAssignDialogOpen, setAutoAssignDialogOpen] = useState(false);
@@ -252,6 +257,23 @@ export default function AssignmentsPage() {
     }
   };
 
+  // PDF 배정표 다운로드
+  const handleDownloadPdf = async () => {
+    setGeneratingPdf(true);
+    try {
+      await generateAssignmentPdf(
+        schedules,
+        currentDate.getFullYear(),
+        currentDate.getMonth() + 1
+      );
+    } catch (err) {
+      console.error('PDF 생성 오류:', err);
+      alert('PDF 생성 중 오류가 발생했습니다');
+    } finally {
+      setGeneratingPdf(false);
+    }
+  };
+
   // 전체 보기
   const handleShowAll = () => {
     setSelectedDate(null);
@@ -291,14 +313,19 @@ export default function AssignmentsPage() {
 
         {/* 뷰 모드 전환 버튼 + 자동배정 버튼 + 저장 버튼 */}
         <div className="flex gap-3 flex-shrink-0 flex-wrap">
-          {/* 봉사자 배정표 저장 (기능 추가 예정) */}
+          {/* 봉사자 배정표 PDF 다운로드 */}
           <Button
             variant="outline"
             size="default"
-            disabled
+            onClick={handleDownloadPdf}
+            disabled={generatingPdf || schedules.length === 0}
           >
-            <Download className="h-4 w-4 mr-2" />
-            배정표 저장
+            {generatingPdf ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Download className="h-4 w-4 mr-2" />
+            )}
+            {generatingPdf ? 'PDF 생성 중...' : '배정표 저장'}
           </Button>
 
           {/* 자동배정 버튼 (눈에 잘 띄게) */}
