@@ -8,7 +8,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ChevronLeft, ChevronRight, Loader2, X, UserPlus, Calendar, List, Sparkles, Download } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Loader2, X, UserPlus, Calendar, List, Sparkles, Download, Mail } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -18,7 +18,8 @@ import {
 } from '@/components/ui/dialog';
 import AssignmentDialog from '@/components/assignments/assignment-dialog';
 import AssignmentCalendar from '@/components/assignments/assignment-calendar';
-import { generateAssignmentPdf } from '@/lib/generate-assignment-pdf';
+import { generateAssignmentPdf, generateAssignmentPdfBlob } from '@/lib/generate-assignment-pdf';
+import { EmailSendDialog } from '@/components/email-send-dialog';
 
 // 미사 일정 타입
 interface MassSchedule {
@@ -86,6 +87,8 @@ export default function AssignmentsPage() {
 
   // PDF 생성 상태
   const [generatingPdf, setGeneratingPdf] = useState(false);
+  // 이메일 다이얼로그 열림 상태
+  const [emailDialogOpen, setEmailDialogOpen] = useState(false);
 
   // 자동배정 다이얼로그 상태
   const [autoAssignDialogOpen, setAutoAssignDialogOpen] = useState(false);
@@ -327,6 +330,17 @@ export default function AssignmentsPage() {
               <Download className="h-4 w-4 mr-2" />
             )}
             {generatingPdf ? 'PDF 생성 중...' : '배정표 저장'}
+          </Button>
+
+          {/* 배정표 이메일 발송 */}
+          <Button
+            variant="outline"
+            size="default"
+            onClick={() => setEmailDialogOpen(true)}
+            disabled={schedules.length === 0}
+          >
+            <Mail className="h-4 w-4 mr-2" />
+            이메일 발송
           </Button>
 
           {/* 자동배정 버튼 (눈에 잘 띄게) */}
@@ -702,6 +716,21 @@ export default function AssignmentsPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* 배정표 이메일 발송 다이얼로그 */}
+      <EmailSendDialog
+        open={emailDialogOpen}
+        onOpenChange={setEmailDialogOpen}
+        generatePdfBlob={() =>
+          generateAssignmentPdfBlob(
+            schedules,
+            currentDate.getFullYear(),
+            currentDate.getMonth() + 1
+          )
+        }
+        fileName={`${currentDate.getFullYear()}년_${currentDate.getMonth() + 1}월_봉사자_배정표.pdf`}
+        subject={`${currentDate.getFullYear()}년 ${currentDate.getMonth() + 1}월 봉사자 배정표`}
+      />
     </div>
   );
 }

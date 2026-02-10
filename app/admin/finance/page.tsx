@@ -7,13 +7,14 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { Plus, Download, Loader2 } from 'lucide-react';
+import { Plus, Download, Loader2, Mail } from 'lucide-react';
 import { MonthNavigator } from './_components/MonthNavigator';
 import { FinanceTable } from './_components/FinanceTable';
 import { FinanceSummary } from './_components/FinanceSummary';
 import { FinanceRecordModal } from './_components/FinanceRecordModal';
 import { ViewModeSelector, type ViewMode } from './_components/ViewModeSelector';
-import { generateFinancePdf } from '@/lib/generate-finance-pdf';
+import { generateFinancePdf, generateFinancePdfBlob } from '@/lib/generate-finance-pdf';
+import { EmailSendDialog } from '@/components/email-send-dialog';
 import {
   getMonthlyTransactions,
   getYearlyTransactions,
@@ -68,6 +69,9 @@ export default function FinancePage() {
 
   // 모달 상태
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // 이메일 발송 다이얼로그 상태
+  const [emailDialogOpen, setEmailDialogOpen] = useState(false);
 
   // 데이터 로드
   const loadData = async () => {
@@ -205,6 +209,16 @@ export default function FinancePage() {
             )}
             <span>{generatingPdf ? 'PDF 생성 중...' : '입출금내역 저장'}</span>
           </Button>
+          {/* 이메일 발송 버튼 (월별 보기에서만 활성) */}
+          <Button
+            variant="outline"
+            disabled={isPdfDisabled}
+            onClick={() => setEmailDialogOpen(true)}
+            className="flex items-center gap-2"
+          >
+            <Mail className="w-4 h-4" />
+            <span>이메일 발송</span>
+          </Button>
           {/* 입출금 기록 버튼 */}
           <Button onClick={() => setIsModalOpen(true)} className="flex items-center gap-2">
             <Plus className="w-4 h-4" />
@@ -295,6 +309,19 @@ export default function FinancePage() {
         onClose={() => setIsModalOpen(false)}
         onSuccess={handleModalSuccess}
         volunteers={volunteers}
+      />
+
+      {/* 이메일 발송 다이얼로그 */}
+      <EmailSendDialog
+        open={emailDialogOpen}
+        onOpenChange={setEmailDialogOpen}
+        generatePdfBlob={() => {
+          // 현재 월별 데이터로 PDF Blob 생성
+          const monthlySummary = summary as MonthlyFinanceSummary;
+          return generateFinancePdfBlob(transactions, monthlySummary, year, month);
+        }}
+        fileName={`${year}년_${month}월_입출금내역.pdf`}
+        subject={`${year}년 ${month}월 입출금내역`}
       />
     </div>
   );

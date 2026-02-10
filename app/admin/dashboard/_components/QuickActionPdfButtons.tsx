@@ -7,10 +7,11 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Download, Wallet, Loader2 } from 'lucide-react';
-import { generateAssignmentPdf } from '@/lib/generate-assignment-pdf';
-import { generateFinancePdf } from '@/lib/generate-finance-pdf';
+import { Download, Wallet, Loader2, Mail } from 'lucide-react';
+import { generateAssignmentPdf, generateAssignmentPdfBlob } from '@/lib/generate-assignment-pdf';
+import { generateFinancePdf, generateFinancePdfBlob } from '@/lib/generate-finance-pdf';
 import { getMonthlyTransactions } from '@/lib/actions/finance';
+import { EmailSendDialog } from '@/components/email-send-dialog';
 
 interface QuickActionPdfButtonsProps {
   // 현재 달 배정 데이터 존재 여부
@@ -31,6 +32,10 @@ export function QuickActionPdfButtons({
   // PDF 생성 로딩 상태
   const [generatingAssignment, setGeneratingAssignment] = useState(false);
   const [generatingFinance, setGeneratingFinance] = useState(false);
+
+  // 이메일 발송 다이얼로그 상태
+  const [assignmentEmailOpen, setAssignmentEmailOpen] = useState(false);
+  const [financeEmailOpen, setFinanceEmailOpen] = useState(false);
 
   // 배정표 PDF 다운로드
   const handleAssignmentPdf = async () => {
@@ -109,6 +114,59 @@ export function QuickActionPdfButtons({
           {generatingFinance ? 'PDF 생성 중...' : '입출금내역 저장'}
         </span>
       </Button>
+
+      {/* 배정표 이메일 발송 */}
+      <Button
+        variant="outline"
+        className="min-h-[72px] h-auto py-4 flex flex-col items-center gap-2"
+        disabled={!hasAssignments}
+        onClick={() => setAssignmentEmailOpen(true)}
+      >
+        <Mail className="h-6 w-6 shrink-0" />
+        <span className="text-sm text-center whitespace-nowrap">배정표 이메일</span>
+      </Button>
+
+      {/* 입출금내역 이메일 발송 */}
+      <Button
+        variant="outline"
+        className="min-h-[72px] h-auto py-4 flex flex-col items-center gap-2"
+        disabled={!hasFinanceData}
+        onClick={() => setFinanceEmailOpen(true)}
+      >
+        <Mail className="h-6 w-6 shrink-0" />
+        <span className="text-sm text-center whitespace-nowrap">입출금 이메일</span>
+      </Button>
+
+      {/* 배정표 이메일 다이얼로그 */}
+      <EmailSendDialog
+        open={assignmentEmailOpen}
+        onOpenChange={setAssignmentEmailOpen}
+        generatePdfBlob={async () => {
+          // API에서 배정 데이터 가져오기
+          const monthStr = `${year}-${String(month).padStart(2, '0')}`;
+          const response = await fetch(`/api/admin/assignments?month=${monthStr}`);
+          if (!response.ok) throw new Error('배정 데이터 조회 실패');
+          const schedules = await response.json();
+          return generateAssignmentPdfBlob(schedules, year, month);
+        }}
+        fileName={`${year}년_${month}월_봉사자_배정표.pdf`}
+        subject={`${year}년 ${month}월 봉사자 배정표`}
+      />
+
+      {/* 입출금 이메일 다이얼로그 */}
+      <EmailSendDialog
+        open={financeEmailOpen}
+        onOpenChange={setFinanceEmailOpen}
+        generatePdfBlob={async () => {
+          // Server Action으로 입출금 데이터 가져오기
+          const result = await getMonthlyTransactions(year, month);
+          if (!result.success) throw new Error(result.error);
+          const { transactions, summary } = result.data;
+          return generateFinancePdfBlob(transactions, summary, year, month);
+        }}
+        fileName={`${year}년_${month}월_입출금내역.pdf`}
+        subject={`${year}년 ${month}월 입출금내역`}
+      />
     </>
   );
 }

@@ -1,8 +1,21 @@
 /**
  * 입출금내역 PDF 생성 유틸리티
- * html2canvas로 HTML을 캡처한 후 jspdf로 PDF 변환하여 다운로드
+ * jspdf + jspdf-autotable로 직접 테이블 PDF 생성 (html2canvas 불필요)
  */
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import { registerKoreanFont } from '@/lib/pdf/load-korean-font';
 import type { Transaction, MonthlyFinanceSummary } from '@/types/finance';
+
+// hex 색상 → RGB 배열 변환 (예: '#2563eb' → [37, 99, 235])
+function hexToRgb(hex: string): [number, number, number] {
+  const h = hex.replace('#', '');
+  return [
+    parseInt(h.substring(0, 2), 16),
+    parseInt(h.substring(2, 4), 16),
+    parseInt(h.substring(4, 6), 16),
+  ];
+}
 
 // 날짜 포맷 (예: "02/01 (일)")
 const formatDate = (date: Date) => {
@@ -19,213 +32,156 @@ const formatAmount = (amount: number) => {
   return amount.toLocaleString('ko-KR') + '원';
 };
 
-// 입출금내역 HTML 전체 생성
-const buildFinanceSheetHtml = (
+// 색상 상수
+const BLUE = hexToRgb('#2563eb');      // 수입 색상
+const RED = hexToRgb('#dc2626');       // 지출 색상
+const GREEN = hexToRgb('#16a34a');     // 잔액 양수
+const GRAY = hexToRgb('#999999');      // 비활성 텍스트
+const HEADER_BG = hexToRgb('#e8e8e8'); // 헤더 배경
+const BF_BG = hexToRgb('#f8f9fa');     // 이월금 배경
+const TOTAL_BG = hexToRgb('#f0f4ff');  // 합계 배경
+const BALANCE_BG = hexToRgb('#e8f5e9'); // 잔액 배경
+
+/**
+ * 입출금내역 PDF 내부 생성 (jsPDF 인스턴스 반환)
+ * 다운로드와 Blob 생성 모두에서 재사용
+ */
+async function buildFinancePdf(
   transactions: Transaction[],
   summary: MonthlyFinanceSummary,
   year: number,
   month: number
-) => {
+): Promise<jsPDF> {
   const { balanceForward, totalIncome, totalExpense, balance } = summary;
 
-  // 이월금 행 생성 (이월금이 0이 아닐 때)
-  const balanceForwardRow = balanceForward !== 0
-    ? `
-      <tr style="background-color: #f8f9fa;">
-        <td style="border: 1px solid #333; padding: 8px 10px; text-align: center; font-size: 12px;">
-          ${String(month).padStart(2, '0')}/01
-        </td>
-        <td style="border: 1px solid #333; padding: 8px 10px; text-align: right; font-size: 12px; color: #2563eb; font-weight: 600;">
-          ${formatAmount(balanceForward)}
-        </td>
-        <td style="border: 1px solid #333; padding: 8px 10px; text-align: center; font-size: 12px; color: #999;">
-          -
-        </td>
-        <td style="border: 1px solid #333; padding: 8px 10px; font-size: 12px; color: #555;">
-          전월 이월
-        </td>
-      </tr>
-    `
-    : '';
+  // 1. jsPDF 인스턴스 생성 (A4 세로)
+  const doc = new jsPDF({
+    orientation: 'portrait',
+    unit: 'mm',
+    format: 'a4',
+  });
 
-  // 거래 내역 행 생성
-  const transactionRows = transactions
-    .map((tx) => {
-      const isIncome = tx.type === 'income';
-      const incomeCell = isIncome
-        ? `<span style="color: #2563eb; font-weight: 600;">${formatAmount(tx.amount)}</span>`
-        : '<span style="color: #999;">-</span>';
-      const expenseCell = !isIncome
-        ? `<span style="color: #dc2626; font-weight: 600;">${formatAmount(tx.amount)}</span>`
-        : '<span style="color: #999;">-</span>';
-      const userInfo = tx.user ? ` (${tx.user.name})` : '';
+  // 2. 한글 폰트 등록
+  await registerKoreanFont(doc);
 
-      return `
-        <tr>
-          <td style="border: 1px solid #333; padding: 8px 10px; text-align: center; font-size: 12px;">
-            ${formatDate(tx.date)}
-          </td>
-          <td style="border: 1px solid #333; padding: 8px 10px; text-align: right; font-size: 12px;">
-            ${incomeCell}
-          </td>
-          <td style="border: 1px solid #333; padding: 8px 10px; text-align: right; font-size: 12px;">
-            ${expenseCell}
-          </td>
-          <td style="border: 1px solid #333; padding: 8px 10px; font-size: 12px;">
-            ${tx.description}${userInfo}
-          </td>
-        </tr>
-      `;
-    })
-    .join('');
+  // 3. 제목
+  doc.setFontSize(20);
+  doc.setTextColor(17, 17, 17);
+  doc.text(`${year}년 ${month}월 입출금내역`, 105, 20, { align: 'center' });
 
-  // 합계 행
-  const summaryRows = `
-    <tr style="background-color: #f0f4ff; font-weight: bold;">
-      <td style="border: 1px solid #333; padding: 10px; text-align: center; font-size: 12px;">
-        합계
-      </td>
-      <td style="border: 1px solid #333; padding: 10px; text-align: right; font-size: 12px; color: #2563eb;">
-        ${formatAmount(totalIncome)}
-      </td>
-      <td style="border: 1px solid #333; padding: 10px; text-align: right; font-size: 12px; color: #dc2626;">
-        ${formatAmount(totalExpense)}
-      </td>
-      <td style="border: 1px solid #333; padding: 10px; font-size: 12px;">
-      </td>
-    </tr>
-    <tr style="background-color: #e8f5e9; font-weight: bold;">
-      <td colspan="3" style="border: 1px solid #333; padding: 10px; text-align: right; font-size: 13px;">
-        잔액 (이월 + 수입 - 지출)
-      </td>
-      <td style="border: 1px solid #333; padding: 10px; text-align: right; font-size: 14px; color: ${balance >= 0 ? '#16a34a' : '#dc2626'}; font-weight: bold;">
-        ${formatAmount(balance)}
-      </td>
-    </tr>
-  `;
+  // 4. 테이블 body 데이터 구성
+  const body: any[][] = [];
 
-  // 전체 HTML 조합 (결재란 없음)
-  return `
-    <div style="
-      font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
-      padding: 30px;
-      background: white;
-      width: 800px;
-      box-sizing: border-box;
-    ">
-      <!-- 제목 -->
-      <h1 style="
-        text-align: center;
-        font-size: 24px;
-        font-weight: bold;
-        margin-bottom: 24px;
-        color: #111;
-      ">
-        ${year}년 ${month}월 입출금내역
-      </h1>
-
-      <!-- 입출금 테이블 -->
-      <table style="width: 100%; border-collapse: collapse; border: 2px solid #333;">
-        <thead>
-          <tr>
-            <th style="border: 1px solid #333; padding: 10px 8px; background-color: #e8e8e8; font-size: 12px; text-align: center; width: 120px; font-weight: bold;">
-              날짜
-            </th>
-            <th style="border: 1px solid #333; padding: 10px 8px; background-color: #e8e8e8; font-size: 12px; text-align: center; width: 140px; font-weight: bold;">
-              수입
-            </th>
-            <th style="border: 1px solid #333; padding: 10px 8px; background-color: #e8e8e8; font-size: 12px; text-align: center; width: 140px; font-weight: bold;">
-              지출
-            </th>
-            <th style="border: 1px solid #333; padding: 10px 8px; background-color: #e8e8e8; font-size: 12px; text-align: center; font-weight: bold;">
-              적요
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          ${balanceForwardRow}
-          ${transactionRows}
-          ${summaryRows}
-        </tbody>
-      </table>
-
-      <!-- 하단 메모 -->
-      <div style="margin-top: 16px; text-align: right; font-size: 10px; color: #888;">
-        생성일: ${new Date().toLocaleDateString('ko-KR')}
-      </div>
-    </div>
-  `;
-};
-
-/**
- * html2canvas 모듈 동적 로드
- * webpack/turbopack의 ESM/CJS 호환성 차이를 자동 처리
- */
-async function loadHtml2Canvas(): Promise<(element: HTMLElement, options?: object) => Promise<HTMLCanvasElement>> {
-  const mod = await import('html2canvas');
-  // ESM default export 또는 CJS module.exports 대응
-  const fn = typeof mod.default === 'function'
-    ? mod.default
-    : typeof mod === 'function'
-      ? (mod as any)
-      : (mod as any).default?.default;
-  if (typeof fn !== 'function') {
-    throw new Error(
-      `html2canvas 모듈 로드 실패: default=${typeof mod.default}, mod=${typeof mod}, keys=${Object.keys(mod).join(',')}`
-    );
+  // 이월금 행 (0이 아닐 때만)
+  if (balanceForward !== 0) {
+    body.push([
+      { content: `${String(month).padStart(2, '0')}/01`, styles: { halign: 'center' as const } },
+      { content: formatAmount(balanceForward), styles: { halign: 'right' as const, textColor: BLUE, fontStyle: 'bold' as const } },
+      { content: '-', styles: { halign: 'center' as const, textColor: GRAY } },
+      { content: '전월 이월', styles: { textColor: [85, 85, 85] } },
+    ]);
   }
-  return fn as (element: HTMLElement, options?: object) => Promise<HTMLCanvasElement>;
-}
 
-/**
- * jsPDF 생성자 동적 로드
- * webpack/turbopack의 ESM/CJS 호환성 차이를 자동 처리
- */
-async function loadJsPDF(): Promise<any> {
-  const mod = await import('jspdf');
-  // named export 'jsPDF' 또는 default export 대응
-  const JsPDF = (mod as any).jsPDF
-    || (typeof mod.default === 'function' ? mod.default : null)
-    || (mod as any).default?.jsPDF;
-  if (typeof JsPDF !== 'function') {
-    throw new Error(
-      `jsPDF 모듈 로드 실패: jsPDF=${typeof (mod as any).jsPDF}, default=${typeof mod.default}, keys=${Object.keys(mod).join(',')}`
-    );
-  }
-  return JsPDF;
-}
+  // 거래 내역 행
+  transactions.forEach((tx) => {
+    const isIncome = tx.type === 'income';
+    const userInfo = tx.user ? ` (${tx.user.name})` : '';
 
-/**
- * 인쇄 다이얼로그 폴백
- * html2canvas/jspdf 실패 시 새 창에서 인쇄 다이얼로그를 띄움
- */
-function printFallback(html: string, title: string): void {
-  const printWindow = window.open('', '_blank');
-  if (!printWindow) {
-    alert('팝업이 차단되었습니다. 팝업 차단을 해제한 후 다시 시도해주세요.');
-    return;
-  }
-  printWindow.document.write(`
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="utf-8" />
-      <title>${title}</title>
-      <style>
-        @media print {
-          @page { size: portrait A4; margin: 10mm; }
-          body { margin: 0; }
-        }
-      </style>
-    </head>
-    <body>${html}</body>
-    </html>
-  `);
-  printWindow.document.close();
-  // 렌더링 완료 후 인쇄 다이얼로그 표시
-  printWindow.onload = () => {
-    printWindow.print();
-  };
+    body.push([
+      { content: formatDate(tx.date), styles: { halign: 'center' as const } },
+      // 수입 셀
+      isIncome
+        ? { content: formatAmount(tx.amount), styles: { halign: 'right' as const, textColor: BLUE, fontStyle: 'bold' as const } }
+        : { content: '-', styles: { halign: 'center' as const, textColor: GRAY } },
+      // 지출 셀
+      !isIncome
+        ? { content: formatAmount(tx.amount), styles: { halign: 'right' as const, textColor: RED, fontStyle: 'bold' as const } }
+        : { content: '-', styles: { halign: 'center' as const, textColor: GRAY } },
+      // 적요
+      { content: `${tx.description}${userInfo}` },
+    ]);
+  });
+
+  // 5. autoTable 호출
+  autoTable(doc, {
+    startY: 28,
+    // 테이블 헤더
+    head: [['날짜', '수입', '지출', '적요']],
+    body: body,
+    // 합계 + 잔액 행을 foot으로
+    foot: [
+      // 합계 행
+      [
+        { content: '합계', styles: { halign: 'center' as const, fontStyle: 'bold' as const } },
+        { content: formatAmount(totalIncome), styles: { halign: 'right' as const, textColor: BLUE, fontStyle: 'bold' as const } },
+        { content: formatAmount(totalExpense), styles: { halign: 'right' as const, textColor: RED, fontStyle: 'bold' as const } },
+        { content: '' },
+      ],
+      // 잔액 행
+      [
+        { content: '잔액 (이월 + 수입 - 지출)', colSpan: 3, styles: { halign: 'right' as const, fontStyle: 'bold' as const } },
+        {
+          content: formatAmount(balance),
+          styles: {
+            halign: 'right' as const,
+            fontStyle: 'bold' as const,
+            fontSize: 11,
+            textColor: balance >= 0 ? GREEN : RED,
+          },
+        },
+      ],
+    ],
+    // 테마 및 스타일
+    theme: 'grid',
+    styles: {
+      font: 'NotoSansKR',
+      fontSize: 9,
+      cellPadding: 3,
+      lineColor: [51, 51, 51],
+      lineWidth: 0.3,
+    },
+    headStyles: {
+      fillColor: HEADER_BG,
+      textColor: [0, 0, 0],
+      fontStyle: 'normal',
+      halign: 'center',
+      fontSize: 10,
+    },
+    footStyles: {
+      fillColor: TOTAL_BG,
+      textColor: [0, 0, 0],
+      fontStyle: 'normal',
+    },
+    // 컬럼별 스타일
+    columnStyles: {
+      0: { cellWidth: 30 },       // 날짜
+      1: { cellWidth: 35 },       // 수입
+      2: { cellWidth: 35 },       // 지출
+      3: { cellWidth: 'auto' },   // 적요
+    },
+    // 이월금 행 / 잔액 행 배경색 처리
+    didParseCell: (data) => {
+      // 이월금 행 (body의 첫 행이고 이월금이 있을 때)
+      if (data.section === 'body' && data.row.index === 0 && balanceForward !== 0) {
+        data.cell.styles.fillColor = BF_BG;
+      }
+      // 잔액 행 배경색 (foot의 두 번째 행)
+      if (data.section === 'foot' && data.row.index === 1) {
+        data.cell.styles.fillColor = BALANCE_BG;
+      }
+    },
+    // 매 페이지 헤더 반복
+    showHead: 'everyPage',
+    showFoot: 'lastPage',
+  });
+
+  // 6. 하단 생성일
+  const pageHeight = doc.internal.pageSize.getHeight();
+  doc.setFontSize(8);
+  doc.setTextColor(136, 136, 136);
+  doc.text(`생성일: ${new Date().toLocaleDateString('ko-KR')}`, 200, pageHeight - 10, { align: 'right' });
+
+  return doc;
 }
 
 /**
@@ -247,147 +203,30 @@ export async function generateFinancePdf(
     return;
   }
 
-  // HTML 미리 생성 (PDF 실패 시 인쇄 폴백에서도 사용)
-  const sheetHtml = buildFinanceSheetHtml(transactions, summary, year, month);
-
-  // 0. 라이브러리 동적 로드
-  let html2canvas: (element: HTMLElement, options?: object) => Promise<HTMLCanvasElement>;
-  let JsPDF: any;
-
   try {
-    html2canvas = await loadHtml2Canvas();
+    const doc = await buildFinancePdf(transactions, summary, year, month);
+    // PDF 파일 다운로드
+    doc.save(`${year}년_${month}월_입출금내역.pdf`);
   } catch (err) {
-    console.error('[PDF] html2canvas 로드 실패, 인쇄 폴백 사용:', err);
-    printFallback(sheetHtml, `${year}년 ${month}월 입출금내역`);
-    return;
+    console.error('[PDF] 입출금내역 PDF 생성 실패:', err);
+    alert(`PDF 생성에 실패했습니다.\n${err instanceof Error ? err.message : String(err)}`);
   }
+}
 
-  try {
-    JsPDF = await loadJsPDF();
-  } catch (err) {
-    console.error('[PDF] jsPDF 로드 실패, 인쇄 폴백 사용:', err);
-    printFallback(sheetHtml, `${year}년 ${month}월 입출금내역`);
-    return;
-  }
-
-  // 1. 숨겨진 div 생성
-  //    off-screen 배치 (opacity:0은 html2canvas가 빈 이미지로 캡처할 수 있음)
-  const container = document.createElement('div');
-  container.style.cssText = `
-    position: absolute;
-    left: -9999px;
-    top: 0;
-    width: 900px;
-    background: white;
-  `;
-  container.innerHTML = sheetHtml;
-  document.body.appendChild(container);
-
-  try {
-    // 브라우저 레이아웃 + 페인트 완료 대기
-    await new Promise((resolve) => {
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          setTimeout(() => resolve(undefined), 100);
-        });
-      });
-    });
-
-    // 2. html2canvas로 캡처
-    const target = container.firstElementChild as HTMLElement;
-    if (!target) {
-      throw new Error('캡처 대상 요소를 찾을 수 없습니다.');
-    }
-
-    // 요소 크기 확인
-    const rect = target.getBoundingClientRect();
-    console.log('[PDF] 캡처 대상 크기:', { width: rect.width, height: rect.height, scrollW: target.scrollWidth, scrollH: target.scrollHeight });
-    if (rect.width === 0 || rect.height === 0) {
-      throw new Error(`요소 크기가 0입니다: ${rect.width}x${rect.height}`);
-    }
-
-    let canvas: HTMLCanvasElement;
-    try {
-      canvas = await html2canvas(target, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: '#ffffff',
-        logging: false,
-      });
-    } catch (err) {
-      throw new Error(`html2canvas 캡처 실패: ${err instanceof Error ? err.message : err}`);
-    }
-
-    // 캔버스 크기 확인
-    console.log('[PDF] 캔버스 크기:', { width: canvas.width, height: canvas.height });
-    if (canvas.width === 0 || canvas.height === 0) {
-      throw new Error(`캔버스 크기가 0입니다: ${canvas.width}x${canvas.height}`);
-    }
-
-    // 3. jsPDF로 PDF 생성 (A4 세로)
-    const pdf = new JsPDF({
-      orientation: 'portrait',
-      unit: 'mm',
-      format: 'a4',
-    });
-
-    // A4 세로 크기: 210mm x 297mm
-    const pageWidth = 210;
-    const pageHeight = 297;
-    const margin = 10;
-    const contentWidth = pageWidth - margin * 2;
-
-    // 캡처 이미지의 비율 계산
-    const imgWidth = contentWidth;
-    const imgHeight = (canvas.height * contentWidth) / canvas.width;
-
-    // 캔버스를 PNG 데이터 URL로 변환
-    const imgData = canvas.toDataURL('image/png');
-
-    // PDF에 이미지 삽입
-    if (imgHeight <= pageHeight - margin * 2) {
-      // 한 페이지에 들어가는 경우
-      pdf.addImage(imgData, 'PNG', margin, margin, imgWidth, imgHeight);
-    } else {
-      // 여러 페이지로 분할
-      let remainingHeight = imgHeight;
-      let position = 0;
-
-      while (remainingHeight > 0) {
-        if (position > 0) {
-          pdf.addPage();
-        }
-
-        pdf.addImage(
-          imgData,
-          'PNG',
-          margin,
-          margin - position,
-          imgWidth,
-          imgHeight
-        );
-
-        position += pageHeight - margin * 2;
-        remainingHeight -= pageHeight - margin * 2;
-      }
-    }
-
-    // 4. PDF 다운로드
-    pdf.save(`${year}년_${month}월_입출금내역.pdf`);
-  } catch (err) {
-    // PDF 생성 실패 시 인쇄 폴백 사용
-    console.error('[PDF] PDF 생성 실패, 인쇄 폴백 사용:', err);
-    const message = err instanceof Error ? err.message : String(err);
-    const usePrint = confirm(
-      `PDF 자동 다운로드에 실패했습니다.\n(${message})\n\n인쇄 다이얼로그를 통해 PDF로 저장하시겠습니까?\n(인쇄 다이얼로그에서 "PDF로 저장"을 선택해 주세요)`
-    );
-    if (usePrint) {
-      printFallback(sheetHtml, `${year}년 ${month}월 입출금내역`);
-    }
-  } finally {
-    // 5. 임시 div 정리
-    if (container.parentNode) {
-      document.body.removeChild(container);
-    }
-  }
+/**
+ * 입출금내역 PDF를 Blob으로 반환 (이메일 전송용)
+ * @param transactions 거래 내역 배열
+ * @param summary 월별 요약 정보
+ * @param year 연도
+ * @param month 월
+ * @returns PDF Blob
+ */
+export async function generateFinancePdfBlob(
+  transactions: Transaction[],
+  summary: MonthlyFinanceSummary,
+  year: number,
+  month: number
+): Promise<Blob> {
+  const doc = await buildFinancePdf(transactions, summary, year, month);
+  return doc.output('blob');
 }
