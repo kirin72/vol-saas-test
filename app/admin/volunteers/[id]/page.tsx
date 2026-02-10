@@ -23,6 +23,7 @@ interface VolunteerRole {
   id: string;
   name: string;
   color: string;
+  isActive: boolean;
 }
 
 // 봉사자 타입
@@ -132,6 +133,9 @@ export default function VolunteerDetailPage() {
     }
     fetchData();
   }, [volunteerId, reset]);
+
+  // 활성 역할만 필터링
+  const activeRoles = roles.filter((r) => r.isActive);
 
   // 역할 선택/해제
   const toggleRole = (roleId: string) => {
@@ -388,13 +392,13 @@ export default function VolunteerDetailPage() {
             {/* 봉사 역할 선택 */}
             <div className="space-y-2">
               <Label>봉사 역할 * (최소 1개 선택)</Label>
-              {roles.length === 0 ? (
+              {activeRoles.length === 0 ? (
                 <p className="text-sm text-red-600">
-                  먼저 역할을 생성해주세요
+                  활성화된 역할이 없습니다. 역할 관리에서 역할을 활성화해주세요.
                 </p>
               ) : (
                 <div className="space-y-2 border rounded-md p-4">
-                  {roles.map((role) => (
+                  {activeRoles.map((role) => (
                     <div key={role.id} className="flex items-center">
                       <Checkbox
                         id={`role-${role.id}`}

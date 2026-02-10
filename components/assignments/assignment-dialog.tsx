@@ -13,9 +13,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Search, User, UserPlus } from 'lucide-react';
+import { Loader2, User, UserPlus } from 'lucide-react';
 import Link from 'next/link';
 
 interface AssignmentDialogProps {
@@ -57,8 +56,6 @@ export default function AssignmentDialog({
 }: AssignmentDialogProps) {
   const [loading, setLoading] = useState(false);
   const [volunteers, setVolunteers] = useState<Volunteer[]>([]);
-  const [filteredVolunteers, setFilteredVolunteers] = useState<Volunteer[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
   const [selectedVolunteer, setSelectedVolunteer] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -67,7 +64,6 @@ export default function AssignmentDialog({
   useEffect(() => {
     if (open) {
       fetchVolunteersAndStats();
-      setSearchQuery('');
       setSelectedVolunteer(null);
       setError('');
     }
@@ -109,40 +105,12 @@ export default function AssignmentDialog({
       });
 
       setVolunteers(volunteersWithStats);
-      setFilteredVolunteers(volunteersWithStats);
     } catch (err: any) {
       setError(err.message);
     } finally {
       setLoading(false);
     }
   };
-
-  // 검색 처리 (정렬 유지)
-  useEffect(() => {
-    if (!searchQuery.trim()) {
-      setFilteredVolunteers(volunteers);
-      return;
-    }
-
-    const query = searchQuery.toLowerCase();
-    const filtered = volunteers.filter(
-      (v) =>
-        v.name.toLowerCase().includes(query) ||
-        (v.baptismalName && v.baptismalName.toLowerCase().includes(query))
-    );
-
-    // 검색 결과도 배정 횟수 적은 순으로 정렬 유지
-    filtered.sort((a, b) => {
-      const countA = a.assignmentCount || 0;
-      const countB = b.assignmentCount || 0;
-      if (countA !== countB) {
-        return countA - countB;
-      }
-      return a.name.localeCompare(b.name);
-    });
-
-    setFilteredVolunteers(filtered);
-  }, [searchQuery, volunteers]);
 
   // 불가요일 경고 확인
   const checkUnavailableWarning = (): boolean => {
@@ -227,44 +195,28 @@ export default function AssignmentDialog({
         </DialogHeader>
 
         <div className="space-y-4 flex-1 overflow-hidden flex flex-col">
-          {/* 검색 */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <Input
-              type="text"
-              placeholder="이름 또는 세례명으로 검색"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9"
-            />
-          </div>
-
           {/* 봉사자 목록 */}
           <div className="flex-1 overflow-y-auto border rounded-md">
             {loading ? (
               <div className="flex justify-center items-center py-12">
                 <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
               </div>
-            ) : filteredVolunteers.length === 0 ? (
+            ) : volunteers.length === 0 ? (
               <div className="text-center py-12 space-y-4">
                 <p className="text-gray-500">
-                  {searchQuery
-                    ? '검색 결과가 없습니다'
-                    : '이 역할을 할 수 있는 봉사자가 없습니다'}
+                  이 역할을 할 수 있는 봉사자가 없습니다
                 </p>
-                {/* 봉사자가 아예 없는 경우 등록 페이지로 이동 버튼 */}
-                {!searchQuery && (
-                  <Link href="/admin/volunteers/new">
-                    <Button variant="outline" size="sm">
-                      <UserPlus className="h-4 w-4 mr-2" />
-                      봉사자 입력
-                    </Button>
-                  </Link>
-                )}
+                {/* 봉사자가 없는 경우 등록 페이지로 이동 버튼 */}
+                <Link href="/admin/volunteers/new">
+                  <Button variant="outline" size="sm">
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    봉사자 입력
+                  </Button>
+                </Link>
               </div>
             ) : (
               <div className="divide-y">
-                {filteredVolunteers.map((volunteer) => (
+                {volunteers.map((volunteer) => (
                   <button
                     key={volunteer.id}
                     onClick={() => setSelectedVolunteer(volunteer.id)}
