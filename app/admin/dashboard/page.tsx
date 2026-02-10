@@ -7,11 +7,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Users, CalendarCheck, CheckCircle, TrendingUp, Download, Wallet } from 'lucide-react';
+import { Users, CalendarCheck, CheckCircle, TrendingUp } from 'lucide-react';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { redirect } from 'next/navigation';
 import { DesktopTable, MobileCardList, MobileCard, MobileCardHeader, MobileCardRow } from '@/components/ui/responsive-table';
+import { QuickActionPdfButtons } from './_components/QuickActionPdfButtons';
 
 // 통계 데이터 가져오기 함수 (직접 DB 쿼리)
 async function getStats(organizationId: string) {
@@ -151,6 +152,47 @@ async function getStats(organizationId: string) {
       };
     });
 
+    // 6. 이번 달 입출금 데이터 여부 확인
+    const financeTransactionCount = await prisma.transaction.count({
+      where: {
+        organizationId,
+        date: {
+          gte: startOfMonth,
+          lte: endOfMonth,
+        },
+      },
+    });
+
+    // 전월 이월금 계산 (거래 없어도 이월금이 있으면 PDF 가능)
+    const previousMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+    const previousTransactions = await prisma.transaction.findMany({
+      where: {
+        organizationId,
+        date: {
+          lte: previousMonthEnd,
+        },
+        type: {
+          not: 'balance_forward',
+        },
+      },
+      select: {
+        type: true,
+        amount: true,
+      },
+    });
+
+    let balanceForward = 0;
+    for (const tx of previousTransactions) {
+      if (tx.type === 'income') {
+        balanceForward += tx.amount;
+      } else if (tx.type === 'expense') {
+        balanceForward -= tx.amount;
+      }
+    }
+
+    // 입출금 데이터 존재 여부 (거래 내역 또는 이월금이 있으면 true)
+    const hasFinanceData = financeTransactionCount > 0 || balanceForward !== 0;
+
     // 배정된 고유 봉사자 수 (1회 이상 배정된 봉사자)
     const assignedVolunteerCount = volunteerStats.filter((v) => v.assignmentCount > 0).length;
 
@@ -173,6 +215,7 @@ async function getStats(organizationId: string) {
       totalRequiredSlots,
       volunteerStats,
       distribution,
+      hasFinanceData,
     };
   } catch (error) {
     console.error('통계 조회 오류:', error);
@@ -186,6 +229,7 @@ async function getStats(organizationId: string) {
       totalRequiredSlots: 0,
       volunteerStats: [],
       distribution: { zero: 0, upToThree: 0, fourToFive: 0, sixToSeven: 0, eightPlus: 0 },
+      hasFinanceData: false,
     };
   }
 }
@@ -206,6 +250,9 @@ export default async function AdminDashboardPage() {
 
   // 통계 데이터 가져오기
   const stats = await getStats(session.user.organizationId);
+
+  // 현재 년/월 (빠른작업 PDF 버튼에 전달)
+  const now = new Date();
 
   return (
     <div className="space-y-8">
@@ -328,25 +375,13 @@ export default async function AdminDashboardPage() {
               </Link>
             </Button>
 
-            {/* 봉사자 배정표 저장 (기능 추가 예정) */}
-            <Button
-              variant="outline"
-              className="min-h-[72px] h-auto py-4 flex flex-col items-center gap-2"
-              disabled
-            >
-              <Download className="h-6 w-6 shrink-0" />
-              <span className="text-sm text-center whitespace-nowrap">배정표 저장</span>
-            </Button>
-
-            {/* 입출금내역 저장 (기능 추가 예정) */}
-            <Button
-              variant="outline"
-              className="min-h-[72px] h-auto py-4 flex flex-col items-center gap-2"
-              disabled
-            >
-              <Wallet className="h-6 w-6 shrink-0" />
-              <span className="text-sm text-center whitespace-nowrap">입출금내역 저장</span>
-            </Button>
+            {/* 봉사자 배정표 저장 / 입출금내역 저장 (PDF 다운로드) */}
+            <QuickActionPdfButtons
+              hasAssignments={stats.assignedSlots > 0}
+              hasFinanceData={stats.hasFinanceData}
+              year={now.getFullYear()}
+              month={now.getMonth() + 1}
+            />
           </div>
         </CardContent>
       </Card>

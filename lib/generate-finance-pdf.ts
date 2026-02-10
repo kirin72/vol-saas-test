@@ -2,8 +2,6 @@
  * 입출금내역 PDF 생성 유틸리티
  * html2canvas로 HTML을 캡처한 후 jspdf로 PDF 변환하여 다운로드
  */
-import html2canvas from 'html2canvas';
-import { jsPDF } from 'jspdf';
 import type { Transaction, MonthlyFinanceSummary } from '@/types/finance';
 
 // 날짜 포맷 (예: "02/01 (일)")
@@ -178,6 +176,11 @@ export async function generateFinancePdf(
     return;
   }
 
+  // 0. 라이브러리 동적 import (Next.js ESM/CJS 호환)
+  const html2canvasModule = await import('html2canvas');
+  const html2canvas = html2canvasModule.default;
+  const { jsPDF } = await import('jspdf');
+
   // 1. 숨겨진 div 생성 (html2canvas가 캡처할 수 있도록 absolute 위치)
   const container = document.createElement('div');
   container.style.position = 'absolute';
@@ -189,10 +192,14 @@ export async function generateFinancePdf(
 
   try {
     // 브라우저 렌더링 대기
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    await new Promise((resolve) => setTimeout(resolve, 200));
 
     // 2. html2canvas로 캡처 (2배 스케일로 고화질)
     const target = container.firstElementChild as HTMLElement;
+    if (!target) {
+      throw new Error('캡처 대상 요소를 찾을 수 없습니다.');
+    }
+
     const canvas = await html2canvas(target, {
       scale: 2,
       useCORS: true,
