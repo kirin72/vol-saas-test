@@ -1,0 +1,207 @@
+/**
+ * 성당 디렉토리 유틸리티
+ * 한글 미사시간 문자열 파싱 + MassTemplate 생성 데이터 변환
+ */
+
+import { MassType } from '@prisma/client';
+
+// 파싱된 미사시간 하나의 구조
+export interface ParsedMassTime {
+  time: string; // "HH:mm" 형식 (예: "10:00", "18:00")
+  label: string; // 원본 텍스트 (예: "오전 10시")
+}
+
+// MassTemplate 생성에 필요한 데이터 구조
+export interface TemplateCreateData {
+  name: string; // 템플릿 이름 (예: "주일 오전 10시 미사")
+  massType: MassType; // SUNDAY, WEEKDAY, SATURDAY
+  dayOfWeek: string[]; // 반복 요일 배열
+  time: string; // "HH:mm" 형식
+}
+
+// 기본 봉사 역할 9개 정의
+export const DEFAULT_VOLUNTEER_ROLES = [
+  { name: '1독서', description: '제1독서 봉독', color: '#3B82F6', sortOrder: 1 },
+  { name: '2독서', description: '제2독서 봉독', color: '#60A5FA', sortOrder: 2 },
+  { name: '해설', description: '미사 해설', color: '#10B981', sortOrder: 3 },
+  { name: '반주', description: '반주 봉사', color: '#8B5CF6', sortOrder: 4 },
+  { name: '복사', description: '복사 봉사', color: '#F59E0B', sortOrder: 5 },
+  { name: '제대', description: '제대 봉사', color: '#EF4444', sortOrder: 6 },
+  { name: '성체분배', description: '성체분배 봉사', color: '#EC4899', sortOrder: 7 },
+  { name: '주차', description: '주차 안내 봉사', color: '#6B7280', sortOrder: 8 },
+  { name: '운전', description: '차량 운전 봉사', color: '#14B8A6', sortOrder: 9 },
+] as const;
+
+/**
+ * 한글 시간 문자열에서 개별 시간을 추출하여 HH:mm 형식으로 변환
+ * 지원 형식:
+ *   - "오전 10시" → "10:00"
+ *   - "오후 6시" → "18:00"
+ *   - "오전 6시 30분" → "06:30"
+ *   - "오후 12시" → "12:00"
+ *   - "10:00" → "10:00" (이미 HH:mm 형식)
+ *   - "새벽 5시" → "05:00"
+ */
+export function parseMassTimes(massTimeStr: string): ParsedMassTime[] {
+  // null/빈 문자열 처리
+  if (!massTimeStr || massTimeStr.trim() === '') return [];
+
+  const results: ParsedMassTime[] = [];
+
+  // 줄바꿈으로 분리 (여러 줄의 미사시간 정보 - 예: "주일: 오전 10시\n토요: 오후 6시")
+  const lines = massTimeStr.split('\n');
+
+  for (const line of lines) {
+    // 각 줄에서 시간 부분만 추출 (콜론 뒤 부분)
+    const timePart = line.includes(':') && !line.match(/^\d{1,2}:\d{2}/)
+      ? line.split(':').slice(1).join(':') // "주일: 오전10시" → "오전10시"
+      : line;
+
+    // 쉼표나 슬래시로 구분된 다중 시간 처리
+    const timeSegments = timePart.split(/[,/]/).map(s => s.trim()).filter(Boolean);
+
+    for (const segment of timeSegments) {
+      const parsed = parseKoreanTime(segment);
+      if (parsed) {
+        // 중복 시간 제거
+        if (!results.some(r => r.time === parsed.time)) {
+          results.push(parsed);
+        }
+      }
+    }
+  }
+
+  return results;
+}
+
+/**
+ * 단일 한글 시간 문자열을 파싱
+ * 예: "오전 10시" → { time: "10:00", label: "오전 10시" }
+ *     "오후 6시 30분" → { time: "18:30", label: "오후 6시 30분" }
+ *     "10:00" → { time: "10:00", label: "10:00" }
+ */
+function parseKoreanTime(str: string): ParsedMassTime | null {
+  const trimmed = str.trim();
+  if (!trimmed) return null;
+
+  // 이미 HH:mm 형식인 경우 (예: "10:00", "06:30")
+  const hhmmMatch = trimmed.match(/^(\d{1,2}):(\d{2})$/);
+  if (hhmmMatch) {
+    const h = parseInt(hhmmMatch[1]);
+    const m = parseInt(hhmmMatch[2]);
+    if (h >= 0 && h <= 23 && m >= 0 && m <= 59) {
+      return {
+        time: `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`,
+        label: trimmed,
+      };
+    }
+  }
+
+  // 한글 시간 형식: (오전|오후|새벽|저녁|밤) X시 (Y분)
+  const koreanMatch = trimmed.match(
+    /(오전|오후|새벽|저녁|밤|낮)?\s*(\d{1,2})\s*시\s*(?:(\d{1,2})\s*분)?/
+  );
+
+  if (koreanMatch) {
+    const period = koreanMatch[1] || ''; // 오전/오후/새벽 등
+    let hour = parseInt(koreanMatch[2]); // 시
+    const minute = koreanMatch[3] ? parseInt(koreanMatch[3]) : 0; // 분
+
+    // 오후/저녁/밤: 12시간제 → 24시간제 변환
+    if (['오후', '저녁', '밤'].includes(period)) {
+      if (hour < 12) hour += 12; // 오후 1시→13, 오후 6시→18
+    }
+    // 새벽: 그대로 (새벽 5시 = 05:00)
+    // 오전: 그대로 (오전 10시 = 10:00)
+    // period 없는 경우: 12시간제 기준으로 판단 (7~11 → 오전, 그 외 → 그대로)
+
+    // 유효 범위 검사
+    if (hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59) {
+      return {
+        time: `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`,
+        label: trimmed,
+      };
+    }
+  }
+
+  // 파싱 불가 → null 반환 (에러 없이 스킵)
+  return null;
+}
+
+/**
+ * 파싱된 미사시간 → MassTemplate 생성 데이터로 변환
+ * - sundayMass → MassType.SUNDAY, dayOfWeek: ["SUNDAY"]
+ * - weekdayMass → MassType.WEEKDAY, dayOfWeek: ["MONDAY"~"FRIDAY"]
+ *   (토요일 포함된 경우 별도 MassType.SATURDAY 생성)
+ */
+export function buildTemplateData(
+  sundayMass: string | null,
+  weekdayMass: string | null,
+  orgName: string,
+): TemplateCreateData[] {
+  const templates: TemplateCreateData[] = [];
+
+  // 주일미사 파싱
+  if (sundayMass) {
+    const sundayTimes = parseMassTimes(sundayMass);
+    for (const t of sundayTimes) {
+      templates.push({
+        name: `주일 ${t.label || t.time} 미사`,
+        massType: 'SUNDAY' as MassType,
+        dayOfWeek: ['SUNDAY'],
+        time: t.time,
+      });
+    }
+  }
+
+  // 평일미사 파싱
+  if (weekdayMass) {
+    const weekdayTimes = parseMassTimes(weekdayMass);
+    for (const t of weekdayTimes) {
+      templates.push({
+        name: `평일 ${t.label || t.time} 미사`,
+        massType: 'WEEKDAY' as MassType,
+        dayOfWeek: ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY'],
+        time: t.time,
+      });
+    }
+  }
+
+  return templates;
+}
+
+/**
+ * 특정 월에서 특정 요일에 해당하는 모든 날짜를 반환
+ * (generate-schedules/route.ts의 로직 재사용)
+ */
+export function getDatesForDayOfWeek(year: number, month: number, dayOfWeek: number): Date[] {
+  const dates: Date[] = [];
+  // 해당 월의 첫째 날
+  const firstDay = new Date(year, month - 1, 1);
+  // 해당 월의 마지막 날
+  const lastDay = new Date(year, month, 0);
+
+  // 첫 번째 해당 요일 찾기
+  const current = new Date(firstDay);
+  const diff = (dayOfWeek - current.getDay() + 7) % 7;
+  current.setDate(current.getDate() + diff);
+
+  // 해당 월 내의 모든 해당 요일 수집
+  while (current <= lastDay) {
+    dates.push(new Date(current));
+    current.setDate(current.getDate() + 7);
+  }
+
+  return dates;
+}
+
+// 요일 문자열 → Date.getDay() 숫자 변환
+export const dayOfWeekToNumber: Record<string, number> = {
+  SUNDAY: 0,
+  MONDAY: 1,
+  TUESDAY: 2,
+  WEDNESDAY: 3,
+  THURSDAY: 4,
+  FRIDAY: 5,
+  SATURDAY: 6,
+};

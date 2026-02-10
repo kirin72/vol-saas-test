@@ -426,7 +426,25 @@ model Transaction {
 }
 
 // ============================================
-// 15. Feedback (피드백/리포트)
+// 15. ChurchDirectory (전국 성당 디렉토리)
+// ============================================
+model ChurchDirectory {
+  id          String   @id @default(cuid())
+  diocese     String   // 교구명 (예: "서울대교구")
+  name        String   // 성당명 (예: "명동성당")
+  address     String?  // 주소
+  phone       String?  // 전화번호
+  sundayMass  String?  // 주일미사 원본 텍스트
+  weekdayMass String?  // 평일미사 원본 텍스트
+  createdAt   DateTime @default(now())
+
+  @@index([name])
+  @@index([diocese])
+  @@map("church_directories")
+}
+
+// ============================================
+// 16. Feedback (피드백/리포트)
 // ============================================
 model Feedback {
   id             String    @id @default(cuid())

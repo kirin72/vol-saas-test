@@ -1,15 +1,27 @@
 /**
  * 조직 회원가입 페이지
  * 조직(Organization) + 관리자 계정(User) 동시 생성
+ * 성당 디렉토리 검색 + 자동 매칭 지원
  */
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
+
+// 성당 디렉토리 검색 결과 타입
+interface ChurchDirectoryResult {
+  id: string;
+  diocese: string;
+  name: string;
+  address: string | null;
+  phone: string | null;
+  sundayMass: string | null;
+  weekdayMass: string | null;
+}
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -24,6 +36,15 @@ export default function RegisterPage() {
   const [orgEmail, setOrgEmail] = useState('');
   const [orgAddress, setOrgAddress] = useState('');
 
+  // 성당 디렉토리 매칭 관련 상태
+  const [churchDirectoryId, setChurchDirectoryId] = useState<string | null>(null);
+  const [searchResults, setSearchResults] = useState<ChurchDirectoryResult[]>([]);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [isMatched, setIsMatched] = useState(false); // 매칭 성공 여부
+  const [searching, setSearching] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // 관리자 정보
   const [adminName, setAdminName] = useState('');
   const [adminEmail, setAdminEmail] = useState('');
@@ -31,7 +52,42 @@ export default function RegisterPage() {
   const [adminPassword, setAdminPassword] = useState('');
   const [adminPasswordConfirm, setAdminPasswordConfirm] = useState('');
 
-  // 조직명에서 자동으로 slug 생성
+  // 드롭다운 외부 클릭 시 닫기
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setShowDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // 성당 디렉토리 검색 (debounced 300ms)
+  const searchChurchDirectory = useCallback(async (query: string) => {
+    // 2글자 미만이면 검색하지 않음
+    if (query.length < 2) {
+      setSearchResults([]);
+      setShowDropdown(false);
+      return;
+    }
+
+    setSearching(true);
+    try {
+      const res = await fetch(`/api/church-directory/search?q=${encodeURIComponent(query)}`);
+      if (res.ok) {
+        const results: ChurchDirectoryResult[] = await res.json();
+        setSearchResults(results);
+        setShowDropdown(results.length > 0);
+      }
+    } catch {
+      // 검색 실패는 무시 (네트워크 오류 등)
+    } finally {
+      setSearching(false);
+    }
+  }, []);
+
+  // 조직명에서 자동으로 slug 생성 + 성당 검색
   const handleOrgNameChange = (value: string) => {
     setOrgName(value);
     // 한글 → 영문 변환은 추후 구현, 일단 소문자 + 하이픈으로 변환
@@ -40,6 +96,44 @@ export default function RegisterPage() {
       .replace(/\s+/g, '-')
       .replace(/[^a-z0-9-]/g, '');
     setOrgSlug(slug);
+
+    // 매칭 상태 초기화 (직접 타이핑 시)
+    if (isMatched) {
+      setIsMatched(false);
+      setChurchDirectoryId(null);
+    }
+
+    // debounced 성당 검색
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+    searchTimeoutRef.current = setTimeout(() => {
+      searchChurchDirectory(value);
+    }, 300);
+  };
+
+  // 성당 선택 시 자동 입력
+  const handleSelectChurch = (church: ChurchDirectoryResult) => {
+    // 성당 이름 설정
+    setOrgName(church.name);
+    setChurchDirectoryId(church.id);
+    setIsMatched(true);
+    setShowDropdown(false);
+
+    // slug 자동 생성
+    const slug = church.name
+      .toLowerCase()
+      .replace(/\s+/g, '-')
+      .replace(/[^a-z0-9-]/g, '');
+    setOrgSlug(slug);
+
+    // 주소와 전화번호 자동 입력 (데이터가 있는 경우만)
+    if (church.address) {
+      setOrgAddress(church.address);
+    }
+    if (church.phone) {
+      setOrgPhone(church.phone);
+    }
   };
 
   // 회원가입 처리
@@ -79,6 +173,8 @@ export default function RegisterPage() {
             phone: adminPhone,
             password: adminPassword,
           },
+          // 성당 디렉토리 매칭 ID (매칭된 경우에만)
+          churchDirectoryId: churchDirectoryId || undefined,
         }),
       });
 
@@ -115,18 +211,56 @@ export default function RegisterPage() {
             <div>
               <h3 className="text-lg font-semibold mb-4">조직 정보</h3>
               <div className="space-y-4">
-                <div className="space-y-2">
+                {/* 본당 이름 + 자동완성 드롭다운 */}
+                <div className="space-y-2 relative" ref={dropdownRef}>
                   <Label htmlFor="orgName">본당 이름 *</Label>
-                  <Input
-                    id="orgName"
-                    type="text"
-                    placeholder="명동성당"
-                    value={orgName}
-                    onChange={(e) => handleOrgNameChange(e.target.value)}
-                    required
-                    disabled={loading}
-                  />
+                  <div className="relative">
+                    <Input
+                      id="orgName"
+                      type="text"
+                      placeholder="명동성당"
+                      value={orgName}
+                      onChange={(e) => handleOrgNameChange(e.target.value)}
+                      required
+                      disabled={loading}
+                      className={isMatched ? 'border-green-400 bg-green-50' : ''}
+                      autoComplete="off"
+                    />
+                    {/* 검색 중 표시 */}
+                    {searching && (
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                        <div className="w-4 h-4 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin" />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 자동완성 드롭다운 */}
+                  {showDropdown && searchResults.length > 0 && (
+                    <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                      {searchResults.map((church) => (
+                        <button
+                          key={church.id}
+                          type="button"
+                          className="w-full px-4 py-3 text-left hover:bg-blue-50 border-b border-gray-100 last:border-b-0 transition-colors"
+                          onClick={() => handleSelectChurch(church)}
+                        >
+                          <div className="font-medium text-gray-900">{church.name}</div>
+                          <div className="text-xs text-gray-500 mt-0.5">
+                            {church.diocese}
+                            {church.address && ` · ${church.address.slice(0, 30)}...`}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
+
+                {/* 성당 매칭 성공 메시지 */}
+                {isMatched && (
+                  <div className="bg-green-50 border border-green-200 rounded-md p-3 text-sm text-green-700">
+                    해당 성당이 데이터베이스에 존재합니다. 미사시간과 주소 연락처를 자동으로 입력합니다.
+                  </div>
+                )}
 
                 <div className="space-y-2">
                   <Label htmlFor="orgGroupName">조직이름</Label>
@@ -166,6 +300,7 @@ export default function RegisterPage() {
                       value={orgPhone}
                       onChange={(e) => setOrgPhone(e.target.value)}
                       disabled={loading}
+                      className={isMatched && orgPhone ? 'border-green-300 bg-green-50/50' : ''}
                     />
                   </div>
 
@@ -192,6 +327,7 @@ export default function RegisterPage() {
                     value={orgAddress}
                     onChange={(e) => setOrgAddress(e.target.value)}
                     disabled={loading}
+                    className={isMatched && orgAddress ? 'border-green-300 bg-green-50/50' : ''}
                   />
                 </div>
               </div>
