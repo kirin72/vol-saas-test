@@ -254,6 +254,7 @@ model MassTemplate {
   massType       MassType
   dayOfWeek      Json?      // 반복 요일 배열 (예: ["MONDAY","WEDNESDAY","FRIDAY"])
   time           String     // "10:00"
+  vestmentColor  String?    // 제의 색상 (WHITE, RED, GREEN, PURPLE, ROSE, BLACK, GOLD)
   isActive       Boolean    @default(true)
   createdAt      DateTime   @default(now())
   updatedAt      DateTime   @updatedAt

@@ -11,6 +11,8 @@ import {
   templateCreateSchema,
   type TemplateCreateInput,
   dayOfWeekLabels,
+  vestmentColorLabels,
+  vestmentColorCodes,
 } from '@/lib/validations/template';
 import { massTypeLabels } from '@/lib/validations/schedule';
 import {
@@ -41,6 +43,7 @@ interface TemplateData {
   massType: string;
   dayOfWeek: string | string[] | null;
   time: string;
+  vestmentColor: string | null;
   isActive: boolean;
   slots: Array<{
     volunteerRoleId: string;
@@ -68,6 +71,13 @@ const WEEKDAY_OPTIONS: Array<{ value: string; label: string }> = [
   { value: 'THURSDAY', label: '목' },
   { value: 'FRIDAY', label: '금' },
 ];
+
+// 제의 색상 옵션
+const VESTMENT_COLOR_OPTIONS = Object.entries(vestmentColorLabels).map(([value, label]) => ({
+  value,
+  label,
+  color: vestmentColorCodes[value],
+}));
 
 export default function TemplateDialog({
   open,
@@ -100,6 +110,7 @@ export default function TemplateDialog({
       massType: 'SUNDAY',
       dayOfWeek: null,
       time: '10:00',
+      vestmentColor: null,
       slots: [],
     },
   });
@@ -131,6 +142,7 @@ export default function TemplateDialog({
           massType: template.massType as any,
           dayOfWeek: existingDays.length > 0 ? existingDays as any : null,
           time: template.time,
+          vestmentColor: (template.vestmentColor as any) || null,
           slots: template.slots.map((s) => ({
             volunteerRoleId: s.volunteerRoleId,
             requiredCount: s.requiredCount,
@@ -150,6 +162,7 @@ export default function TemplateDialog({
           massType: 'SUNDAY',
           dayOfWeek: null,
           time: '10:00',
+          vestmentColor: null,
           slots: [],
         });
         setSelectedSlots({});
@@ -281,6 +294,7 @@ export default function TemplateDialog({
         body: JSON.stringify({
           ...data,
           dayOfWeek,
+          vestmentColor: data.vestmentColor || null,
           slots,
         }),
       });
@@ -420,6 +434,50 @@ export default function TemplateDialog({
             {errors.time && (
               <p className="text-sm text-red-600">{errors.time.message}</p>
             )}
+          </div>
+
+          {/* 제의 색상 (선택사항) */}
+          <div className="space-y-2">
+            <Label>제의 색상</Label>
+            <div className="flex flex-wrap gap-2">
+              {VESTMENT_COLOR_OPTIONS.map(({ value, label, color }) => {
+                const isSelected = watch('vestmentColor') === value;
+                // 백색은 테두리로 구분
+                const isWhite = value === 'WHITE';
+                return (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => {
+                      // 이미 선택된 색상 클릭 시 선택 해제
+                      if (isSelected) {
+                        setValue('vestmentColor', null as any);
+                      } else {
+                        setValue('vestmentColor', value as any);
+                      }
+                    }}
+                    disabled={loading}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-sm transition-all ${
+                      isSelected
+                        ? 'ring-2 ring-blue-500 ring-offset-1 border-blue-400 font-semibold'
+                        : 'border-gray-200 hover:border-gray-400'
+                    }`}
+                  >
+                    {/* 색상 원형 표시 */}
+                    <span
+                      className={`inline-block w-4 h-4 rounded-full shrink-0 ${
+                        isWhite ? 'border border-gray-300' : ''
+                      }`}
+                      style={{ backgroundColor: color }}
+                    />
+                    <span>{label}</span>
+                  </button>
+                );
+              })}
+            </div>
+            <p className="text-xs text-gray-500">
+              선택하지 않아도 됩니다. 다시 클릭하면 선택이 해제됩니다.
+            </p>
           </div>
 
           {/* 필요 역할 */}

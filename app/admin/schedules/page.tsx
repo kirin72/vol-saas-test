@@ -12,6 +12,7 @@ import { PlusCircle, Edit, Trash2, Loader2, ChevronLeft, ChevronRight, Calendar,
 import ScheduleDialog from '@/components/schedules/schedule-dialog';
 import ScheduleCalendar from '@/components/schedules/schedule-calendar';
 import { massTypeLabels } from '@/lib/validations/schedule';
+import { vestmentColorLabels, vestmentColorCodes } from '@/lib/validations/template';
 import { DesktopTable, MobileCardList, MobileCard, MobileCardHeader, MobileCardRow, MobileCardActions } from '@/components/ui/responsive-table';
 
 interface MassSchedule {
@@ -22,6 +23,7 @@ interface MassSchedule {
   massTemplate: {
     id: string;
     massType: string;
+    vestmentColor: string | null;
     slots: Array<{
       id: string;
       requiredCount: number;
@@ -332,9 +334,23 @@ export default function SchedulesPage() {
                           </Badge>
                         </MobileCardHeader>
                         <MobileCardRow label="미사 종류">
-                          <Badge variant="outline" className="text-xs">
-                            {massTypeLabels[schedule.massTemplate?.massType || 'WEEKDAY']}
-                          </Badge>
+                          <div className="flex items-center gap-1">
+                            <Badge variant="outline" className="text-xs">
+                              {massTypeLabels[schedule.massTemplate?.massType || 'WEEKDAY']}
+                            </Badge>
+                            {/* 제의 색상 (선택된 경우에만 표시) */}
+                            {schedule.massTemplate?.vestmentColor && (
+                              <Badge variant="outline" className="flex items-center gap-1 text-xs">
+                                <span
+                                  className={`inline-block w-2.5 h-2.5 rounded-full shrink-0 ${
+                                    schedule.massTemplate.vestmentColor === 'WHITE' ? 'border border-gray-300' : ''
+                                  }`}
+                                  style={{ backgroundColor: vestmentColorCodes[schedule.massTemplate.vestmentColor] }}
+                                />
+                                {vestmentColorLabels[schedule.massTemplate.vestmentColor]}
+                              </Badge>
+                            )}
+                          </div>
                         </MobileCardRow>
                         <div className="flex flex-wrap gap-1">
                           {schedule.massTemplate?.slots
@@ -409,9 +425,23 @@ export default function SchedulesPage() {
                           )}
                           <TableCell>{schedule.time}</TableCell>
                           <TableCell>
-                            <Badge variant="outline">
-                              {massTypeLabels[schedule.massTemplate?.massType || 'WEEKDAY']}
-                            </Badge>
+                            <div className="flex items-center gap-1">
+                              <Badge variant="outline">
+                                {massTypeLabels[schedule.massTemplate?.massType || 'WEEKDAY']}
+                              </Badge>
+                              {/* 제의 색상 (선택된 경우에만 표시) */}
+                              {schedule.massTemplate?.vestmentColor && (
+                                <Badge variant="outline" className="flex items-center gap-1">
+                                  <span
+                                    className={`inline-block w-2.5 h-2.5 rounded-full shrink-0 ${
+                                      schedule.massTemplate.vestmentColor === 'WHITE' ? 'border border-gray-300' : ''
+                                    }`}
+                                    style={{ backgroundColor: vestmentColorCodes[schedule.massTemplate.vestmentColor] }}
+                                  />
+                                  {vestmentColorLabels[schedule.massTemplate.vestmentColor]}
+                                </Badge>
+                              )}
+                            </div>
                           </TableCell>
                           <TableCell>
                             <div className="flex flex-wrap gap-1">

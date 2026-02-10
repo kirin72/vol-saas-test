@@ -22,7 +22,7 @@ import {
 import TemplateDialog from '@/components/templates/template-dialog';
 import GenerateSchedulesDialog from '@/components/templates/generate-schedules-dialog';
 import { massTypeLabels } from '@/lib/validations/schedule';
-import { dayOfWeekLabels } from '@/lib/validations/template';
+import { dayOfWeekLabels, vestmentColorLabels, vestmentColorCodes } from '@/lib/validations/template';
 
 // 템플릿 타입
 interface MassTemplate {
@@ -31,6 +31,7 @@ interface MassTemplate {
   massType: string;
   dayOfWeek: string | string[] | null;
   time: string;
+  vestmentColor: string | null;
   isActive: boolean;
   createdAt: string;
   slots: Array<{
@@ -265,11 +266,26 @@ export default function TemplatesPage() {
                   <div className="flex-1">
                     {/* 템플릿 이름 */}
                     <h3 className="font-semibold text-lg">{template.name}</h3>
-                    {/* 미사 종류 + 비활성 뱃지 */}
-                    <div className="flex items-center gap-2 mt-1">
+                    {/* 미사 종류 + 제의 색상 + 비활성 뱃지 */}
+                    <div className="flex items-center gap-2 mt-1 flex-wrap">
                       <Badge variant="outline">
                         {massTypeLabels[template.massType] || template.massType}
                       </Badge>
+                      {/* 제의 색상 (선택된 경우에만 표시) */}
+                      {template.vestmentColor && (
+                        <Badge
+                          variant="outline"
+                          className="flex items-center gap-1"
+                        >
+                          <span
+                            className={`inline-block w-3 h-3 rounded-full shrink-0 ${
+                              template.vestmentColor === 'WHITE' ? 'border border-gray-300' : ''
+                            }`}
+                            style={{ backgroundColor: vestmentColorCodes[template.vestmentColor] }}
+                          />
+                          {vestmentColorLabels[template.vestmentColor]}
+                        </Badge>
+                      )}
                       {!template.isActive && (
                         <Badge variant="secondary">비활성</Badge>
                       )}
