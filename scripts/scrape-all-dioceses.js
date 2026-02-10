@@ -5,6 +5,7 @@
 const axios = require('axios');
 const cheerio = require('cheerio');
 const ExcelJS = require('exceljs');
+const iconv = require('iconv-lite');
 const fs = require('fs');
 const path = require('path');
 
@@ -40,6 +41,36 @@ async function fetchBatch(items, fn, concurrency = CONCURRENCY) {
 
 async function get(url, opts = {}) {
   return axios.get(url, { timeout: TIMEOUT, headers: HEADERS, responseType: 'text', ...opts });
+}
+
+// SSO 3단계 우회 함수 (수원/광주교구용 — 307→SSO→302→원본URL→200)
+async function fetchWithSso(url) {
+  // 1단계: 원본 URL → 307 → SSO URL (쿠키 획득)
+  const r1 = await axios.get(url, {
+    timeout: TIMEOUT, headers: HEADERS,
+    maxRedirects: 0, validateStatus: (s) => true,
+  });
+  if (r1.status === 200) return r1.data;
+  if (r1.status !== 307 || !r1.headers.location) return null;
+  const cookie1 = (r1.headers['set-cookie'] || []).map(c => c.split(';')[0]).join('; ');
+
+  // 2단계: SSO URL → 302 → 원본 URL (세션 쿠키 획득)
+  const r2 = await axios.get(r1.headers.location, {
+    timeout: TIMEOUT, headers: { ...HEADERS, Cookie: cookie1 },
+    maxRedirects: 0, validateStatus: (s) => true,
+  });
+  const cookie2 = (r2.headers['set-cookie'] || []).map(c => c.split(';')[0]).join('; ');
+  const allCookies = [cookie1, cookie2].filter(Boolean).join('; ');
+
+  // 3단계: 최종 URL → 200 (실제 페이지)
+  const finalUrl = r2.headers.location
+    ? (r2.headers.location.startsWith('http') ? r2.headers.location : new URL(r2.headers.location, url).href)
+    : url;
+  const r3 = await axios.get(finalUrl, {
+    timeout: TIMEOUT, headers: { ...HEADERS, Cookie: allCookies },
+    maxRedirects: 5,
+  });
+  return r3.data;
 }
 
 // ════════════════════════════════════════
@@ -178,70 +209,98 @@ async function scrapeJeonju() {
 }
 
 // ════════════════════════════════════════
-// 3. 대전교구 (djcatholic.or.kr)
+// 3. 대전교구 (djcatholic.or.kr) - EUC-KR 인코딩 / 14개 지구 / h3+li/span 구조
 // ════════════════════════════════════════
 async function scrapeDaejeon() {
   console.log('\n[대전교구] 수집 시작...');
-  const res = await get('https://www.djcatholic.or.kr/home/pages/church.php');
-  const $ = cheerio.load(res.data);
 
+  // EUC-KR 인코딩 페이지 → arraybuffer로 받아 iconv-lite로 디코딩
+  async function getEucKr(url) {
+    const res = await axios.get(url, { timeout: TIMEOUT, headers: HEADERS, responseType: 'arraybuffer' });
+    const html = iconv.decode(Buffer.from(res.data), 'euc-kr');
+    return html;
+  }
+
+  // 1단계: 메인 페이지에서 14개 지구명 추출
+  const mainHtml = await getEucKr('https://www.djcatholic.or.kr/home/pages/church.php');
+
+  // goArea() 호출에서 지구명 추출
+  const districts = [];
+  const seenDistrict = new Set();
+  const areaRegex = /goArea\s*\(\s*['"]([^'"]+)['"]\s*\)/g;
+  let match;
+  while ((match = areaRegex.exec(mainHtml)) !== null) {
+    const name = match[1].trim();
+    if (name && !seenDistrict.has(name)) {
+      seenDistrict.add(name);
+      districts.push(name);
+    }
+  }
+  console.log(`  지구 ${districts.length}개: ${districts.join(', ')}`);
+
+  // 2단계: 각 지구 페이지에서 h3 "본당정보" 블록 파싱
   const results = [];
-  // 성당 정보가 블록 형태로 나열됨
-  // 각 성당 블록에 이름, 주소, 전화, 미사시간 등
+  for (const district of districts) {
+    try {
+      // EUC-KR 인코딩된 area 파라미터
+      const encodedArea = iconv.encode(district, 'euc-kr');
+      const percentEncoded = Array.from(encodedArea)
+        .map((b) => '%' + b.toString(16).toUpperCase().padStart(2, '0'))
+        .join('');
+      const url = `https://www.djcatholic.or.kr/home/pages/church.php?area=${percentEncoded}`;
 
-  // 패턴 기반 추출 - 성당별 블록
-  const html = res.data;
+      const html = await getEucKr(url);
+      const $ = cheerio.load(html);
 
-  // 성당명은 보통 <strong> 또는 <h> 태그 안에
-  // 주소는 우편번호로 시작
-  // 전화는 042- 또는 041- 로 시작
+      let districtCount = 0;
 
-  // 간단한 블록 분리 시도
-  const churchBlocks = html.split(/<(?:h[34]|strong|b)[^>]*>/i);
+      // 각 .modal-body 안에 하나의 성당 정보가 있음
+      $('.modal-body').each((_, modal) => {
+        const h3 = $(modal).find('h3').first();
+        const h3Text = h3.text().trim();
+        const nameMatch = h3Text.match(/^([가-힣\s]+)\s*본당/);
+        if (!nameMatch) return;
+        const name = nameMatch[1].trim();
 
-  for (const block of churchBlocks) {
-    // 성당명 추출 (첫 번째 텍스트)
-    const nameMatch = block.match(/^([^<]{1,20})\s*(?:성당|본당|공소)/);
-    if (!nameMatch) continue;
+        let address = '', phone = '', sundayMass = '', weekdayMass = '';
 
-    const name = nameMatch[0].trim();
-    const addrMatch = block.match(/(\d{5}[^<\n]{5,80})/);
-    const telMatch = block.match(/(0\d{1,2}[-)]\d{3,4}[-)]\d{4}[~\d]*)/);
+        // modal-body 안의 li span 파싱
+        $(modal).find('li').each((_, li) => {
+          const spans = [];
+          $(li).find('span').each((_, s) => spans.push($(s).text().trim()));
+          if (spans.length < 2) return;
 
-    // 미사시간 추출
-    const sundayMatch = block.match(/(?:주일|일요일)[^:]*[:：]\s*([^<\n]{3,100})/i);
-    const weekdayMatch = block.match(/(?:평일|평일미사)[^:]*[:：]\s*([^<\n]{3,100})/i);
+          const label = spans[0];
+          const value = spans.slice(1).join(' ').trim();
 
-    results.push(
-      church(
-        '대전교구',
-        name,
-        addrMatch?.[1]?.trim() || '',
-        telMatch?.[1] || '',
-        sundayMatch?.[1]?.trim() || '',
-        weekdayMatch?.[1]?.trim() || ''
-      )
-    );
+          if (label === '본당주소' || label.includes('주소')) {
+            address = value;
+          } else if (label === '본당전화/팩스') {
+            const m = value.match(/(0\d{1,2}[-)]\d{3,4}[-)]\d{4})/);
+            if (m) phone = m[1];
+          } else if (label === '미사시간' || label.includes('미사')) {
+            // ▶평일, ▶토요일, ▶주일 파싱
+            const sundayM = value.match(/▶주일\s*[-–]\s*([^\n▶]+)/);
+            if (sundayM) sundayMass = sundayM[1].trim();
+            const weekdayM = value.match(/▶평일\s*[-–]\s*([^\n▶]+)/);
+            if (weekdayM) weekdayMass = weekdayM[1].trim();
+            const satM = value.match(/▶토요일\s*[-–]\s*([^\n▶]+)/);
+            if (satM) sundayMass = (sundayMass ? sundayMass + ' / 토: ' : '토: ') + satM[1].trim();
+          }
+        });
+
+        results.push(church('대전교구', name + '성당', address, phone, sundayMass, weekdayMass));
+        districtCount++;
+      });
+
+      process.stdout.write(`\r  ${district}: ${districtCount}개`);
+    } catch (e) {
+      console.log(`  ${district} 오류: ${e.message}`);
+    }
+    await sleep(500);
   }
 
-  // 대안: 테이블/리스트 구조
-  if (results.length < 10) {
-    results.length = 0;
-    // li 기반 추출 시도
-    $('li, .church-item, .item, tr').each((i, el) => {
-      const text = $(el).text().trim();
-      if (text.length > 20 && text.length < 500) {
-        const nameM = text.match(/^([^\s]{2,15})\s/);
-        const addrM = text.match(/(\d{5}[^\n]{5,60})/);
-        const telM = text.match(/(0\d{1,2}[-)]\d{3,4}[-)]\d{4}[~\d]*)/);
-        if (nameM && (addrM || telM)) {
-          results.push(church('대전교구', nameM[1], addrM?.[1]?.trim() || '', telM?.[1] || '', '', ''));
-        }
-      }
-    });
-  }
-
-  console.log(`  → ${results.length}개 완료`);
+  console.log(`\n  → ${results.length}개 완료`);
   return results;
 }
 
@@ -370,19 +429,77 @@ async function scrapeIncheon() {
 }
 
 // ════════════════════════════════════════
-// 6. 광주대교구 (gjcatholic.or.kr)
+// 6. 광주대교구 (gjcatholic.or.kr) - SSO 우회 + 상세 페이지 스크래핑
 // ════════════════════════════════════════
 async function scrapeGwangju() {
   console.log('\n[광주대교구] 수집 시작...');
 
-  // 사전 수집된 성당 목록 사용 (Playwright로 추출, axios 리다이렉트 문제 우회)
+  // 사전 수집된 성당 목록 (이름 + 상세 URL 포함)
   const parishes = require('./gwangju-parishes.json');
-  console.log(`  사전 수집 목록: ${parishes.length}개`);
+  console.log(`  목록: ${parishes.length}개, 상세 수집 중...`);
 
-  // 성당명만으로 결과 생성 (광주 사이트의 리다이렉트 문제로 상세 접근 불가)
-  const results = parishes.map(p => church('광주대교구', p.name + '본당', '', '', '', ''));
+  const results = [];
+  let done = 0;
 
-  console.log(`  → ${results.length}개 완료`);
+  for (let i = 0; i < parishes.length; i += CONCURRENCY) {
+    const batch = parishes.slice(i, i + CONCURRENCY);
+    const br = await Promise.all(
+      batch.map(async (p) => {
+        try {
+          // SSO 우회하여 페이지 접근
+          const html = await fetchWithSso(p.url);
+          if (!html) return church('광주대교구', p.name + '본당', '', '', '', '');
+          const $ = cheerio.load(html);
+
+          // 주소: 본문에서 우편번호 패턴으로 추출 (th/td가 아닌 텍스트)
+          let address = '';
+          const bodyText = $('body').text();
+          const addrMatch = bodyText.match(/(\d{5}\)[^\n]{5,80})/);
+          if (addrMatch) address = addrMatch[1].trim();
+
+          // 전화번호: th="전화번호" → 다음 td
+          let phone = '';
+          $('th').each((_, el) => {
+            if ($(el).text().trim() === '전화번호') {
+              phone = $(el).next('td').text().trim();
+            }
+          });
+
+          // 미사시간: 요일별 th/td 쌍 추출
+          let sundayMass = '';
+          const weekdayParts = [];
+
+          $('table').each((_, table) => {
+            $(table).find('tr').each((_, tr) => {
+              const ths = $(tr).find('th');
+              const tds = $(tr).find('td');
+              ths.each((idx, th) => {
+                const day = $(th).text().trim();
+                const time = tds.eq(idx) ? tds.eq(idx).text().trim().replace(/\s+/g, ' ') : '';
+                if (!time) return;
+                if (day === '주일' || day === '일') {
+                  sundayMass = time;
+                } else if (['월', '화', '수', '목', '금', '토'].includes(day)) {
+                  weekdayParts.push(day + ': ' + time);
+                }
+              });
+            });
+          });
+
+          const weekdayMass = weekdayParts.length > 0 ? weekdayParts.join(', ') : '';
+
+          return church('광주대교구', p.name + '본당', address, phone, sundayMass, weekdayMass);
+        } catch (e) {
+          return church('광주대교구', p.name + '본당', '', '', '', '');
+        }
+      })
+    );
+    results.push(...br);
+    done += batch.length;
+    process.stdout.write(`\r  ${done}/${parishes.length}`);
+    if (i + CONCURRENCY < parishes.length) await sleep(DELAY_MS);
+  }
+  console.log(`\n  → ${results.length}개 완료`);
   return results;
 }
 
@@ -688,36 +805,169 @@ async function scrapeWonju() {
 }
 
 // ════════════════════════════════════════
-// 11. 대구대교구 (daegu-archdiocese.or.kr)
+// 11. 대구대교구 (daegu-archdiocese.or.kr) - 상세 페이지 스크래핑
 // ════════════════════════════════════════
 async function scrapeDaegu() {
   console.log('\n[대구대교구] 수집 시작...');
 
-  // 사전 수집된 성당 목록 사용 (Playwright로 추출, 동적 페이지 우회)
+  // 사전 수집된 성당 목록 (이름 + 상세 URL 포함)
   const parishes = require('./daegu-parishes.json');
-  console.log(`  사전 수집 목록: ${parishes.length}개`);
+  console.log(`  목록: ${parishes.length}개, 상세 수집 중...`);
 
-  // 성당명만으로 결과 생성 (대구 사이트 동적 페이지)
-  const results = parishes.map(p => church('대구대교구', p.name + '본당', '', '', '', ''));
+  const results = [];
+  let done = 0;
 
-  console.log(`  → ${results.length}개 완료`);
+  for (let i = 0; i < parishes.length; i += CONCURRENCY) {
+    const batch = parishes.slice(i, i + CONCURRENCY);
+    const br = await Promise.all(
+      batch.map(async (p) => {
+        try {
+          const r = await get(p.url);
+          const $ = cheerio.load(r.data);
+
+          let address = '', phone = '', sundayMass = '', weekdayMass = '';
+
+          // 주소: table.church_info_table에서 "주소" 행
+          $('table.church_info_table tr').each((_, tr) => {
+            const tds = $(tr).find('td');
+            if (tds.length >= 2 && tds.eq(0).text().trim() === '주소') {
+              address = tds.eq(1).text().trim().replace(/\s+/g, ' ');
+            }
+          });
+
+          // 전화번호: table.church_member_table에서 "사무실" 행
+          $('table.church_member_table tr').each((_, tr) => {
+            const tds = $(tr).find('td');
+            if (tds.length >= 1 && tds.eq(0).text().trim() === '사무실') {
+              const phoneText = tds.last().text().trim();
+              const m = phoneText.match(/(0\d{1,2}[-)]\d{3,4}[-)]\d{4})/);
+              if (m) phone = m[1];
+            }
+          });
+
+          // 미사시간: .church_title "미사 시간" 다음의 .church_item_wrap
+          $('.church_title').each((_, el) => {
+            if (!$(el).text().includes('미사 시간')) return;
+            const wrap = $(el).next('.church_item_wrap');
+            if (!wrap.length) return;
+            const text = wrap.html()
+              .replace(/<br\s*\/?>/gi, '\n')
+              .replace(/<[^>]+>/g, '')
+              .trim();
+
+            // [주일미사] 파싱
+            const sundayM = text.match(/\[주일미사\]\s*([\s\S]*?)(?=\[평일미사\]|$)/);
+            if (sundayM) sundayMass = sundayM[1].trim().replace(/\n/g, ' ').replace(/\s+/g, ' ');
+
+            // [평일미사] 파싱
+            const weekdayM = text.match(/\[평일미사\]\s*([\s\S]*?)$/);
+            if (weekdayM) weekdayMass = weekdayM[1].trim().replace(/\n/g, ' ').replace(/\s+/g, ' ');
+
+            // 패턴 매칭 실패 시 전체 텍스트
+            if (!sundayMass && !weekdayMass) {
+              sundayMass = text.replace(/\n/g, ' ').replace(/\s+/g, ' ').substring(0, 200);
+            }
+          });
+
+          return church('대구대교구', p.name + '본당', address, phone, sundayMass, weekdayMass);
+        } catch (e) {
+          return church('대구대교구', p.name + '본당', '', '', '', '');
+        }
+      })
+    );
+    results.push(...br);
+    done += batch.length;
+    process.stdout.write(`\r  ${done}/${parishes.length}`);
+    if (i + CONCURRENCY < parishes.length) await sleep(DELAY_MS);
+  }
+  console.log(`\n  → ${results.length}개 완료`);
   return results;
 }
 
 // ════════════════════════════════════════
-// 12. 수원교구 (casuwon.or.kr)
+// 12. 수원교구 (casuwon.or.kr) - SSO 우회 + 상세 페이지 스크래핑
 // ════════════════════════════════════════
 async function scrapeSuwon() {
   console.log('\n[수원교구] 수집 시작...');
 
-  // 사전 수집된 성당 목록 사용 (Playwright로 추출, axios 리다이렉트 문제 우회)
+  // 사전 수집된 성당 목록 (이름 + 상세 URL 포함)
   const parishes = require('./suwon-parishes.json');
-  console.log(`  사전 수집 목록: ${parishes.length}개`);
+  console.log(`  목록: ${parishes.length}개, 상세 수집 중...`);
 
-  // 성당명만으로 결과 생성 (수원 사이트의 리다이렉트 문제로 상세 접근 불가)
-  const results = parishes.map(p => church('수원교구', p.name + '본당', '', '', '', ''));
+  const results = [];
+  let done = 0;
 
-  console.log(`  → ${results.length}개 완료`);
+  for (let i = 0; i < parishes.length; i += CONCURRENCY) {
+    const batch = parishes.slice(i, i + CONCURRENCY);
+    const br = await Promise.all(
+      batch.map(async (p) => {
+        try {
+          // SSO 우회하여 페이지 접근
+          const url = encodeURI(p.url);
+          const html = await fetchWithSso(url);
+          if (!html) return church('수원교구', p.name + '본당', '', '', '', '');
+          const $ = cheerio.load(html);
+
+          // 주소: icon_location 이미지의 부모 텍스트
+          let address = '';
+          $('img[src*="icon_location"]').each((_, img) => {
+            const parent = $(img).parent();
+            address = parent.text().trim();
+          });
+          // 대안: 본문에서 우편번호 패턴
+          if (!address) {
+            const bodyText = $('body').text();
+            const addrMatch = bodyText.match(/(\d{5}\)[^\n]{5,80})/);
+            if (addrMatch) address = addrMatch[1].trim();
+          }
+
+          // 전화번호: <span><img icon_phone_blue></span> 다음의 <p> 태그
+          let phone = '';
+          $('img[src*="icon_phone_blue"]').each((_, img) => {
+            // span > img 구조이므로 span의 형제 p에서 전화번호
+            const span = $(img).parent();
+            const nextP = span.next('p');
+            if (nextP.length) {
+              const m = nextP.text().match(/(0\d{1,2}[-)]\d{3,4}[-)]\d{4})/);
+              if (m) phone = m[1];
+            }
+            // 대안: 부모 li의 전체 텍스트에서 추출
+            if (!phone) {
+              const li = span.closest('li');
+              const m = li.text().match(/(0\d{1,2}[-)]\d{3,4}[-)]\d{4})/);
+              if (m) phone = m[1];
+            }
+          });
+
+          // 미사시간: table.massTable (th=요일, td=시간 구조)
+          let sundayMass = '';
+          const weekdayParts = [];
+
+          $('table.massTable tr').each((_, tr) => {
+            const day = $(tr).find('th').text().trim();
+            const time = $(tr).find('td').text().trim().replace(/\s+/g, ' ');
+            if (!time || !day) return;
+            if (day === '주일' || day === '일') {
+              sundayMass += (sundayMass ? ', ' : '') + time;
+            } else if (['월', '화', '수', '목', '금', '토'].includes(day)) {
+              weekdayParts.push(day + ': ' + time);
+            }
+          });
+
+          const weekdayMass = weekdayParts.length > 0 ? weekdayParts.join(', ') : '';
+
+          return church('수원교구', p.name + '본당', address, phone, sundayMass, weekdayMass);
+        } catch (e) {
+          return church('수원교구', p.name + '본당', '', '', '', '');
+        }
+      })
+    );
+    results.push(...br);
+    done += batch.length;
+    process.stdout.write(`\r  ${done}/${parishes.length}`);
+    if (i + CONCURRENCY < parishes.length) await sleep(DELAY_MS);
+  }
+  console.log(`\n  → ${results.length}개 완료`);
   return results;
 }
 

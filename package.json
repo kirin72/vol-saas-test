@@ -51,6 +51,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "exceljs": "^4.4.0",
+    "iconv-lite": "^0.7.2",
     "shadcn": "^3.8.4",
     "sharp": "^0.34.5",
     "tailwindcss": "^4",
