@@ -4,7 +4,7 @@
  */
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -30,6 +30,9 @@ export default function NewVolunteerPage() {
   const [error, setError] = useState('');
   const [roles, setRoles] = useState<VolunteerRole[]>([]);
   const [loadingRoles, setLoadingRoles] = useState(true);
+  // 전화번호 중복 체크 상태
+  const [phoneDuplicateMsg, setPhoneDuplicateMsg] = useState('');
+  const phoneCheckTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // React Hook Form 설정
   const {
@@ -54,6 +57,39 @@ export default function NewVolunteerPage() {
     if (digits.length <= 3) return digits;
     if (digits.length <= 7) return `${digits.slice(0, 3)}-${digits.slice(3)}`;
     return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`;
+  };
+
+  // 전화번호 중복 체크 (디바운스 적용)
+  const checkPhoneDuplicate = useCallback(async (phone: string) => {
+    // 포맷된 전화번호가 최소 12자리(000-0000-0000) 이상이면 체크
+    if (phone.replace(/\D/g, '').length < 10) {
+      setPhoneDuplicateMsg('');
+      return;
+    }
+    try {
+      const res = await fetch(`/api/admin/volunteers/check-phone?phone=${encodeURIComponent(phone)}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.duplicate) {
+          setPhoneDuplicateMsg(`해당 번호는 ${data.volunteerName}봉사자님의 번호로 이미 등록된 번호입니다.`);
+        } else {
+          setPhoneDuplicateMsg('');
+        }
+      }
+    } catch {
+      // 네트워크 오류 시 무시
+    }
+  }, []);
+
+  // 전화번호 입력 핸들러 (포맷 + 중복 체크)
+  const handlePhoneChange = (value: string) => {
+    const formatted = formatPhone(value);
+    setValue('phone', formatted);
+    // 기존 타이머 취소 후 500ms 디바운스로 중복 체크
+    if (phoneCheckTimer.current) clearTimeout(phoneCheckTimer.current);
+    phoneCheckTimer.current = setTimeout(() => {
+      checkPhoneDuplicate(formatted);
+    }, 500);
   };
 
   // 역할 목록 가져오기
@@ -245,17 +281,20 @@ export default function NewVolunteerPage() {
               )}
             </div>
 
-            {/* 전화번호 (숫자만 입력해도 자동 포맷) */}
+            {/* 전화번호 (숫자만 입력해도 자동 포맷 + 중복 체크) */}
             <div className="space-y-2">
               <Label htmlFor="phone">전화번호</Label>
               <Input
                 id="phone"
                 inputMode="numeric"
                 value={watch('phone') || ''}
-                onChange={(e) => setValue('phone', formatPhone(e.target.value))}
+                onChange={(e) => handlePhoneChange(e.target.value)}
                 placeholder="01012345678"
                 disabled={loading}
               />
+              {phoneDuplicateMsg && (
+                <p className="text-sm text-orange-600">{phoneDuplicateMsg}</p>
+              )}
               {errors.phone && (
                 <p className="text-sm text-red-600">{errors.phone.message}</p>
               )}
