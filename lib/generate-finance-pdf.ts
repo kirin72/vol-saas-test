@@ -21,36 +21,6 @@ const formatAmount = (amount: number) => {
   return amount.toLocaleString('ko-KR') + '원';
 };
 
-// 결재란 생성
-const buildApprovalSection = () => {
-  return `
-    <div style="display: flex; justify-content: flex-end; margin-bottom: 20px;">
-      <table style="border-collapse: collapse; border: 2px solid #333;">
-        <tr>
-          <td style="border: 1px solid #333; padding: 6px 12px; background-color: #f5f5f5; font-weight: bold; font-size: 12px; text-align: center; width: 50px;">
-            결재
-          </td>
-          <td style="border: 1px solid #333; padding: 6px 12px; background-color: #f5f5f5; font-weight: bold; font-size: 12px; text-align: center; width: 70px;">
-            작성자
-          </td>
-          <td style="border: 1px solid #333; padding: 6px 12px; background-color: #f5f5f5; font-weight: bold; font-size: 12px; text-align: center; width: 70px;">
-            수녀님
-          </td>
-          <td style="border: 1px solid #333; padding: 6px 12px; background-color: #f5f5f5; font-weight: bold; font-size: 12px; text-align: center; width: 70px;">
-            신부님
-          </td>
-        </tr>
-        <tr>
-          <td style="border: 1px solid #333; height: 60px; width: 50px;"></td>
-          <td style="border: 1px solid #333; height: 60px; width: 70px;"></td>
-          <td style="border: 1px solid #333; height: 60px; width: 70px;"></td>
-          <td style="border: 1px solid #333; height: 60px; width: 70px;"></td>
-        </tr>
-      </table>
-    </div>
-  `;
-};
-
 // 입출금내역 HTML 전체 생성
 const buildFinanceSheetHtml = (
   transactions: Transaction[],
@@ -136,7 +106,7 @@ const buildFinanceSheetHtml = (
     </tr>
   `;
 
-  // 전체 HTML 조합
+  // 전체 HTML 조합 (결재란 없음)
   return `
     <div style="
       font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
@@ -145,9 +115,6 @@ const buildFinanceSheetHtml = (
       width: 800px;
       box-sizing: border-box;
     ">
-      <!-- 결재란 -->
-      ${buildApprovalSection()}
-
       <!-- 제목 -->
       <h1 style="
         text-align: center;
@@ -211,22 +178,28 @@ export async function generateFinancePdf(
     return;
   }
 
-  // 1. 숨겨진 div 생성
+  // 1. 숨겨진 div 생성 (html2canvas가 캡처할 수 있도록 absolute 위치)
   const container = document.createElement('div');
-  container.style.position = 'fixed';
+  container.style.position = 'absolute';
   container.style.left = '-9999px';
-  container.style.top = '0';
+  container.style.top = `${window.scrollY}px`;
   container.style.zIndex = '-1';
   container.innerHTML = buildFinanceSheetHtml(transactions, summary, year, month);
   document.body.appendChild(container);
 
   try {
+    // 브라우저 렌더링 대기
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
     // 2. html2canvas로 캡처 (2배 스케일로 고화질)
-    const canvas = await html2canvas(container.firstElementChild as HTMLElement, {
+    const target = container.firstElementChild as HTMLElement;
+    const canvas = await html2canvas(target, {
       scale: 2,
       useCORS: true,
       backgroundColor: '#ffffff',
       logging: false,
+      width: target.scrollWidth,
+      height: target.scrollHeight,
     });
 
     // 3. jsPDF로 PDF 생성 (A4 세로)

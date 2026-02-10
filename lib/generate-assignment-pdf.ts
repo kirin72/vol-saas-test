@@ -294,22 +294,28 @@ export async function generateAssignmentPdf(
     return;
   }
 
-  // 1. 숨겨진 div 생성
+  // 1. 숨겨진 div 생성 (html2canvas가 캡처할 수 있도록 absolute 위치)
   const container = document.createElement('div');
-  container.style.position = 'fixed';
+  container.style.position = 'absolute';
   container.style.left = '-9999px';
-  container.style.top = '0';
+  container.style.top = `${window.scrollY}px`;
   container.style.zIndex = '-1';
   container.innerHTML = buildAssignmentSheetHtml(schedules, year, month);
   document.body.appendChild(container);
 
   try {
+    // 브라우저 렌더링 대기
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
     // 2. html2canvas로 캡처 (2배 스케일로 고화질)
-    const canvas = await html2canvas(container.firstElementChild as HTMLElement, {
+    const target = container.firstElementChild as HTMLElement;
+    const canvas = await html2canvas(target, {
       scale: 2,
       useCORS: true,
       backgroundColor: '#ffffff',
       logging: false,
+      width: target.scrollWidth,
+      height: target.scrollHeight,
     });
 
     // 3. jsPDF로 PDF 생성 (A4 가로)
