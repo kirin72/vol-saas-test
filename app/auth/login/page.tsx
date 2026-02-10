@@ -140,11 +140,7 @@ export default function LoginPage() {
         if (userRole === 'VOLUNTEER' && isFirstLogin) {
           setShowPasswordChangePrompt(true);
           setLoading(false);
-
-          // 2초 후 대시보드로 이동
-          setTimeout(() => {
-            window.location.href = '/volunteer/dashboard';
-          }, 2000);
+          // 자동 리다이렉트 없이 사용자가 직접 선택하도록 대기
         } else {
           // 관리자 또는 이미 로그인한 봉사자는 바로 대시보드로 이동
           let dashboardUrl = '/admin/dashboard';
@@ -168,9 +164,9 @@ export default function LoginPage() {
     }
   };
 
-  // 비밀번호 변경 페이지로 이동
+  // 비밀번호 변경 페이지로 이동 (로그인 페이지에서 다른 레이아웃으로 이동하므로 window.location 사용)
   const handlePasswordChange = () => {
-    router.push('/volunteer/settings'); // 또는 비밀번호 변경 페이지
+    window.location.href = '/volunteer/settings';
   };
 
   // 성공 알림 무시하고 대시보드로 이동

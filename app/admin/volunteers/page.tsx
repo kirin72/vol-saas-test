@@ -152,6 +152,11 @@ export default function VolunteersPage() {
         </div>
       </div>
 
+      {/* 안내 배너 */}
+      <div className="bg-blue-50 border border-blue-200 text-blue-700 text-sm px-4 py-3 rounded-md">
+        모든 봉사자는 본인의 이름과 휴대폰번호 뒷자리 8자리로 개별 로그인 할 수 있습니다.
+      </div>
+
       {/* 봉사자 목록 */}
       {volunteers.length === 0 ? (
         <Card>
@@ -256,10 +261,10 @@ export default function VolunteersPage() {
                       </div>
                     </div>
 
-                    {/* 상세보기 버튼 */}
+                    {/* 정보수정 버튼 */}
                     <Button asChild variant="outline" className="w-full">
                       <Link href={`/admin/volunteers/${volunteer.id}`}>
-                        상세보기
+                        정보수정
                       </Link>
                     </Button>
                   </CardContent>
