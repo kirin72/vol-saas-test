@@ -14,7 +14,7 @@ export default function Home() {
           <h1 className="text-3xl sm:text-5xl font-bold text-gray-900 leading-tight">
             봉사자 관리
             <br />
-            <span className="text-blue-600">이제 스마트하게!</span>
+            <span className="text-blue-600">쉽고 스마트하게!</span>
           </h1>
           <p className="text-base sm:text-xl text-gray-600 max-w-2xl mx-auto">
             손쉬운 자동화 플랫폼으로
