@@ -167,11 +167,11 @@ async function loadHtml2Canvas(): Promise<(element: HTMLElement, options?: objec
   const fn = typeof mod.default === 'function'
     ? mod.default
     : typeof mod === 'function'
-      ? mod
+      ? (mod as any)
       : (mod as any).default?.default;
   if (typeof fn !== 'function') {
     throw new Error(
-      `html2canvas 모듈 로드 실패: default=${typeof mod.default}, mod=${typeof mod}`
+      `html2canvas 모듈 로드 실패: default=${typeof mod.default}, mod=${typeof mod}, keys=${Object.keys(mod).join(',')}`
     );
   }
   return fn as (element: HTMLElement, options?: object) => Promise<HTMLCanvasElement>;
@@ -184,13 +184,48 @@ async function loadHtml2Canvas(): Promise<(element: HTMLElement, options?: objec
 async function loadJsPDF(): Promise<any> {
   const mod = await import('jspdf');
   // named export 'jsPDF' 또는 default export 대응
-  const JsPDF = (mod as any).jsPDF || mod.default;
+  const JsPDF = (mod as any).jsPDF
+    || (typeof mod.default === 'function' ? mod.default : null)
+    || (mod as any).default?.jsPDF;
   if (typeof JsPDF !== 'function') {
     throw new Error(
-      `jsPDF 모듈 로드 실패: jsPDF=${typeof (mod as any).jsPDF}, default=${typeof mod.default}`
+      `jsPDF 모듈 로드 실패: jsPDF=${typeof (mod as any).jsPDF}, default=${typeof mod.default}, keys=${Object.keys(mod).join(',')}`
     );
   }
   return JsPDF;
+}
+
+/**
+ * 인쇄 다이얼로그 폴백
+ * html2canvas/jspdf 실패 시 새 창에서 인쇄 다이얼로그를 띄움
+ */
+function printFallback(html: string, title: string): void {
+  const printWindow = window.open('', '_blank');
+  if (!printWindow) {
+    alert('팝업이 차단되었습니다. 팝업 차단을 해제한 후 다시 시도해주세요.');
+    return;
+  }
+  printWindow.document.write(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8" />
+      <title>${title}</title>
+      <style>
+        @media print {
+          @page { size: portrait A4; margin: 10mm; }
+          body { margin: 0; }
+        }
+      </style>
+    </head>
+    <body>${html}</body>
+    </html>
+  `);
+  printWindow.document.close();
+  // 렌더링 완료 후 인쇄 다이얼로그 표시
+  printWindow.onload = () => {
+    printWindow.print();
+  };
 }
 
 /**
@@ -212,6 +247,9 @@ export async function generateFinancePdf(
     return;
   }
 
+  // HTML 미리 생성 (PDF 실패 시 인쇄 폴백에서도 사용)
+  const sheetHtml = buildFinanceSheetHtml(transactions, summary, year, month);
+
   // 0. 라이브러리 동적 로드
   let html2canvas: (element: HTMLElement, options?: object) => Promise<HTMLCanvasElement>;
   let JsPDF: any;
@@ -219,28 +257,30 @@ export async function generateFinancePdf(
   try {
     html2canvas = await loadHtml2Canvas();
   } catch (err) {
-    throw new Error(`[1단계] html2canvas 로드 실패: ${err instanceof Error ? err.message : err}`);
+    console.error('[PDF] html2canvas 로드 실패, 인쇄 폴백 사용:', err);
+    printFallback(sheetHtml, `${year}년 ${month}월 입출금내역`);
+    return;
   }
 
   try {
     JsPDF = await loadJsPDF();
   } catch (err) {
-    throw new Error(`[1단계] jsPDF 로드 실패: ${err instanceof Error ? err.message : err}`);
+    console.error('[PDF] jsPDF 로드 실패, 인쇄 폴백 사용:', err);
+    printFallback(sheetHtml, `${year}년 ${month}월 입출금내역`);
+    return;
   }
 
   // 1. 숨겨진 div 생성
-  //    opacity:0 + pointer-events:none 방식 (off-screen보다 렌더링 안정적)
+  //    off-screen 배치 (opacity:0은 html2canvas가 빈 이미지로 캡처할 수 있음)
   const container = document.createElement('div');
   container.style.cssText = `
-    position: fixed;
+    position: absolute;
+    left: -9999px;
     top: 0;
-    left: 0;
     width: 900px;
-    opacity: 0;
-    pointer-events: none;
-    z-index: -9999;
+    background: white;
   `;
-  container.innerHTML = buildFinanceSheetHtml(transactions, summary, year, month);
+  container.innerHTML = sheetHtml;
   document.body.appendChild(container);
 
   try {
@@ -248,7 +288,7 @@ export async function generateFinancePdf(
     await new Promise((resolve) => {
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
-          resolve(undefined);
+          setTimeout(() => resolve(undefined), 100);
         });
       });
     });
@@ -256,14 +296,14 @@ export async function generateFinancePdf(
     // 2. html2canvas로 캡처
     const target = container.firstElementChild as HTMLElement;
     if (!target) {
-      throw new Error('[2단계] 캡처 대상 요소를 찾을 수 없습니다.');
+      throw new Error('캡처 대상 요소를 찾을 수 없습니다.');
     }
 
     // 요소 크기 확인
-    const targetWidth = target.scrollWidth || target.offsetWidth;
-    const targetHeight = target.scrollHeight || target.offsetHeight;
-    if (targetWidth === 0 || targetHeight === 0) {
-      throw new Error(`[2단계] 요소 크기가 0입니다: ${targetWidth}x${targetHeight}`);
+    const rect = target.getBoundingClientRect();
+    console.log('[PDF] 캡처 대상 크기:', { width: rect.width, height: rect.height, scrollW: target.scrollWidth, scrollH: target.scrollHeight });
+    if (rect.width === 0 || rect.height === 0) {
+      throw new Error(`요소 크기가 0입니다: ${rect.width}x${rect.height}`);
     }
 
     let canvas: HTMLCanvasElement;
@@ -273,24 +313,23 @@ export async function generateFinancePdf(
         useCORS: true,
         backgroundColor: '#ffffff',
         logging: false,
-        width: targetWidth,
-        height: targetHeight,
       });
     } catch (err) {
-      throw new Error(`[3단계] html2canvas 캡처 실패: ${err instanceof Error ? err.message : err}`);
+      throw new Error(`html2canvas 캡처 실패: ${err instanceof Error ? err.message : err}`);
+    }
+
+    // 캔버스 크기 확인
+    console.log('[PDF] 캔버스 크기:', { width: canvas.width, height: canvas.height });
+    if (canvas.width === 0 || canvas.height === 0) {
+      throw new Error(`캔버스 크기가 0입니다: ${canvas.width}x${canvas.height}`);
     }
 
     // 3. jsPDF로 PDF 생성 (A4 세로)
-    let pdf: any;
-    try {
-      pdf = new JsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4',
-      });
-    } catch (err) {
-      throw new Error(`[4단계] jsPDF 생성 실패: ${err instanceof Error ? err.message : err}`);
-    }
+    const pdf = new JsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4',
+    });
 
     // A4 세로 크기: 210mm x 297mm
     const pageWidth = 210;
@@ -303,50 +342,47 @@ export async function generateFinancePdf(
     const imgHeight = (canvas.height * contentWidth) / canvas.width;
 
     // 캔버스를 PNG 데이터 URL로 변환
-    let imgData: string;
-    try {
-      imgData = canvas.toDataURL('image/png');
-    } catch (err) {
-      throw new Error(`[5단계] Canvas→PNG 변환 실패: ${err instanceof Error ? err.message : err}`);
-    }
+    const imgData = canvas.toDataURL('image/png');
 
     // PDF에 이미지 삽입
-    try {
-      if (imgHeight <= pageHeight - margin * 2) {
-        // 한 페이지에 들어가는 경우
-        pdf.addImage(imgData, 'PNG', margin, margin, imgWidth, imgHeight);
-      } else {
-        // 여러 페이지로 분할
-        let remainingHeight = imgHeight;
-        let position = 0;
+    if (imgHeight <= pageHeight - margin * 2) {
+      // 한 페이지에 들어가는 경우
+      pdf.addImage(imgData, 'PNG', margin, margin, imgWidth, imgHeight);
+    } else {
+      // 여러 페이지로 분할
+      let remainingHeight = imgHeight;
+      let position = 0;
 
-        while (remainingHeight > 0) {
-          if (position > 0) {
-            pdf.addPage();
-          }
-
-          pdf.addImage(
-            imgData,
-            'PNG',
-            margin,
-            margin - position,
-            imgWidth,
-            imgHeight
-          );
-
-          position += pageHeight - margin * 2;
-          remainingHeight -= pageHeight - margin * 2;
+      while (remainingHeight > 0) {
+        if (position > 0) {
+          pdf.addPage();
         }
+
+        pdf.addImage(
+          imgData,
+          'PNG',
+          margin,
+          margin - position,
+          imgWidth,
+          imgHeight
+        );
+
+        position += pageHeight - margin * 2;
+        remainingHeight -= pageHeight - margin * 2;
       }
-    } catch (err) {
-      throw new Error(`[6단계] PDF 이미지 삽입 실패: ${err instanceof Error ? err.message : err}`);
     }
 
     // 4. PDF 다운로드
-    try {
-      pdf.save(`${year}년_${month}월_입출금내역.pdf`);
-    } catch (err) {
-      throw new Error(`[7단계] PDF 저장 실패: ${err instanceof Error ? err.message : err}`);
+    pdf.save(`${year}년_${month}월_입출금내역.pdf`);
+  } catch (err) {
+    // PDF 생성 실패 시 인쇄 폴백 사용
+    console.error('[PDF] PDF 생성 실패, 인쇄 폴백 사용:', err);
+    const message = err instanceof Error ? err.message : String(err);
+    const usePrint = confirm(
+      `PDF 자동 다운로드에 실패했습니다.\n(${message})\n\n인쇄 다이얼로그를 통해 PDF로 저장하시겠습니까?\n(인쇄 다이얼로그에서 "PDF로 저장"을 선택해 주세요)`
+    );
+    if (usePrint) {
+      printFallback(sheetHtml, `${year}년 ${month}월 입출금내역`);
     }
   } finally {
     // 5. 임시 div 정리
