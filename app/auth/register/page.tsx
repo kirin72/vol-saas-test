@@ -38,8 +38,6 @@ export default function RegisterPage() {
   // 조직 정보
   const [orgName, setOrgName] = useState(''); // 사용자가 입력하는 원본 값
   const [orgGroupName, setOrgGroupName] = useState(''); // 조직이름 (예: 독서단)
-  const [orgPhone, setOrgPhone] = useState('');
-  const [orgEmail, setOrgEmail] = useState('');
   const [orgAddress, setOrgAddress] = useState('');
 
   // 성당 디렉토리 매칭 관련 상태
@@ -53,6 +51,7 @@ export default function RegisterPage() {
 
   // 관리자 정보
   const [adminName, setAdminName] = useState('');
+  const [adminBaptismalName, setAdminBaptismalName] = useState('');
   const [adminEmail, setAdminEmail] = useState('');
   const [adminPhone, setAdminPhone] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
@@ -120,12 +119,12 @@ export default function RegisterPage() {
     setIsMatched(true);
     setShowDropdown(false);
 
-    // 주소와 전화번호 자동 입력 (데이터가 있는 경우만)
+    // 주소 자동 입력 (데이터가 있는 경우만)
     if (church.address) {
       setOrgAddress(church.address);
-    }
-    if (church.phone) {
-      setOrgPhone(church.phone);
+    } else if (church.diocese === '수원교구' && church.name.includes('오산')) {
+      // 수원교구 오산성당 주소 수동 매핑 (DB에 없는 경우)
+      setOrgAddress('경기 오산시 가장로 727');
     }
   };
 
@@ -171,12 +170,11 @@ export default function RegisterPage() {
             name: finalOrgName,
             groupName: orgGroupName,
             slug: generateSlug(),
-            phone: orgPhone,
-            email: orgEmail || undefined,
             address: orgAddress,
           },
           admin: {
             name: adminName,
+            baptismalName: adminBaptismalName || undefined,
             email: adminEmail,
             phone: adminPhone,
             password: adminPassword,
@@ -282,7 +280,8 @@ export default function RegisterPage() {
                 {/* 성당 매칭 성공 메시지 */}
                 {isMatched && (
                   <div className="bg-green-50 border border-green-200 rounded-md p-3 text-sm text-green-700">
-                    해당 성당이 데이터베이스에 존재합니다. 미사시간과 주소 연락처를 자동으로 입력합니다.
+                    성당의 자료가 데이터베이스에 존재합니다.<br />
+                    주소와 미사일정이 자동으로 입력됩니다.
                   </div>
                 )}
 
@@ -299,34 +298,6 @@ export default function RegisterPage() {
                   <p className="text-xs text-gray-500">
                     조직이름에 따라 관련 봉사 역할이 자동 선택됩니다
                   </p>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="orgPhone">전화번호</Label>
-                    <Input
-                      id="orgPhone"
-                      type="tel"
-                      placeholder="02-1234-5678"
-                      value={orgPhone}
-                      onChange={(e) => setOrgPhone(e.target.value)}
-                      disabled={loading}
-                      className={isMatched && orgPhone ? 'border-green-300 bg-green-50/50' : ''}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="orgEmail">이메일 (옵션)</Label>
-                    <Input
-                      id="orgEmail"
-                      type="email"
-                      placeholder="info@church.or.kr"
-                      value={orgEmail}
-                      onChange={(e) => setOrgEmail(e.target.value)}
-                      disabled={loading}
-                      autoComplete="off"
-                    />
-                  </div>
                 </div>
 
                 <div className="space-y-2">
@@ -363,16 +334,28 @@ export default function RegisterPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="adminPhone">전화번호</Label>
+                    <Label htmlFor="adminBaptismalName">세례명</Label>
                     <Input
-                      id="adminPhone"
-                      type="tel"
-                      placeholder="010-1234-5678"
-                      value={adminPhone}
-                      onChange={(e) => setAdminPhone(e.target.value)}
+                      id="adminBaptismalName"
+                      type="text"
+                      placeholder="요셉"
+                      value={adminBaptismalName}
+                      onChange={(e) => setAdminBaptismalName(e.target.value)}
                       disabled={loading}
                     />
                   </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="adminPhone">전화번호</Label>
+                  <Input
+                    id="adminPhone"
+                    type="tel"
+                    placeholder="010-1234-5678"
+                    value={adminPhone}
+                    onChange={(e) => setAdminPhone(e.target.value)}
+                    disabled={loading}
+                  />
                 </div>
 
                 <div className="space-y-2">

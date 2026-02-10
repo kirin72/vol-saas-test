@@ -54,7 +54,7 @@ export default async function VolunteerLayout({
     <div className="min-h-screen bg-gray-50">
       {/* 상단 헤더 */}
       <VolunteerHeader
-        organizationName={volunteer.organization?.name || ''}
+        organizationName={(volunteer.organization?.name || '').replace(/본당$/, '성당')}
         volunteerName={volunteer.name}
         baptismalName={volunteer.baptismalName}
         roles={volunteer.userRoles.map((ur) => ur.volunteerRole)}

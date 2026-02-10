@@ -24,6 +24,11 @@ function getActiveRolesForGroup(groupName: string | null | undefined): string[] 
   const name = groupName.trim();
   const activeRoles: string[] = [];
 
+  // '레위'가 포함되면 1독서, 2독서, 해설만 등록
+  if (name.includes('레위')) {
+    return ['1독서', '2독서', '해설'];
+  }
+
   // 키워드 매핑: 조직이름에 포함된 단어 → 활성화할 역할
   if (name.includes('독서')) activeRoles.push('1독서', '2독서');
   if (name.includes('해설')) activeRoles.push('해설');
@@ -107,6 +112,7 @@ export async function POST(request: NextRequest) {
           email: admin.email,
           password: hashedPassword,
           name: admin.name,
+          baptismalName: admin.baptismalName || null,
           phone: admin.phone || null,
           role: 'ADMIN',
           status: 'ACTIVE',

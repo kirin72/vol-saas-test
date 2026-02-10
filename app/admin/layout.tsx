@@ -46,7 +46,7 @@ export default async function AdminLayout({
     <div className="min-h-screen bg-gray-50">
       {/* 상단 고정 네비게이션 바 */}
       <AdminNavbar
-        organizationName={organization.name}
+        organizationName={organization.name.replace(/본당$/, '성당')}
         groupName={organization.groupName}
         userName={session.user.name || '관리자'}
       />
