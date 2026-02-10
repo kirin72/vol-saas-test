@@ -174,7 +174,19 @@ function parseWeekdayMassDetailed(weekdayMass: string): Map<string, string[]> {
     // 요일 접두사 이후의 시간 부분 추출
     const timePart = trimmedLine.substring(dayMatch[0].length);
     // HH:mm 형식의 시간을 모두 추출 (괄호 안의 설명 텍스트는 무시)
+    // bare number(예: "17")도 HH:00으로 처리
     const timeMatches = [...timePart.matchAll(/(\d{1,2}):(\d{2})/g)];
+
+    // HH:mm 매칭이 없으면 bare number(시간만) 시도
+    if (timeMatches.length === 0) {
+      const bareMatches = [...timePart.matchAll(/(\d{1,2})(?=\s|,|$)/g)];
+      for (const bm of bareMatches) {
+        const h = parseInt(bm[1]);
+        if (h >= 0 && h <= 23) {
+          timeMatches.push(Object.assign([bm[0], bm[1], '00'], { index: bm.index, input: bm.input }) as any);
+        }
+      }
+    }
 
     for (const match of timeMatches) {
       const h = parseInt(match[1]);
