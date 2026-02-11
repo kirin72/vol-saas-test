@@ -300,11 +300,11 @@ export default function MassTimesPage() {
         </div>
         {/* 버튼 그룹 */}
         <div className="flex gap-3 shrink-0">
-          {/* 미사일정 추가 버튼 */}
+          {/* 개별미사추가 버튼 */}
           <Button asChild variant="outline" size="lg">
             <Link href="/admin/schedules">
               <CalendarDays className="h-4 w-4 mr-2" />
-              미사일정 추가
+              개별미사추가
             </Link>
           </Button>
           {/* 저장 버튼 */}
