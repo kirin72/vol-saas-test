@@ -25,12 +25,13 @@ export async function GET(
 
     const organizationId = session.user.organizationId;
 
-    // 봉사자 조회
+    // 봉사자 조회 (ADMIN도 봉사 역할이 있으면 봉사자로 간주)
     const volunteer = await prisma.user.findFirst({
       where: {
         id,
         organizationId,
-        role: 'VOLUNTEER',
+        role: { in: ['VOLUNTEER', 'ADMIN'] },
+        userRoles: { some: {} },
       },
       include: {
         userRoles: {
@@ -73,12 +74,13 @@ export async function PATCH(
 
     const organizationId = session.user.organizationId;
 
-    // 봉사자 존재 확인
+    // 봉사자 존재 확인 (ADMIN도 봉사 역할이 있으면 봉사자로 간주)
     const existingVolunteer = await prisma.user.findFirst({
       where: {
         id,
         organizationId,
-        role: 'VOLUNTEER',
+        role: { in: ['VOLUNTEER', 'ADMIN'] },
+        userRoles: { some: {} },
       },
     });
 
@@ -195,12 +197,13 @@ export async function DELETE(
 
     const organizationId = session.user.organizationId;
 
-    // 봉사자 존재 확인
+    // 봉사자 존재 확인 (ADMIN도 봉사 역할이 있으면 봉사자로 간주)
     const volunteer = await prisma.user.findFirst({
       where: {
         id,
         organizationId,
-        role: 'VOLUNTEER',
+        role: { in: ['VOLUNTEER', 'ADMIN'] },
+        userRoles: { some: {} },
       },
     });
 

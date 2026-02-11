@@ -8,6 +8,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ServiceWorkerRegister } from "@/components/pwa/service-worker-register";
+import { AuthProvider } from "@/components/auth-provider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -51,7 +52,10 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+        {/* NextAuth 세션 컨텍스트 (useSession 훅 사용을 위해 필요) */}
+        <AuthProvider>
+          {children}
+        </AuthProvider>
         {/* PWA Service Worker 등록 */}
         <ServiceWorkerRegister />
       </body>

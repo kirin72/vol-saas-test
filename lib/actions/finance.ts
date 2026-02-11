@@ -540,11 +540,11 @@ export async function getVolunteersForFinance(): Promise<
     }
     const organizationId = access.organizationId!;
 
-    // 2. 해당 본당의 봉사자 목록 조회
+    // 2. 해당 본당의 봉사자 + 관리자 목록 조회 (관리자도 입금자로 선택 가능)
     const volunteers = await prisma.user.findMany({
       where: {
         organizationId,
-        role: 'VOLUNTEER',
+        role: { in: ['VOLUNTEER', 'ADMIN'] },
         status: 'ACTIVE',
       },
       select: {
