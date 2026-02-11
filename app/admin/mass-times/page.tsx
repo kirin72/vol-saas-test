@@ -8,7 +8,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, Save, Plus, Trash2, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Loader2, Save, Plus, Trash2, AlertCircle, CheckCircle2, CalendarDays } from 'lucide-react';
+import Link from 'next/link';
 
 // 요일 목록 (일~토 순서)
 const DAYS = [
@@ -294,23 +295,32 @@ export default function MassTimesPage() {
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">미사 일정</h1>
           <p className="text-gray-600 mt-2">
-          요일별 미사 시간과 봉사 역할을 설정해주세요.<br>설정이 끝나면 <strong>저장</strong>버튼을 눌러주세요.</br>
+          요일별 미사 시간과 봉사 역할을 설정해주세요.<br />설정이 끝나면 <strong>저장</strong>버튼을 눌러주세요.
           </p>
         </div>
-        {/* 저장 버튼 */}
-        <Button
-          onClick={handleSave}
-          disabled={saving || totalMassTimes === 0}
-          className="shrink-0"
-          size="lg"
-        >
-          {saving ? (
-            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-          ) : (
-            <Save className="h-4 w-4 mr-2" />
-          )}
-          {saving ? '저장 중...' : '저장'}
-        </Button>
+        {/* 버튼 그룹 */}
+        <div className="flex gap-3 shrink-0">
+          {/* 미사일정 추가 버튼 */}
+          <Button asChild variant="outline" size="lg">
+            <Link href="/admin/schedules">
+              <CalendarDays className="h-4 w-4 mr-2" />
+              미사일정 추가
+            </Link>
+          </Button>
+          {/* 저장 버튼 */}
+          <Button
+            onClick={handleSave}
+            disabled={saving || totalMassTimes === 0}
+            size="lg"
+          >
+            {saving ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Save className="h-4 w-4 mr-2" />
+            )}
+            {saving ? '저장 중...' : '저장'}
+          </Button>
+        </div>
       </div>
 
       {/* 안내 배너 */}
