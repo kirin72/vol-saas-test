@@ -26,7 +26,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "봉사관리",
+    title: "봉사자",
   },
   formatDetection: {
     telephone: false,
