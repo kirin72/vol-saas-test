@@ -59,9 +59,9 @@ export default function SetupGuidePage() {
                 <p className="text-sm text-gray-600 leading-relaxed">
                   가장 먼저, 단체의 봉사 역할을 등록해 주세요.
                   <br />
-                  각 봉사 역할당 1명의 봉사자만 배정할 수 있습니다.
+                  각 봉사 역할당 1명의 봉사자를 배정할 수 있습니다.
                   <br />
-                  예) 해설, 1독서, 2독서, 제대, 복사 등
+                  예) 해설, 1독서, 2독서, 1복사, 2복사 등
                 </p>
                 {/* 해당 페이지 링크 */}
                 <Link
@@ -89,7 +89,7 @@ export default function SetupGuidePage() {
                   <h2 className="text-lg font-bold text-gray-900">봉사자 관리</h2>
                 </div>
                 <p className="text-sm text-gray-600 leading-relaxed">
-                  이 메뉴에서 봉사자를 등록하고 각 봉사자에게 역할을 배정할 수 있습니다.
+                  이 메뉴에서 단체의 봉사자를 등록할 수 있습니다.
                   <br />
                   등록된 봉사자는 본인의 이름과 전화번호 뒷자리로 로그인 할 수 있습니다.
                 </p>
@@ -118,11 +118,11 @@ export default function SetupGuidePage() {
                   <h2 className="text-lg font-bold text-gray-900">미사 일정</h2>
                 </div>
                 <p className="text-sm text-gray-600 leading-relaxed">
-                  미사 일정 만들어 주세요.
+                  본당의 미사 일정을 만들어 주세요.
                   <br />
                   미사일정은 자동으로 생성 될 수도 있으나 확인이 필요합니다.
                   <br />
-                  각 미사에 필요한 봉사역할도 선택하실 수 있습니다.
+                  각 미사에 필요한 봉사 역할도 선택할 수 있습니다.
                 </p>
                 <Link
                   href="/admin/mass-times"
@@ -149,6 +149,9 @@ export default function SetupGuidePage() {
               </p>
               <p className="text-sm text-amber-700 leading-relaxed">
                 명절이나 대축일 등 <strong>특별 미사</strong>가 있는 경우, 왼쪽 메뉴의 미사 일정 추가로 만들어서 관리할 수 있습니다.
+              </p>
+              <p className="text-sm text-amber-700 leading-relaxed">
+                PC사용에 능숙한 경우 컴퓨터로도 bongsaja.com 에 접속하여 넓은화면으로 편리하게 사용 할 수 있습니다.
               </p>
             </div>
           </div>
