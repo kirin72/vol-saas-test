@@ -91,7 +91,7 @@ export default function ScheduleDialog({
     defaultValues: {
       date: '',
       time: '10:00',
-      massType: 'SUNDAY',
+      massType: 'FEAST',
       notes: '',
       requiredRoles: [{ roleId: '', count: 1 }],
     },
@@ -154,7 +154,7 @@ export default function ScheduleDialog({
         reset({
           date: schedule.date ? new Date(schedule.date).toISOString().split('T')[0] : '',
           time: schedule.time || '10:00',
-          massType: schedule.massTemplate?.massType || 'SUNDAY',
+          massType: schedule.massTemplate?.massType || 'FEAST',
           notes: schedule.notes || '',
           requiredRoles: [],
         });
@@ -284,11 +284,14 @@ export default function ScheduleDialog({
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 disabled={loading}
               >
-                {Object.entries(massTypeLabels).map(([value, label]) => (
-                  <option key={value} value={value}>
-                    {label}
-                  </option>
-                ))}
+                {/* 자동 생성 타입(주일/평일/토요일/특전)은 드롭다운에서 제외 */}
+                {Object.entries(massTypeLabels)
+                  .filter(([value]) => !['SUNDAY', 'WEEKDAY', 'SATURDAY', 'SPECIAL'].includes(value))
+                  .map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
               </select>
               {errors.massType && (
                 <p className="text-sm text-red-600">{errors.massType.message}</p>
