@@ -80,6 +80,7 @@ export default function MassTimesPage() {
   const [saving, setSaving] = useState(false); // 저장 중
   const [source, setSource] = useState<string>(''); // 데이터 출처
   const [error, setError] = useState(''); // 에러 메시지
+  const [errorId, setErrorId] = useState(''); // 에러 ID (추적용)
   const [successMessage, setSuccessMessage] = useState(''); // 성공 메시지
 
   // 시간 문자열을 표시 형식으로 변환 (예: "10:00" → "오전 10:00")
@@ -100,6 +101,7 @@ export default function MassTimesPage() {
     try {
       setLoading(true);
       setError('');
+      setErrorId('');
 
       // 미사시간과 역할 목록 동시 조회
       const [massTimesRes, rolesRes] = await Promise.all([
@@ -118,7 +120,11 @@ export default function MassTimesPage() {
       }
 
       // 미사시간 데이터 처리
-      if (!massTimesRes.ok) throw new Error('미사시간 조회 실패');
+      if (!massTimesRes.ok) {
+        const errorData = await massTimesRes.json();
+        setErrorId(errorData.errorId || '');
+        throw new Error(errorData.details || errorData.error || '미사시간 조회 실패');
+      }
       const data = await massTimesRes.json();
 
       setSource(data.source);
@@ -241,6 +247,7 @@ export default function MassTimesPage() {
     try {
       setSaving(true);
       setError('');
+      setErrorId('');
       setSuccessMessage('');
 
       const response = await fetch('/api/admin/mass-times', {
@@ -251,7 +258,8 @@ export default function MassTimesPage() {
 
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.error || '저장 실패');
+        setErrorId(data.errorId || '');
+        throw new Error(data.details || data.error || '저장 실패');
       }
 
       const result = await response.json();
@@ -333,8 +341,24 @@ export default function MassTimesPage() {
 
       {/* 에러 메시지 */}
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-md p-4 text-sm text-red-700">
-          {error}
+        <div className="bg-red-50 border-2 border-red-400 rounded-md p-4 text-sm">
+          <div className="flex items-start gap-2">
+            <AlertCircle className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="font-semibold text-red-800 mb-1">오류가 발생했습니다</p>
+              <p className="text-red-700 mb-2">{error}</p>
+              {errorId && (
+                <div className="mt-3 pt-3 border-t border-red-300">
+                  <p className="text-xs text-red-600">
+                    <strong>에러 ID:</strong> <code className="bg-red-100 px-2 py-1 rounded">{errorId}</code>
+                  </p>
+                  <p className="text-xs text-red-600 mt-1">
+                    문제가 계속되면 위 에러 ID를 포함하여 문의해 주세요.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
 

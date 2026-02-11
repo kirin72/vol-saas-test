@@ -8,6 +8,7 @@ import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { dayOfWeekToNumber } from '@/lib/validations/template';
 import { buildTemplateData } from '@/lib/church-directory';
+import { logError, getUserFriendlyErrorMessage, generateErrorId } from '@/lib/error-logger';
 
 // 요일 영문 → 한글 매핑
 const dayKorean: Record<string, string> = {
@@ -191,8 +192,26 @@ export async function GET(request: NextRequest) {
     // 3. 아무 데이터도 없으면 빈 구조 반환
     return NextResponse.json({ source: 'empty', days });
   } catch (error) {
-    console.error('미사시간 조회 오류:', error);
-    return NextResponse.json({ error: 'Failed to fetch mass times' }, { status: 500 });
+    const errorId = generateErrorId();
+
+    logError(error, {
+      endpoint: '/api/admin/mass-times',
+      method: 'GET',
+      userId: session?.user?.id,
+      organizationId: session?.user?.organizationId || undefined,
+      additionalInfo: { errorId },
+    });
+
+    const userMessage = getUserFriendlyErrorMessage(error);
+
+    return NextResponse.json(
+      {
+        error: '미사 일정을 불러오는 중 오류가 발생했습니다.',
+        details: userMessage,
+        errorId, // 사용자가 문의 시 이 ID를 전달할 수 있음
+      },
+      { status: 500 }
+    );
   }
 }
 
@@ -415,7 +434,26 @@ export async function POST(request: NextRequest) {
       ...result,
     });
   } catch (error) {
-    console.error('미사시간 저장 오류:', error);
-    return NextResponse.json({ error: 'Failed to save mass times' }, { status: 500 });
+    const errorId = generateErrorId();
+
+    logError(error, {
+      endpoint: '/api/admin/mass-times',
+      method: 'POST',
+      userId: session?.user?.id,
+      organizationId: session?.user?.organizationId || undefined,
+      requestBody: body,
+      additionalInfo: { errorId },
+    });
+
+    const userMessage = getUserFriendlyErrorMessage(error);
+
+    return NextResponse.json(
+      {
+        error: '미사 일정을 저장하는 중 오류가 발생했습니다.',
+        details: userMessage,
+        errorId,
+      },
+      { status: 500 }
+    );
   }
 }
