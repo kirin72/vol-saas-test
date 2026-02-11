@@ -349,18 +349,7 @@ export default async function AdminDashboardPage() {
           <CardTitle>빠른 작업</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-            {/* 봉사자 등록 */}
-            <Button asChild className="min-h-[72px] h-auto py-4">
-              <Link
-                href="/admin/volunteers/new"
-                className="flex flex-col items-center gap-2"
-              >
-                <Users className="h-6 w-6 shrink-0" />
-                <span className="text-sm text-center whitespace-nowrap">봉사자 등록</span>
-              </Link>
-            </Button>
-
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {/* 일정 추가 */}
             <Button asChild variant="outline" className="min-h-[72px] h-auto py-4">
               <Link
