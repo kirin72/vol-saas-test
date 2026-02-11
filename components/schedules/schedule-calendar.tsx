@@ -205,17 +205,17 @@ export default function ScheduleCalendar({
                 </>
               )}
 
-              {/* 일정 추가 버튼 (데스크톱에서만 표시) */}
+              {/* 일정 추가 버튼 */}
               {onAddSchedule && (
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     onAddSchedule(date);
                   }}
-                  className="hidden sm:flex mt-auto pt-1 text-gray-400 hover:text-blue-600 transition-colors items-center justify-center gap-1 text-xs"
+                  className="flex mt-auto pt-1 text-gray-400 hover:text-blue-600 transition-colors items-center justify-center gap-1 text-xs"
                 >
                   <Plus className="h-3 w-3" />
-                  <span>추가</span>
+                  <span className="hidden sm:inline">추가</span>
                 </button>
               )}
             </div>
