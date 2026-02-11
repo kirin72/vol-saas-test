@@ -31,7 +31,7 @@ export default function Home() {
               <Sparkles className="w-6 h-6" />
             </div>
             <h3 className="font-semibold">쉬운 봉사자 배정</h3>
-            <p className="text-sm text-gray-500 mt-1">몇 번의 클릭으로 자동 배정</p>
+            <p className="text-sm text-gray-500 mt-1">몇번 클릭으로 자동 배정</p>
           </div>
 
           {/* 일정 변경도 간편하게 */}
@@ -39,8 +39,8 @@ export default function Home() {
             <div className="w-12 h-12 mx-auto mb-3 flex items-center justify-center rounded-xl bg-green-100 text-green-600">
               <RefreshCcw className="w-6 h-6" />
             </div>
-            <h3 className="font-semibold">일정 변경도 간편하게</h3>
-            <p className="text-sm text-gray-500 mt-1">봉사자가 직접 요청 가능</p>
+            <h3 className="font-semibold">간편한 일정 변경</h3>
+            <p className="text-sm text-gray-500 mt-1">간편 변경 시스템</p>
           </div>
 
           {/* 자동 알림 시스템 */}
@@ -84,7 +84,7 @@ export default function Home() {
           </div>
 
           <p className="mt-6 text-gray-600 text-sm max-w-md mx-auto">
-            공정한 자동 배정으로 복잡한 봉사 배정 시간을 크게 줄일 수 있습니다.
+            자동 배정으로 복잡한 봉사 배정 시간을 크게 단축합니다.
           </p>
         </div>
       </section>
