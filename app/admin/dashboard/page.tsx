@@ -23,12 +23,13 @@ async function getStats(organizationId: string) {
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
 
-    // 1. 전체 봉사자 수
+    // 1. 전체 봉사자 수 (관리자도 봉사 역할이 있으면 포함)
     const volunteerCount = await prisma.user.count({
       where: {
         organizationId,
-        role: 'VOLUNTEER',
+        role: { in: ['VOLUNTEER', 'ADMIN'] },
         status: 'ACTIVE',
+        userRoles: { some: {} },
       },
     });
 
@@ -87,12 +88,13 @@ async function getStats(organizationId: string) {
         ? Math.round((assignedSlots / totalRequiredSlots) * 100)
         : 0;
 
-    // 5. 봉사자별 배정 통계
+    // 5. 봉사자별 배정 통계 (관리자도 봉사 역할이 있으면 포함)
     const volunteers = await prisma.user.findMany({
       where: {
         organizationId,
-        role: 'VOLUNTEER',
+        role: { in: ['VOLUNTEER', 'ADMIN'] },
         status: 'ACTIVE',
+        userRoles: { some: {} },
       },
       select: {
         id: true,

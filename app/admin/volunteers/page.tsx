@@ -21,6 +21,7 @@ interface Volunteer {
   baptismalName: string | null;
   email: string;
   phone: string | null;
+  role: string;
   status: string;
   hasPaidDues: boolean;
   userRoles: Array<{
@@ -222,7 +223,7 @@ export default function VolunteersPage() {
       <TreasurerDialog
         open={treasurerDialogOpen}
         onOpenChange={setTreasurerDialogOpen}
-        volunteers={volunteers.map((v) => ({
+        volunteers={volunteers.filter((v) => v.role !== 'ADMIN').map((v) => ({
           id: v.id,
           name: v.name,
           baptismalName: v.baptismalName,
