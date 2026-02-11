@@ -27,7 +27,17 @@ export async function POST(request: NextRequest) {
       // 이메일로 검색 (단일 사용자)
       const user = await prisma.user.findUnique({
         where: { email: identifier },
-        include: { organization: true },
+        include: {
+          organization: true,
+          // 봉사 역할 정보 포함 (성당 선택 화면에 표시용)
+          userRoles: {
+            include: {
+              volunteerRole: {
+                select: { name: true, color: true, isActive: true },
+              },
+            },
+          },
+        },
       });
 
       users = user ? [user] : [];
@@ -38,7 +48,17 @@ export async function POST(request: NextRequest) {
           name: identifier,
           status: 'ACTIVE',
         },
-        include: { organization: true },
+        include: {
+          organization: true,
+          // 봉사 역할 정보 포함 (성당 선택 화면에 표시용)
+          userRoles: {
+            include: {
+              volunteerRole: {
+                select: { name: true, color: true, isActive: true },
+              },
+            },
+          },
+        },
       });
     }
 
@@ -54,6 +74,12 @@ export async function POST(request: NextRequest) {
     for (const user of users) {
       const isPasswordValid = await bcrypt.compare(password, user.password);
       if (isPasswordValid && user.status === 'ACTIVE') {
+        // 활성 봉사 역할 목록 추출
+        const volunteerRoles = (user as any).userRoles
+          ?.map((ur: any) => ur.volunteerRole)
+          .filter((role: any) => role?.isActive)
+          .map((role: any) => ({ name: role.name, color: role.color })) || [];
+
         validUsers.push({
           id: user.id,
           name: user.name,
@@ -61,6 +87,7 @@ export async function POST(request: NextRequest) {
           organizationId: user.organizationId,
           organizationName: user.organization?.name || '알 수 없음',
           role: user.role,
+          volunteerRoles, // 봉사 가능 역할 목록
         });
       }
     }

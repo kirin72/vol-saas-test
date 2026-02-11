@@ -268,7 +268,7 @@ export default function RegisterPage() {
                     )}
                   </div>
                   <p className="text-xs text-gray-500">
-                    &apos;성당&apos;을 입력하지 않아도 자동으로 붙여집니다
+                    입력중 하단에 생성된 성당을 누르면 자동입력됩니다.
                   </p>
 
                   {/* 자동완성 드롭다운 */}

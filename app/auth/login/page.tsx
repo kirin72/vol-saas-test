@@ -16,6 +16,12 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
+// 봉사 역할 타입
+interface VolunteerRoleInfo {
+  name: string;
+  color: string;
+}
+
 // 성당 정보 타입
 interface OrganizationUser {
   id: string;
@@ -24,6 +30,7 @@ interface OrganizationUser {
   organizationId: string;
   organizationName: string;
   role: string;
+  volunteerRoles: VolunteerRoleInfo[]; // 봉사 가능 역할 목록
 }
 
 export default function LoginPage() {
@@ -256,9 +263,27 @@ export default function LoginPage() {
                     htmlFor={user.organizationId}
                     className="flex-1 cursor-pointer"
                   >
-                    <div className="font-medium">{user.organizationName}</div>
-                    <div className="text-sm text-gray-500">
-                      {user.role === 'ADMIN' ? '관리자' : '봉사자'}
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="font-medium">{user.organizationName}</div>
+                        <div className="text-sm text-gray-500">
+                          {user.name} · {user.role === 'ADMIN' ? '관리자' : '봉사자'}
+                        </div>
+                      </div>
+                      {/* 봉사 가능 역할 표시 */}
+                      {user.volunteerRoles && user.volunteerRoles.length > 0 && (
+                        <div className="flex flex-wrap gap-1 ml-2">
+                          {user.volunteerRoles.map((vr) => (
+                            <span
+                              key={vr.name}
+                              className="text-xs px-1.5 py-0.5 rounded text-white"
+                              style={{ backgroundColor: vr.color || '#6B7280' }}
+                            >
+                              {vr.name}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </Label>
                 </div>

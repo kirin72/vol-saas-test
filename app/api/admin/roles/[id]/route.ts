@@ -64,22 +64,58 @@ export async function PATCH(
       }
     }
 
-    // 역할 수정
-    const updatedRole = await prisma.volunteerRole.update({
-      where: { id },
-      data: {
-        name: validatedData.name,
-        description: validatedData.description || null,
-        color: validatedData.color,
-        sortOrder: validatedData.sortOrder,
-        genderPreference: validatedData.genderPreference || 'NONE', // 성별 우선 배정
-        isActive: validatedData.isActive,
-      },
+    // isActive 상태 변경 여부 확인
+    const isActiveChanged = validatedData.isActive !== existingRole.isActive;
+
+    // 트랜잭션으로 역할 수정 + TemplateSlot 동기화
+    const updatedRole = await prisma.$transaction(async (tx) => {
+      // 1. 역할 수정
+      const role = await tx.volunteerRole.update({
+        where: { id },
+        data: {
+          name: validatedData.name,
+          description: validatedData.description || null,
+          color: validatedData.color,
+          sortOrder: validatedData.sortOrder,
+          genderPreference: validatedData.genderPreference || 'NONE', // 성별 우선 배정
+          isActive: validatedData.isActive,
+        },
+      });
+
+      // 2. isActive가 변경된 경우 TemplateSlot 동기화
+      if (isActiveChanged) {
+        if (validatedData.isActive) {
+          // 활성화: 모든 활성 미사 템플릿에 이 역할의 슬롯 추가
+          const activeTemplates = await tx.massTemplate.findMany({
+            where: { organizationId, isActive: true },
+            select: { id: true },
+          });
+
+          if (activeTemplates.length > 0) {
+            await tx.templateSlot.createMany({
+              data: activeTemplates.map((t) => ({
+                massTemplateId: t.id,
+                volunteerRoleId: id,
+                requiredCount: 1,
+              })),
+              skipDuplicates: true,
+            });
+          }
+        } else {
+          // 비활성화: 해당 역할의 TemplateSlot 모두 제거
+          await tx.templateSlot.deleteMany({
+            where: { volunteerRoleId: id },
+          });
+        }
+      }
+
+      return role;
     });
 
     console.log('역할 수정 완료:', {
       id: updatedRole.id,
       name: updatedRole.name,
+      isActiveChanged: isActiveChanged ? `${existingRole.isActive} → ${validatedData.isActive}` : '변경없음',
     });
 
     return NextResponse.json(updatedRole);

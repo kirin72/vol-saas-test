@@ -101,22 +101,45 @@ export async function POST(request: NextRequest) {
 
     const nextSortOrder = maxSortOrderRole ? maxSortOrderRole.sortOrder + 1 : 0;
 
-    // 역할 생성
-    const role = await prisma.volunteerRole.create({
-      data: {
-        organizationId,
-        name: validatedData.name,
-        description: validatedData.description || null,
-        color: validatedData.color,
-        sortOrder: nextSortOrder, // 자동 할당
-        genderPreference: validatedData.genderPreference || 'NONE', // 성별 우선 배정
-        isActive: true, // 기본값 true
-      },
+    // 트랜잭션으로 역할 생성 + 활성 역할이면 TemplateSlot 자동 추가
+    const role = await prisma.$transaction(async (tx) => {
+      // 1. 역할 생성
+      const newRole = await tx.volunteerRole.create({
+        data: {
+          organizationId,
+          name: validatedData.name,
+          description: validatedData.description || null,
+          color: validatedData.color,
+          sortOrder: nextSortOrder, // 자동 할당
+          genderPreference: validatedData.genderPreference || 'NONE', // 성별 우선 배정
+          isActive: true, // 기본값 true
+        },
+      });
+
+      // 2. 활성 역할이므로 모든 활성 미사 템플릿에 슬롯 추가
+      const activeTemplates = await tx.massTemplate.findMany({
+        where: { organizationId, isActive: true },
+        select: { id: true },
+      });
+
+      if (activeTemplates.length > 0) {
+        await tx.templateSlot.createMany({
+          data: activeTemplates.map((t) => ({
+            massTemplateId: t.id,
+            volunteerRoleId: newRole.id,
+            requiredCount: 1,
+          })),
+          skipDuplicates: true,
+        });
+      }
+
+      return newRole;
     });
 
     console.log('역할 생성 완료:', {
       id: role.id,
       name: role.name,
+      templateSlotsAdded: true,
     });
 
     return NextResponse.json(role, { status: 201 });
