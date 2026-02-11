@@ -64,20 +64,29 @@ export default function Home() {
       </section>
 
       {/* SCREENSHOT */}
-      <section className="px-5 mt-10 text-center">
-        <div className="mt-10 px-5">
-          <Image
-            src="/auto-assign.png"
-            alt="자동배정 화면"
-            width={800}
-            height={600}
-            className="rounded-2xl border border-gray-200 shadow-lg mx-auto"
-            priority
-          />
+      <section className="mt-10 bg-white py-8 px-5">
+        <div className="text-center">
+          {/* 라벨 */}
+          <div className="inline-block mb-6 px-4 py-2 bg-blue-50 text-blue-700 rounded-full text-sm font-semibold">
+            📱 실제 사용 화면예시
+          </div>
+
+          {/* 스크린샷 - 90% 크기 */}
+          <div className="w-[90%] mx-auto">
+            <Image
+              src="/auto-assign.png"
+              alt="자동배정 화면"
+              width={800}
+              height={600}
+              className="rounded-2xl border border-gray-200 shadow-lg w-full"
+              priority
+            />
+          </div>
+
+          <p className="mt-6 text-gray-600 text-sm max-w-md mx-auto">
+            공정한 자동 배정으로 복잡한 봉사 배정 시간을 크게 줄일 수 있습니다.
+          </p>
         </div>
-        <p className="mt-4 text-gray-600 text-sm">
-          공정한 자동 배정으로 복잡한 봉사 배정 시간을 크게 줄일 수 있습니다.
-        </p>
       </section>
 
       {/* CTA - 하단 고정 */}
