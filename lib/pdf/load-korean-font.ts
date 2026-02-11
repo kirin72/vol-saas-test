@@ -42,8 +42,9 @@ export async function registerKoreanFont(doc: jsPDF): Promise<void> {
 
   // jsPDF 가상 파일 시스템에 폰트 등록
   doc.addFileToVFS('NotoSansKR-Regular.ttf', cachedFontBase64);
-  // 폰트 패밀리 등록 (normal 스타일)
+  // 폰트 패밀리 등록 (normal + bold 스타일 모두 등록, bold 미지원 시 fallback 방지)
   doc.addFont('NotoSansKR-Regular.ttf', 'NotoSansKR', 'normal');
+  doc.addFont('NotoSansKR-Regular.ttf', 'NotoSansKR', 'bold');
   // 기본 폰트로 설정
   doc.setFont('NotoSansKR');
 }

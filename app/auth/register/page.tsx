@@ -24,6 +24,14 @@ interface ChurchDirectoryResult {
   weekdayMass: string | null;
 }
 
+// 전화번호 자동 포맷 (숫자만 입력해도 000-0000-0000 형식으로 변환)
+function formatPhone(value: string): string {
+  const digits = value.replace(/\D/g, '').slice(0, 11); // 숫자만, 최대 11자리
+  if (digits.length <= 3) return digits;
+  if (digits.length <= 7) return `${digits.slice(0, 3)}-${digits.slice(3)}`;
+  return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`;
+}
+
 // 성당 이름에 "성당" 접미사를 붙여주는 헬퍼
 // "명동" → "명동성당", "명동성당" → "명동성당" (중복 방지)
 function ensureChurchSuffix(name: string): string {
@@ -365,10 +373,10 @@ export default function RegisterPage() {
                   <Label htmlFor="adminPhone">전화번호</Label>
                   <Input
                     id="adminPhone"
-                    type="tel"
+                    inputMode="numeric"
                     placeholder="010-1234-5678"
                     value={adminPhone}
-                    onChange={(e) => setAdminPhone(e.target.value)}
+                    onChange={(e) => setAdminPhone(formatPhone(e.target.value))}
                     disabled={loading}
                   />
                 </div>

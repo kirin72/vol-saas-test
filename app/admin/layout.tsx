@@ -27,15 +27,21 @@ export default async function AdminLayout({
     redirect('/auth/login');
   }
 
-  // 조직 정보 가져오기
-  const organization = await prisma.organization.findUnique({
-    where: { id: session.user.organizationId },
-    select: {
-      name: true,
-      groupName: true,
-      isActive: true,
-    },
-  });
+  // 조직 정보 + 사용자 세례명 가져오기
+  const [organization, user] = await Promise.all([
+    prisma.organization.findUnique({
+      where: { id: session.user.organizationId },
+      select: {
+        name: true,
+        groupName: true,
+        isActive: true,
+      },
+    }),
+    prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { baptismalName: true },
+    }),
+  ]);
 
   // 조직이 존재하지 않거나 비활성화된 경우
   if (!organization || !organization.isActive) {
@@ -49,6 +55,7 @@ export default async function AdminLayout({
         organizationName={organization.name.replace(/본당$/, '성당')}
         groupName={organization.groupName}
         userName={session.user.name || '관리자'}
+        baptismalName={user?.baptismalName || null}
       />
 
       {/* 메인 컨텐츠 */}

@@ -162,7 +162,7 @@ async function buildFinancePdf(
     styles: {
       font: 'NotoSansKR',
       fontSize: 9,
-      cellPadding: 3,
+      cellPadding: { top: 3, right: 5, bottom: 3, left: 5 },
       lineColor: [51, 51, 51],
       lineWidth: 0.3,
     },

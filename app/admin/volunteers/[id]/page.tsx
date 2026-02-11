@@ -6,6 +6,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { volunteerUpdateSchema, type VolunteerUpdateInput } from '@/lib/validations/volunteer';
@@ -65,7 +66,11 @@ const TIME_OPTIONS = ['상관없음', '새벽', '오전', '오후', '저녁'] as
 export default function VolunteerDetailPage() {
   const router = useRouter();
   const params = useParams();
+  const { data: session } = useSession();
   const volunteerId = params.id as string;
+
+  // 본인 편집 여부 (관리자가 자기 자신을 편집하는 경우)
+  const isSelf = session?.user?.id === volunteerId;
 
   const [loading, setLoading] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -249,18 +254,21 @@ export default function VolunteerDetailPage() {
                 {volunteer.baptismalName && ` (${volunteer.baptismalName})`}
               </CardDescription>
             </div>
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={handleDelete}
-              disabled={deleting || loading}
-            >
-              {deleting ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Trash2 className="h-4 w-4" />
-              )}
-            </Button>
+            {/* 본인이 아닌 경우에만 삭제 버튼 표시 */}
+            {!isSelf && (
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={handleDelete}
+                disabled={deleting || loading}
+              >
+                {deleting ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Trash2 className="h-4 w-4" />
+                )}
+              </Button>
+            )}
           </div>
         </CardHeader>
         <CardContent>
@@ -426,105 +434,108 @@ export default function VolunteerDetailPage() {
               )}
             </div>
 
-            {/* 구분선 */}
-            <div className="border-t pt-6">
-              <h3 className="text-lg font-semibold text-gray-900">
-                봉사 가능 정보
-              </h3>
-              <p className="text-sm text-gray-500 mt-1 mb-4">
-                봉사 가능정보는 봉사자가 개별 입력할 수 있으며 관리자가 입력하지 않아도 됩니다.
-              </p>
-            </div>
+            {/* 봉사 가능 정보 (본인이 아닌 경우에만 표시) */}
+            {!isSelf && (
+              <>
+                {/* 구분선 */}
+                <div className="border-t pt-6">
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    봉사 가능 정보
+                  </h3>
+                  <p className="text-sm text-gray-500 mt-1 mb-4">
+                    봉사 가능정보는 봉사자가 개별 입력할 수 있으며 관리자가 입력하지 않아도 됩니다.
+                  </p>
+                </div>
 
-            {/* 이번 달 봉사 참여 여부 */}
-            <div className="space-y-2">
-              <Label>이번 달 봉사 참여 여부</Label>
-              <div className="flex gap-4">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="availableThisMonth"
-                    checked={watch('availableThisMonth') === true}
-                    onChange={() => setValue('availableThisMonth', true)}
-                    disabled={loading}
-                    className="w-4 h-4 text-blue-600"
-                  />
-                  <span className="text-sm">가능</span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="availableThisMonth"
-                    checked={watch('availableThisMonth') === false}
-                    onChange={() => setValue('availableThisMonth', false)}
-                    disabled={loading}
-                    className="w-4 h-4 text-red-600"
-                  />
-                  <span className="text-sm">불가능</span>
-                </label>
-              </div>
-              {watch('availableThisMonth') === false && (
-                <p className="text-xs text-red-500 mt-1">
-                  * 이번달 봉사 불참으로 설정된 경우 봉사 배정에 나오지 않습니다.
-                </p>
-              )}
-            </div>
+                {/* 이번 달 봉사 참여 여부 */}
+                <div className="space-y-2">
+                  <Label>이번 달 봉사 참여 여부</Label>
+                  <div className="flex gap-4">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="availableThisMonth"
+                        checked={watch('availableThisMonth') === true}
+                        onChange={() => setValue('availableThisMonth', true)}
+                        disabled={loading}
+                        className="w-4 h-4 text-blue-600"
+                      />
+                      <span className="text-sm">가능</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="availableThisMonth"
+                        checked={watch('availableThisMonth') === false}
+                        onChange={() => setValue('availableThisMonth', false)}
+                        disabled={loading}
+                        className="w-4 h-4 text-red-600"
+                      />
+                      <span className="text-sm">불가능</span>
+                    </label>
+                  </div>
+                  {watch('availableThisMonth') === false && (
+                    <p className="text-xs text-red-500 mt-1">
+                      * 이번달 봉사 불참으로 설정된 경우 봉사 배정에 나오지 않습니다.
+                    </p>
+                  )}
+                </div>
 
-            {/* 선호 시간대 (복수 선택 가능) */}
-            <div className="space-y-2">
-              <Label>선호 시간</Label>
-              <div className="flex flex-wrap gap-2">
-                {TIME_OPTIONS.map((time) => {
-                  const selected = (watch('preferredTimes') || []).includes(time);
-                  return (
-                    <button
-                      key={time}
-                      type="button"
-                      onClick={() => {
-                        const current = watch('preferredTimes') || [];
-                        if (time === '상관없음') {
-                          // '상관없음' 선택 시 다른 선택 해제
-                          setValue('preferredTimes', selected ? [] : ['상관없음']);
-                        } else {
-                          // 다른 옵션 선택 시 '상관없음' 해제
-                          let newTimes = current.filter((t: string) => t !== '상관없음');
-                          if (selected) {
-                            newTimes = newTimes.filter((t: string) => t !== time);
-                          } else {
-                            newTimes = [...newTimes, time];
-                          }
-                          setValue('preferredTimes', newTimes.length === 0 ? ['상관없음'] : newTimes);
-                        }
-                      }}
-                      disabled={loading}
-                      className={`px-4 py-2 rounded-md text-sm font-medium border transition-colors ${
-                        selected
-                          ? 'bg-blue-600 text-white border-blue-600'
-                          : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                      } ${loading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-                    >
-                      {time}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+                {/* 선호 시간대 (복수 선택 가능) */}
+                <div className="space-y-2">
+                  <Label>선호 시간</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {TIME_OPTIONS.map((time) => {
+                      const selected = (watch('preferredTimes') || []).includes(time);
+                      return (
+                        <button
+                          key={time}
+                          type="button"
+                          onClick={() => {
+                            const current = watch('preferredTimes') || [];
+                            if (time === '상관없음') {
+                              setValue('preferredTimes', selected ? [] : ['상관없음']);
+                            } else {
+                              let newTimes = current.filter((t: string) => t !== '상관없음');
+                              if (selected) {
+                                newTimes = newTimes.filter((t: string) => t !== time);
+                              } else {
+                                newTimes = [...newTimes, time];
+                              }
+                              setValue('preferredTimes', newTimes.length === 0 ? ['상관없음'] : newTimes);
+                            }
+                          }}
+                          disabled={loading}
+                          className={`px-4 py-2 rounded-md text-sm font-medium border transition-colors ${
+                            selected
+                              ? 'bg-blue-600 text-white border-blue-600'
+                              : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                          } ${loading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                        >
+                          {time}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
 
-            {/* 선호 요일 */}
-            <DaySelector
-              label="선호 요일"
-              value={watch('preferredDays') || []}
-              onChange={(days) => setValue('preferredDays', days)}
-              disabled={loading}
-            />
+                {/* 선호 요일 */}
+                <DaySelector
+                  label="선호 요일"
+                  value={watch('preferredDays') || []}
+                  onChange={(days) => setValue('preferredDays', days)}
+                  disabled={loading}
+                />
 
-            {/* 불가 요일 */}
-            <DaySelector
-              label="불가 요일"
-              value={watch('unavailableDays') || []}
-              onChange={(days) => setValue('unavailableDays', days)}
-              disabled={loading}
-            />
+                {/* 불가 요일 */}
+                <DaySelector
+                  label="불가 요일"
+                  value={watch('unavailableDays') || []}
+                  onChange={(days) => setValue('unavailableDays', days)}
+                  disabled={loading}
+                />
+              </>
+            )}
 
             {/* 에러 메시지 */}
             {error && (

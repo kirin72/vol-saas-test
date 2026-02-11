@@ -32,11 +32,12 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const roleId = searchParams.get('roleId');
 
-    // WHERE 조건 구성
+    // WHERE 조건 구성 (관리자도 봉사자 역할이 있으면 표시)
     const whereClause: any = {
       organizationId,
-      role: 'VOLUNTEER',
+      role: { in: ['VOLUNTEER', 'ADMIN'] },
       status: 'ACTIVE', // 활성 봉사자만
+      userRoles: { some: {} }, // 봉사 역할이 1개 이상 있는 사용자만
     };
 
     // 특정 역할을 가진 봉사자만 필터링

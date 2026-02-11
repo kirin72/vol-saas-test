@@ -38,6 +38,7 @@ interface AdminNavbarProps {
   organizationName: string;
   groupName: string | null;
   userName: string;
+  baptismalName: string | null;
 }
 
 // 메뉴 아이템 타입
@@ -101,7 +102,7 @@ const menuItems: MenuItem[] = [
   },
 ];
 
-export function AdminNavbar({ organizationName, groupName, userName }: AdminNavbarProps) {
+export function AdminNavbar({ organizationName, groupName, userName, baptismalName }: AdminNavbarProps) {
   const pathname = usePathname();
   // 모바일 드로어 열림/닫힘 상태
   const [open, setOpen] = useState(false);
@@ -135,7 +136,7 @@ export function AdminNavbar({ organizationName, groupName, userName }: AdminNavb
                     </span>
                   </SheetTitle>
                   <p className="text-sm text-gray-500 text-left">
-                    {groupName ? `${groupName} 관리자` : '관리자'} · {userName}
+                    {groupName ? `${groupName} 관리자` : '관리자'} · {userName}{baptismalName ? ` ${baptismalName}` : ''}
                   </p>
                 </SheetHeader>
 
@@ -218,7 +219,7 @@ export function AdminNavbar({ organizationName, groupName, userName }: AdminNavb
           {/* 오른쪽: 사용자 정보 + 로그아웃 (데스크톱) */}
           <div className="hidden lg:flex items-center gap-4">
             <span className="text-sm text-gray-600">
-              {userName}
+              {userName}{baptismalName ? ` ${baptismalName}` : ''}
             </span>
             <Button
               onClick={() => signOut({ callbackUrl: '/auth/login' })}
@@ -230,8 +231,8 @@ export function AdminNavbar({ organizationName, groupName, userName }: AdminNavb
           </div>
 
           {/* 모바일에서는 사용자 이름만 간략 표시 */}
-          <span className="lg:hidden text-sm text-gray-600 truncate max-w-[100px]">
-            {userName}
+          <span className="lg:hidden text-sm text-gray-600 truncate max-w-[140px]">
+            {userName}{baptismalName ? ` ${baptismalName}` : ''}
           </span>
         </div>
       </div>
