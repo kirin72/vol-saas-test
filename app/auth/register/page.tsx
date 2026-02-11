@@ -7,6 +7,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { signIn } from 'next-auth/react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -192,9 +193,23 @@ export default function RegisterPage() {
         throw new Error(data.error || '회원가입에 실패했습니다.');
       }
 
-      // 회원가입 성공 → 로그인 페이지로 이동
-      alert('회원가입이 완료되었습니다! 로그인해주세요.');
-      router.push('/auth/login');
+      // 회원가입 성공 → 확인 메시지 후 자동 로그인
+      alert('회원가입이 완료되었습니다!');
+
+      // 자동 로그인 시도
+      const loginResult = await signIn('credentials', {
+        email: adminEmail,
+        password: adminPassword,
+        redirect: false,
+      });
+
+      if (loginResult?.ok) {
+        // 로그인 성공 → 관리자 대시보드로 이동
+        window.location.href = '/admin/dashboard';
+      } else {
+        // 자동 로그인 실패 시 로그인 페이지로 이동
+        router.push('/auth/login');
+      }
     } catch (err: any) {
       setError(err.message);
     } finally {

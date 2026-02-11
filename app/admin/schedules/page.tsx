@@ -203,7 +203,7 @@ export default function SchedulesPage() {
       {/* 헤더 */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">봉사 일정 관리</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">미사일정 추가</h1>
           <p className="text-gray-600 mt-2">
             {currentDate.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long' })} · 총 {schedules.length}개 일정
             {selectedDate && (

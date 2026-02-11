@@ -1,6 +1,6 @@
 /**
  * 본당 관리자 사이드바 컴포넌트
- * 5개 메뉴 네비게이션 (대시보드, 봉사자, 역할, 일정, 배정)
+ * 7개 메뉴 네비게이션 (대시보드, 봉사자, 역할, 템플릿, 미사일정, 일정추가, 배정)
  */
 'use client';
 
@@ -12,6 +12,8 @@ import {
   Tags,
   CalendarDays,
   CalendarCheck,
+  BookOpen,
+  Clock,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -36,12 +38,22 @@ const menuItems: MenuItem[] = [
   },
   {
     href: '/admin/roles',
-    label: '역할 관리',
+    label: '봉사 역할 관리',
     icon: Tags,
   },
   {
+    href: '/admin/templates',
+    label: '미사 템플릿',
+    icon: BookOpen,
+  },
+  {
+    href: '/admin/mass-times',
+    label: '미사 일정',
+    icon: Clock,
+  },
+  {
     href: '/admin/schedules',
-    label: '봉사 일정',
+    label: '미사일정 추가',
     icon: CalendarDays,
   },
   {
