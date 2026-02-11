@@ -71,7 +71,6 @@ export function WelcomeBanner({ isFirstLogin }: WelcomeBannerProps) {
           </h2>
           <p className="text-sm text-blue-100">
             처음 사용하시는 분을 위한 초기 설정 안내를 준비했습니다.
-            역할, 봉사자, 미사 템플릿을 순서대로 설정해 보세요.
           </p>
         </div>
 

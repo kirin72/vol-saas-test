@@ -388,14 +388,7 @@ export default function LoginPage() {
             <div className="text-center text-sm text-gray-600">
               아직 계정이 없으신가요?{' '}
               <Link href="/auth/register" className="text-blue-600 hover:underline">
-                회원가입
-              </Link>
-            </div>
-
-            {/* Super Admin 로그인 링크 */}
-            <div className="text-center text-sm text-gray-500 pt-4 border-t">
-              <Link href="/auth/super-admin" className="hover:underline">
-                총괄 관리자 로그인
+                무료 회원가입
               </Link>
             </div>
           </form>

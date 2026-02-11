@@ -7,8 +7,8 @@ import type { MetadataRoute } from 'next';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: '봉사자 관리',
-    short_name: '봉사관리',
+    name: '봉사자',
+    short_name: '봉사자',
     description: '성당 봉사자 관리 시스템',
     start_url: '/',
     display: 'standalone',

@@ -57,7 +57,9 @@ export default function SetupGuidePage() {
                   <h2 className="text-lg font-bold text-gray-900">역할 관리</h2>
                 </div>
                 <p className="text-sm text-gray-600 leading-relaxed">
-                  봉사 역할을 등록해 주세요.
+                  가장 먼저, 단체의 봉사 역할을 등록해 주세요.
+                  <br />
+                  각 봉사 역할당 1명의 봉사자만 배정할 수 있습니다.
                   <br />
                   예) 해설, 1독서, 2독서, 제대, 복사 등
                 </p>
@@ -87,9 +89,9 @@ export default function SetupGuidePage() {
                   <h2 className="text-lg font-bold text-gray-900">봉사자 관리</h2>
                 </div>
                 <p className="text-sm text-gray-600 leading-relaxed">
-                  봉사자를 등록하고 각 봉사자에게 역할을 배정해 주세요.
+                  이 메뉴에서 봉사자를 등록하고 각 봉사자에게 역할을 배정할 수 있습니다.
                   <br />
-                  봉사자 등록 시 이름, 세례명, 연락처, 역할을 입력합니다.
+                  등록된 봉사자는 본인의 이름과 전화번호 뒷자리로 로그인 할 수 있습니다.
                 </p>
                 <Link
                   href="/admin/volunteers"
@@ -118,9 +120,9 @@ export default function SetupGuidePage() {
                 <p className="text-sm text-gray-600 leading-relaxed">
                   미사 일정 만들어 주세요.
                   <br />
-                  DB에서 미사일정을 자동으로 불러 올 수도 있으나 정확하지 않을 수 있습니다.
+                  미사일정은 자동으로 생성 될 수도 있으나 확인이 필요합니다.
                   <br />
-                  하단에 1번에서 등록한 봉사역할도 선택해 주시면 됩니다.
+                  각 미사에 필요한 봉사역할도 선택하실 수 있습니다.
                 </p>
                 <Link
                   href="/admin/mass-times"
@@ -143,12 +145,10 @@ export default function SetupGuidePage() {
             <div className="space-y-1">
               <h3 className="text-sm font-bold text-amber-800">참고 사항</h3>
               <p className="text-sm text-amber-700 leading-relaxed">
-                위 3단계를 완료한 후, <strong>봉사 일정</strong>에서 미사 일정을 추가하고
-                {' '}<strong>봉사자 배정</strong>에서 각 미사에 봉사자를 배정할 수 있습니다.
+                위 3단계를 완료하면,<strong>봉사자 배정</strong>에서 각 미사에 봉사자를 배정할 수 있습니다.
               </p>
               <p className="text-sm text-amber-700 leading-relaxed">
-                명절이나 대축일 등 <strong>특별 미사</strong>가 있는 경우,
-                별도의 미사 템플릿을 만들어 관리하면 편리합니다.
+                명절이나 대축일 등 <strong>특별 미사</strong>가 있는 경우, 왼쪽 메뉴의 미사 일정 추가로 만들어서 관리할 수 있습니다.
               </p>
             </div>
           </div>
