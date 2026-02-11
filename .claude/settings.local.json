@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\n대시보드 빠른작업에서 봉사자 등록 카드 제거\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git push:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\n미사 일정 추가 기능 개선: 중복 체크 및 사용자 피드백 향상\n\n- 프론트엔드에서 중복 일정 체크 추가\n- 일정 추가/수정 성공 시 명확한 알림 메시지 표시\n- 에러 메시지 스타일 개선 \\(더 눈에 띄게\\)\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git commit:*)",
+      "Bash(npx prisma migrate dev:*)",
+      "Bash(npx prisma db push:*)"
+    ]
+  }
+}

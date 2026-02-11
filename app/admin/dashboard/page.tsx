@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Users, CalendarCheck, CheckCircle, TrendingUp } from 'lucide-react';
+import { Users, CalendarCheck, CheckCircle, TrendingUp, Tags, Clock, CalendarDays, Wallet } from 'lucide-react';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { redirect } from 'next/navigation';
@@ -349,15 +349,48 @@ export default async function AdminDashboardPage() {
           <CardTitle>빠른 작업</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            {/* 일정 추가 */}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            {/* 봉사 역할 관리 */}
             <Button asChild variant="outline" className="min-h-[72px] h-auto py-4">
               <Link
-                href="/admin/schedules?action=new"
+                href="/admin/roles"
                 className="flex flex-col items-center gap-2"
               >
-                <CalendarCheck className="h-6 w-6 shrink-0" />
-                <span className="text-sm text-center whitespace-nowrap">일정 추가</span>
+                <Tags className="h-6 w-6 shrink-0" />
+                <span className="text-sm text-center whitespace-nowrap">봉사 역할 관리</span>
+              </Link>
+            </Button>
+
+            {/* 봉사자 관리 */}
+            <Button asChild variant="outline" className="min-h-[72px] h-auto py-4">
+              <Link
+                href="/admin/volunteers"
+                className="flex flex-col items-center gap-2"
+              >
+                <Users className="h-6 w-6 shrink-0" />
+                <span className="text-sm text-center whitespace-nowrap">봉사자 관리</span>
+              </Link>
+            </Button>
+
+            {/* 미사 일정 */}
+            <Button asChild variant="outline" className="min-h-[72px] h-auto py-4">
+              <Link
+                href="/admin/mass-times"
+                className="flex flex-col items-center gap-2"
+              >
+                <Clock className="h-6 w-6 shrink-0" />
+                <span className="text-sm text-center whitespace-nowrap">미사 일정</span>
+              </Link>
+            </Button>
+
+            {/* 미사일정 추가 */}
+            <Button asChild variant="outline" className="min-h-[72px] h-auto py-4">
+              <Link
+                href="/admin/schedules"
+                className="flex flex-col items-center gap-2"
+              >
+                <CalendarDays className="h-6 w-6 shrink-0" />
+                <span className="text-sm text-center whitespace-nowrap">미사일정 추가</span>
               </Link>
             </Button>
 
@@ -367,18 +400,21 @@ export default async function AdminDashboardPage() {
                 href="/admin/assignments"
                 className="flex flex-col items-center gap-2"
               >
-                <TrendingUp className="h-6 w-6 shrink-0" />
+                <CalendarCheck className="h-6 w-6 shrink-0" />
                 <span className="text-sm text-center whitespace-nowrap">봉사자 배정</span>
               </Link>
             </Button>
 
-            {/* 봉사자 배정표 저장 / 입출금내역 저장 (PDF 다운로드) */}
-            <QuickActionPdfButtons
-              hasAssignments={stats.assignedSlots > 0}
-              hasFinanceData={stats.hasFinanceData}
-              year={now.getFullYear()}
-              month={now.getMonth() + 1}
-            />
+            {/* 입출금 관리 */}
+            <Button asChild variant="outline" className="min-h-[72px] h-auto py-4">
+              <Link
+                href="/admin/finance"
+                className="flex flex-col items-center gap-2"
+              >
+                <Wallet className="h-6 w-6 shrink-0" />
+                <span className="text-sm text-center whitespace-nowrap">입출금 관리</span>
+              </Link>
+            </Button>
           </div>
         </CardContent>
       </Card>

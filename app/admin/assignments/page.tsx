@@ -393,7 +393,7 @@ export default function AssignmentsPage() {
               <Sparkles className="h-5 w-5 mr-2" />
               자동배정
             </Button>
-            <span className="text-xs text-gray-500">PRO (테스트기간 무료)</span>
+            <span className="text-xs text-gray-500">(테스트기간 무료)</span>
           </div>
 
           {/* 뷰 모드 전환 */}

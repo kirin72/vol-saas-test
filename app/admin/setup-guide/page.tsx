@@ -61,7 +61,7 @@ export default function SetupGuidePage() {
                   <br />
                   각 봉사 역할당 1명의 봉사자를 배정할 수 있습니다.
                   <br />
-                  예) 해설, 1독서, 2독서, 1복사, 2복사 등
+                  <b>예) 해설, 1독서, 2독서, 1복사, 2복사 등</b>
                 </p>
                 {/* 해당 페이지 링크 */}
                 <Link
@@ -89,9 +89,9 @@ export default function SetupGuidePage() {
                   <h2 className="text-lg font-bold text-gray-900">봉사자 관리</h2>
                 </div>
                 <p className="text-sm text-gray-600 leading-relaxed">
-                  이 메뉴에서 단체의 봉사자를 등록할 수 있습니다.
+                  이 메뉴에서 봉사자들을 등록 해 주세요.
                   <br />
-                  등록된 봉사자는 본인의 이름과 전화번호 뒷자리로 로그인 할 수 있습니다.
+                  등록된 봉사자는 이름과 전화번호 뒷자리로 개별 로그인 하여 본인의 봉사를 확인할 수 있습니다.
                 </p>
                 <Link
                   href="/admin/volunteers"
@@ -145,13 +145,7 @@ export default function SetupGuidePage() {
             <div className="space-y-1">
               <h3 className="text-sm font-bold text-amber-800">참고 사항</h3>
               <p className="text-sm text-amber-700 leading-relaxed">
-                위 3단계를 완료하면,<strong>봉사자 배정</strong>에서 각 미사에 봉사자를 배정할 수 있습니다.
-              </p>
-              <p className="text-sm text-amber-700 leading-relaxed">
-                명절이나 대축일 등 <strong>특별 미사</strong>가 있는 경우, 왼쪽 메뉴의 미사 일정 추가로 만들어서 관리할 수 있습니다.
-              </p>
-              <p className="text-sm text-amber-700 leading-relaxed">
-                PC사용에 능숙한 경우 컴퓨터로도 bongsaja.com 에 접속하여 넓은화면으로 편리하게 사용 할 수 있습니다.
+                PC사용에 능숙한 경우 컴퓨터로도 bongsaja.com(봉사자닷컴) 에 접속하여 넓은화면으로 편리하게 사용 할 수 있습니다.
               </p>
             </div>
           </div>
