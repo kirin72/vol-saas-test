@@ -82,13 +82,6 @@ export default function Home() {
           </Link>
         </div>
 
-        {/* Super Admin 링크 */}
-        <div className="pt-4 sm:pt-8 text-sm text-gray-500">
-          <Link href="/auth/super-admin" className="hover:text-gray-700 underline">
-            총괄 관리자 로그인
-          </Link>
-        </div>
-
         {/* 푸터 */}
         <footer className="pt-4 sm:pt-12 text-sm text-gray-500">
           © 2026 MechInno, Inc. All rights reserved.
