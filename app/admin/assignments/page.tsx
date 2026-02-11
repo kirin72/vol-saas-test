@@ -96,6 +96,11 @@ export default function AssignmentsPage() {
     created: number;
     skipped: number;
   } | null>(null); // 자동배정 결과
+  // 테스트 안내 다이얼로그 상태
+  const [testNoticeDialogOpen, setTestNoticeDialogOpen] = useState(false);
+  const [dontShowAgain, setDontShowAgain] = useState(false);
+  // 자동배정 진행 단계 (0: 대기, 1: 분석중, 2: 배정중, 3: 완료)
+  const [autoAssignStep, setAutoAssignStep] = useState(0);
 
   // 월 선택
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -228,6 +233,26 @@ export default function AssignmentsPage() {
     } catch (err) {
       console.error('봉사자 확인 실패:', err);
     }
+
+    // localStorage에서 "다음부터 보지 않기" 확인
+    const dontShowTestNotice = localStorage.getItem('dontShowAutoAssignTestNotice') === 'true';
+
+    if (dontShowTestNotice) {
+      // 바로 자동배정 다이얼로그 열기
+      setAutoAssignDialogOpen(true);
+    } else {
+      // 테스트 안내 다이얼로그 먼저 열기
+      setTestNoticeDialogOpen(true);
+    }
+  };
+
+  // 테스트 안내 확인
+  const handleTestNoticeConfirm = () => {
+    // "다음부터 보지 않기" 체크박스 저장
+    if (dontShowAgain) {
+      localStorage.setItem('dontShowAutoAssignTestNotice', 'true');
+    }
+    setTestNoticeDialogOpen(false);
     setAutoAssignDialogOpen(true);
   };
 
@@ -235,8 +260,14 @@ export default function AssignmentsPage() {
   const handleAutoAssign = async () => {
     setAutoAssigning(true);
     setAutoAssignResult(null);
+    setAutoAssignStep(1); // 1단계: 분석 중
 
     try {
+      // 1.5초 대기 (분석 중 메시지)
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
+      setAutoAssignStep(2); // 2단계: 배정 중
+
       const response = await fetch('/api/admin/assignments/auto-assign', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -248,12 +279,17 @@ export default function AssignmentsPage() {
         throw new Error(errorData.error || '자동배정 실패');
       }
 
+      // 2초 대기 (배정 중 메시지)
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
       const result = await response.json();
+      setAutoAssignStep(3); // 3단계: 완료
       setAutoAssignResult(result);
       fetchAssignments(); // 목록 새로고침
     } catch (err: any) {
       alert(`자동배정 오류: ${err.message}`);
       setAutoAssignDialogOpen(false);
+      setAutoAssignStep(0);
     } finally {
       setAutoAssigning(false);
     }
@@ -348,14 +384,17 @@ export default function AssignmentsPage() {
           </Button>
 
           {/* 자동배정 버튼 (눈에 잘 띄게) */}
-          <Button
-            size="default"
-            onClick={handleAutoAssignClick}
-            className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold shadow-lg"
-          >
-            <Sparkles className="h-5 w-5 mr-2" />
-            자동배정
-          </Button>
+          <div className="flex flex-col items-center gap-1">
+            <Button
+              size="default"
+              onClick={handleAutoAssignClick}
+              className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold shadow-lg"
+            >
+              <Sparkles className="h-5 w-5 mr-2" />
+              자동배정
+            </Button>
+            <span className="text-xs text-gray-500">PRO (테스트기간 무료)</span>
+          </div>
 
           {/* 뷰 모드 전환 */}
           <div className="flex gap-2">
@@ -574,11 +613,66 @@ export default function AssignmentsPage() {
         />
       )}
 
+      {/* 테스트 안내 다이얼로그 */}
+      <Dialog open={testNoticeDialogOpen} onOpenChange={setTestNoticeDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-xl">
+              <Sparkles className="h-6 w-6 text-purple-600" />
+              자동 배정 기능 안내
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <p className="text-sm text-gray-700 leading-relaxed">
+                자동 배정 기능은 <strong>테스트 기간 동안 무료로 제공</strong>됩니다.<br />
+                정식 출시 이후에는 <strong>구독 기능에 포함</strong>될 예정입니다.
+              </p>
+            </div>
+
+            {/* 다음부터 보지 않기 체크박스 */}
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={dontShowAgain}
+                onChange={(e) => setDontShowAgain(e.target.checked)}
+                className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+              />
+              <span className="text-sm text-gray-600">다음부터 이 메시지 보지 않기</span>
+            </label>
+
+            {/* 버튼 */}
+            <div className="flex gap-3 pt-2">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => {
+                  setTestNoticeDialogOpen(false);
+                  setDontShowAgain(false);
+                }}
+              >
+                취소
+              </Button>
+              <Button
+                className="flex-1 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+                onClick={handleTestNoticeConfirm}
+              >
+                확인
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* 자동배정 다이얼로그 */}
       <Dialog open={autoAssignDialogOpen} onOpenChange={(open) => {
         if (!autoAssigning) {
           setAutoAssignDialogOpen(open);
-          if (!open) setAutoAssignResult(null); // 닫을 때 결과 초기화
+          if (!open) {
+            setAutoAssignResult(null); // 닫을 때 결과 초기화
+            setAutoAssignStep(0);
+          }
         }
       }}>
         <DialogContent className="sm:max-w-[500px]">
@@ -593,8 +687,37 @@ export default function AssignmentsPage() {
           </DialogHeader>
 
           <div className="space-y-4 py-4">
+            {/* 자동배정 진행 중: 단계별 메시지 */}
+            {autoAssigning && (
+              <div className="text-center space-y-4 py-8">
+                <div className="mx-auto w-16 h-16 rounded-full bg-purple-100 flex items-center justify-center">
+                  <Loader2 className="h-8 w-8 text-purple-600 animate-spin" />
+                </div>
+
+                {autoAssignStep === 1 && (
+                  <div className="space-y-2">
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      봉사자 정보를 분석하고 있습니다.
+                    </h3>
+                  </div>
+                )}
+
+                {autoAssignStep === 2 && (
+                  <div className="space-y-2">
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      봉사자 정보를 분석하여 자동 배정을 진행하고 있습니다.
+                    </h3>
+                    <p className="text-sm text-gray-600 leading-relaxed">
+                      시간 겹침, 봉사 가능 여부, 봉사 횟수, 선호 요일 등<br />
+                      여러 조건을 고려하여 가장 적절한 배정을 계산하고 있습니다.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* 결과가 없을 때: 확인 UI */}
-            {!autoAssignResult && (
+            {!autoAssignResult && !autoAssigning && (
               <>
                 <div className="space-y-3 text-sm">
                   {/* 배정 기준 안내 */}
@@ -651,24 +774,15 @@ export default function AssignmentsPage() {
                     onClick={handleAutoAssign}
                     disabled={autoAssigning}
                   >
-                    {autoAssigning ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        배정 중...
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles className="h-4 w-4 mr-2" />
-                        자동배정 실행
-                      </>
-                    )}
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    자동배정 실행
                   </Button>
                 </div>
               </>
             )}
 
             {/* 결과 표시 */}
-            {autoAssignResult && (
+            {autoAssignResult && !autoAssigning && (
               <>
                 <div className="text-center space-y-4">
                   {/* 성공 아이콘 */}
@@ -676,9 +790,14 @@ export default function AssignmentsPage() {
                     <Sparkles className="h-8 w-8 text-green-600" />
                   </div>
 
-                  <h3 className="text-lg font-semibold text-gray-900">
-                    자동배정 완료
-                  </h3>
+                  <div className="space-y-2">
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      자동 배정이 완료되었습니다.
+                    </h3>
+                    <p className="text-sm text-gray-600">
+                      필요하면 언제든 다시 자동 배정을 실행할 수 있습니다.
+                    </p>
+                  </div>
 
                   {/* 결과 통계 */}
                   <div className="grid grid-cols-2 gap-4">
@@ -710,6 +829,7 @@ export default function AssignmentsPage() {
                     onClick={() => {
                       setAutoAssignDialogOpen(false);
                       setAutoAssignResult(null);
+                      setAutoAssignStep(0);
                     }}
                   >
                     확인

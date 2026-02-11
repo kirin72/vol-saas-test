@@ -24,6 +24,7 @@ model Organization {
   email     String?
   address      String?
   treasurerId  String?  // 총무 봉사자 ID
+  autoAssignUsageCount Int @default(0) // 자동배정 사용 횟수
   isActive     Boolean  @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt

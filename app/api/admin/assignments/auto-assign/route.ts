@@ -246,17 +246,31 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 5. 새 배정을 DB에 일괄 저장
+    // 5. 새 배정을 DB에 일괄 저장 + 사용 횟수 증가
     if (newAssignments.length > 0) {
-      await prisma.assignment.createMany({
-        data: newAssignments.map((a) => ({
-          organizationId: a.organizationId,
-          massScheduleId: a.massScheduleId,
-          userId: a.userId,
-          volunteerRoleId: a.volunteerRoleId,
-          status: 'ASSIGNED',
-          assignmentMethod: 'AUTO', // 자동배정 표시
-        })),
+      await prisma.$transaction([
+        // 배정 생성
+        prisma.assignment.createMany({
+          data: newAssignments.map((a) => ({
+            organizationId: a.organizationId,
+            massScheduleId: a.massScheduleId,
+            userId: a.userId,
+            volunteerRoleId: a.volunteerRoleId,
+            status: 'ASSIGNED',
+            assignmentMethod: 'AUTO', // 자동배정 표시
+          })),
+        }),
+        // 자동배정 사용 횟수 증가
+        prisma.organization.update({
+          where: { id: organizationId },
+          data: { autoAssignUsageCount: { increment: 1 } },
+        }),
+      ]);
+    } else {
+      // 배정이 없어도 사용 횟수는 증가
+      await prisma.organization.update({
+        where: { id: organizationId },
+        data: { autoAssignUsageCount: { increment: 1 } },
       });
     }
 
