@@ -59,7 +59,7 @@ export default function SetupGuidePage() {
                 <p className="text-sm text-gray-600 leading-relaxed">
                   봉사 역할을 등록해 주세요.
                   <br />
-                  예) 해설, 독서, 신자들의 기도, 제대봉사, 성가대 등
+                  예) 해설, 1독서, 2독서, 제대, 복사 등
                 </p>
                 {/* 해당 페이지 링크 */}
                 <Link
@@ -113,20 +113,20 @@ export default function SetupGuidePage() {
               <div className="flex-1 space-y-2">
                 <div className="flex items-center gap-2">
                   <Copy className="w-5 h-5 text-purple-600" />
-                  <h2 className="text-lg font-bold text-gray-900">미사 템플릿</h2>
+                  <h2 className="text-lg font-bold text-gray-900">미사 일정</h2>
                 </div>
                 <p className="text-sm text-gray-600 leading-relaxed">
-                  미사 템플릿을 만들어 주세요.
+                  미사 일정 만들어 주세요.
                   <br />
-                  예) 주일미사 1부, 주일미사 2부, 토요 특전미사 등
+                  DB에서 미사일정을 자동으로 불러 올 수도 있으나 정확하지 않을 수 있습니다.
                   <br />
-                  각 미사에 필요한 역할과 인원수를 설정합니다.
+                  하단에 1번에서 등록한 봉사역할도 선택해 주시면 됩니다.
                 </p>
                 <Link
-                  href="/admin/templates"
+                  href="/admin/mass-times"
                   className="inline-flex items-center gap-1 text-sm font-medium text-purple-600 hover:text-purple-800 transition-colors"
                 >
-                  미사 템플릿 페이지로 이동
+                  미사 일정 페이지로 이동
                   <ChevronRight className="w-4 h-4" />
                 </Link>
               </div>

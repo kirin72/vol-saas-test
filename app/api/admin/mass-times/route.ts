@@ -72,10 +72,15 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Organization ID is required' }, { status: 400 });
     }
 
-    // 1. 기존 템플릿에서 요일별 미사시간 추출
+    // 1. 기존 템플릿에서 요일별 미사시간 추출 (역할 슬롯 포함)
     const templates = await prisma.massTemplate.findMany({
       where: { organizationId, isActive: true },
       orderBy: { time: 'asc' },
+      include: {
+        slots: {
+          select: { volunteerRoleId: true },
+        },
+      },
     });
 
     // 요일별 미사시간 맵
@@ -90,10 +95,19 @@ export async function GET(request: NextRequest) {
     };
 
     if (templates.length > 0) {
+      // 요일별 선택된 역할 ID 맵
+      const dayRoles: Record<string, string[]> = {
+        SUNDAY: [], MONDAY: [], TUESDAY: [], WEDNESDAY: [],
+        THURSDAY: [], FRIDAY: [], SATURDAY: [],
+      };
+
       // 기존 템플릿에서 변환
       for (const template of templates) {
         const dayOfWeekArr = template.dayOfWeek as string[] | null;
         if (!dayOfWeekArr || dayOfWeekArr.length === 0) continue;
+
+        // 이 템플릿의 역할 ID 목록
+        const roleIds = template.slots.map((s: { volunteerRoleId: string }) => s.volunteerRoleId);
 
         for (const day of dayOfWeekArr) {
           if (days[day]) {
@@ -105,6 +119,13 @@ export async function GET(request: NextRequest) {
                 time: template.time,
               });
             }
+
+            // 역할 ID 병합 (중복 방지)
+            for (const roleId of roleIds) {
+              if (!dayRoles[day].includes(roleId)) {
+                dayRoles[day].push(roleId);
+              }
+            }
           }
         }
       }
@@ -114,7 +135,7 @@ export async function GET(request: NextRequest) {
         days[day].sort((a, b) => a.time.localeCompare(b.time));
       }
 
-      return NextResponse.json({ source: 'templates', days });
+      return NextResponse.json({ source: 'templates', days, dayRoles });
     }
 
     // 2. 템플릿 없으면 ChurchDirectory에서 조회 (조직 이름으로 매칭)
@@ -189,8 +210,9 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { days } = body as {
+    const { days, dayRoles } = body as {
       days: Record<string, { period: string; time: string }[]>;
+      dayRoles?: Record<string, string[]>; // 요일별 선택된 역할 ID
     };
 
     if (!days) {
@@ -325,10 +347,26 @@ export async function POST(request: NextRequest) {
           },
         });
 
-        // 역할 슬롯 생성
-        if (activeRoles.length > 0) {
+        // 역할 슬롯 생성 (dayRoles가 있으면 해당 요일의 선택된 역할만 사용)
+        let rolesToUse = activeRoles;
+        if (dayRoles) {
+          // 이 템플릿의 모든 요일에서 선택된 역할의 합집합
+          const selectedRoleIds = new Set<string>();
+          for (const day of tData.dayOfWeek) {
+            if (dayRoles[day]) {
+              for (const roleId of dayRoles[day]) {
+                selectedRoleIds.add(roleId);
+              }
+            }
+          }
+          if (selectedRoleIds.size > 0) {
+            rolesToUse = activeRoles.filter((role) => selectedRoleIds.has(role.id));
+          }
+        }
+
+        if (rolesToUse.length > 0) {
           await tx.templateSlot.createMany({
-            data: activeRoles.map((role) => ({
+            data: rolesToUse.map((role) => ({
               massTemplateId: template.id,
               volunteerRoleId: role.id,
               requiredCount: 1,

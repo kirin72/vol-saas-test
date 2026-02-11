@@ -44,6 +44,17 @@ interface MassTimeEntry {
 // 요일별 미사시간 상태 타입
 type DayMassTimes = Record<string, MassTimeEntry[]>;
 
+// 봉사 역할 타입
+interface VolunteerRole {
+  id: string;
+  name: string;
+  color: string;
+  sortOrder: number;
+}
+
+// 요일별 선택된 역할 ID
+type DaySelectedRoles = Record<string, string[]>;
+
 export default function MassTimesPage() {
   // 요일별 미사시간 상태
   const [dayMassTimes, setDayMassTimes] = useState<DayMassTimes>({
@@ -54,6 +65,14 @@ export default function MassTimesPage() {
     THURSDAY: [],
     FRIDAY: [],
     SATURDAY: [],
+  });
+
+  // 활성 봉사 역할 목록
+  const [roles, setRoles] = useState<VolunteerRole[]>([]);
+  // 요일별 선택된 역할 ID
+  const [daySelectedRoles, setDaySelectedRoles] = useState<DaySelectedRoles>({
+    SUNDAY: [], MONDAY: [], TUESDAY: [], WEDNESDAY: [],
+    THURSDAY: [], FRIDAY: [], SATURDAY: [],
   });
 
   // UI 상태
@@ -76,14 +95,31 @@ export default function MassTimesPage() {
     }
   };
 
-  // 초기 데이터 로드
+  // 초기 데이터 로드 (미사시간 + 역할 동시 조회)
   const fetchMassTimes = useCallback(async () => {
     try {
       setLoading(true);
       setError('');
-      const response = await fetch('/api/admin/mass-times');
-      if (!response.ok) throw new Error('미사시간 조회 실패');
-      const data = await response.json();
+
+      // 미사시간과 역할 목록 동시 조회
+      const [massTimesRes, rolesRes] = await Promise.all([
+        fetch('/api/admin/mass-times'),
+        fetch('/api/admin/roles'),
+      ]);
+
+      // 활성 역할 목록 처리
+      let activeRoles: VolunteerRole[] = [];
+      if (rolesRes.ok) {
+        const rolesData = await rolesRes.json();
+        activeRoles = rolesData
+          .filter((r: any) => r.isActive)
+          .sort((a: any, b: any) => (a.sortOrder ?? 999) - (b.sortOrder ?? 999));
+        setRoles(activeRoles);
+      }
+
+      // 미사시간 데이터 처리
+      if (!massTimesRes.ok) throw new Error('미사시간 조회 실패');
+      const data = await massTimesRes.json();
 
       setSource(data.source);
 
@@ -109,6 +145,20 @@ export default function MassTimesPage() {
         }
 
         setDayMassTimes(newDayMassTimes);
+      }
+
+      // 요일별 선택된 역할 초기화
+      if (data.dayRoles && Object.values(data.dayRoles).some((arr: any) => arr.length > 0)) {
+        // 서버에서 기존 역할 정보가 있으면 사용
+        setDaySelectedRoles(data.dayRoles);
+      } else {
+        // 없으면 모든 요일에 모든 활성 역할 선택
+        const allRoleIds = activeRoles.map((r) => r.id);
+        const initial: DaySelectedRoles = {};
+        for (const day of ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY']) {
+          initial[day] = [...allRoleIds];
+        }
+        setDaySelectedRoles(initial);
       }
     } catch (err: any) {
       setError(err.message);
@@ -163,6 +213,20 @@ export default function MassTimesPage() {
     });
   };
 
+  // 요일별 역할 선택/해제 토글
+  const toggleDayRole = (day: string, roleId: string) => {
+    setDaySelectedRoles((prev) => {
+      const current = prev[day] || [];
+      if (current.includes(roleId)) {
+        // 선택 해제
+        return { ...prev, [day]: current.filter((id) => id !== roleId) };
+      } else {
+        // 선택
+        return { ...prev, [day]: [...current, roleId] };
+      }
+    });
+  };
+
   // 시간 변경
   const changeTime = (day: string, index: number, time: string) => {
     setDayMassTimes((prev) => {
@@ -182,7 +246,7 @@ export default function MassTimesPage() {
       const response = await fetch('/api/admin/mass-times', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ days: dayMassTimes }),
+        body: JSON.stringify({ days: dayMassTimes, dayRoles: daySelectedRoles }),
       });
 
       if (!response.ok) {
@@ -411,6 +475,39 @@ export default function MassTimesPage() {
                         </div>
                       );
                     })}
+                  </div>
+                )}
+
+                {/* 봉사 역할 선택 토글 버튼 */}
+                {times.length > 0 && roles.length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-gray-200">
+                    <div className="flex flex-wrap gap-2">
+                      {roles.map((role) => {
+                        // 이 요일에서 해당 역할이 선택되어 있는지 확인
+                        const isSelected = (daySelectedRoles[key] || []).includes(role.id);
+                        return (
+                          <button
+                            key={role.id}
+                            type="button"
+                            onClick={() => toggleDayRole(key, role.id)}
+                            className={`
+                              px-3 py-1.5 rounded-full text-xs font-medium transition-all border
+                              ${isSelected
+                                ? 'text-white border-transparent shadow-sm'
+                                : 'bg-white text-gray-400 border-gray-200 hover:border-gray-300'
+                              }
+                            `}
+                            style={isSelected ? { backgroundColor: role.color } : {}}
+                          >
+                            {role.name}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {/* 선택된 역할 수 표시 */}
+                    <p className="text-xs text-gray-500 mt-2">
+                      선택된 봉사 역할 {(daySelectedRoles[key] || []).length}개
+                    </p>
                   </div>
                 )}
               </CardContent>
