@@ -83,11 +83,26 @@ export async function POST(request: NextRequest) {
     // 비밀번호 해시
     const hashedPassword = await bcrypt.hash(admin.password, 10);
 
-    // 성당 디렉토리 매칭 데이터 조회 (churchDirectoryId가 있는 경우)
+    // 성당 디렉토리 매칭 데이터 조회
     let churchData = null;
     if (churchDirectoryId) {
+      // 1순위: 드롭다운에서 선택한 경우 (ID로 직접 조회)
       churchData = await prisma.churchDirectory.findUnique({
         where: { id: churchDirectoryId },
+      });
+    }
+
+    // 2순위: churchDirectoryId가 없으면 이름으로 매칭 시도
+    // (사용자가 드롭다운 선택 없이 직접 입력한 경우)
+    if (!churchData && organization.name) {
+      const orgNameBase = organization.name.replace(/성당$/, ''); // "명동성당" → "명동"
+      churchData = await prisma.churchDirectory.findFirst({
+        where: {
+          OR: [
+            { name: organization.name }, // 정확한 이름 매칭: "명동성당"
+            { name: orgNameBase },        // 접미사 제거 매칭: "명동"
+          ],
+        },
       });
     }
 

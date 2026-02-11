@@ -124,8 +124,15 @@ export async function GET(request: NextRequest) {
     });
 
     if (org) {
+      // 조직명에서 "성당" 접미사 제거하여 매칭 (DB에는 "가락2동", 조직명은 "가락2동성당")
+      const orgNameBase = org.name.replace(/성당$/, '');
       const church = await prisma.churchDirectory.findFirst({
-        where: { name: { contains: org.name } },
+        where: {
+          OR: [
+            { name: org.name },    // 정확한 이름 매칭: "명동성당"
+            { name: orgNameBase },  // 접미사 제거 매칭: "명동"
+          ],
+        },
       });
 
       if (church && (church.sundayMass || church.weekdayMass)) {
