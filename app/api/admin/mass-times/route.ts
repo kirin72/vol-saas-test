@@ -62,8 +62,10 @@ function buildTemplateName(day: string, time: string, orgName: string): string {
 
 // GET: 현재 미사시간 조회
 export async function GET(request: NextRequest) {
+  let session = null;
+
   try {
-    const session = await auth();
+    session = await auth();
     if (!session || session.user.role !== 'ADMIN') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -217,8 +219,11 @@ export async function GET(request: NextRequest) {
 
 // POST: 미사시간 저장 → 템플릿 + 일정 재생성
 export async function POST(request: NextRequest) {
+  let session = null;
+  let body = null;
+
   try {
-    const session = await auth();
+    session = await auth();
     if (!session || session.user.role !== 'ADMIN') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -228,7 +233,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Organization ID is required' }, { status: 400 });
     }
 
-    const body = await request.json();
+    body = await request.json();
     const { days, dayRoles } = body as {
       days: Record<string, { period: string; time: string }[]>;
       dayRoles?: Record<string, string[]>; // 요일별 선택된 역할 ID

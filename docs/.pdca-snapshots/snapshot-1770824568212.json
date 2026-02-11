@@ -1,0 +1,373 @@
+{
+  "timestamp": "2026-02-11T15:42:48.211Z",
+  "reason": "compaction",
+  "status": {
+    "version": "2.0",
+    "lastUpdated": "2026-02-11T15:40:57.981Z",
+    "activeFeatures": [
+      "dashboard",
+      "mass-times",
+      "schedules",
+      "auto-assign",
+      "assignments",
+      "vol-saas-test",
+      "admin",
+      "automation",
+      "reports"
+    ],
+    "primaryFeature": "dashboard",
+    "features": {
+      "dashboard": {
+        "phase": "do",
+        "phaseNumber": 3,
+        "matchRate": null,
+        "iterationCount": 0,
+        "requirements": [],
+        "documents": {},
+        "timestamps": {
+          "started": "2026-02-11T12:33:43.394Z",
+          "lastUpdated": "2026-02-11T15:31:43.729Z"
+        },
+        "lastFile": "D:\\Study\\workspace\\vol-saas-test\\app\\admin\\dashboard\\page.tsx"
+      },
+      "mass-times": {
+        "phase": "do",
+        "phaseNumber": 3,
+        "matchRate": null,
+        "iterationCount": 0,
+        "requirements": [],
+        "documents": {},
+        "timestamps": {
+          "started": "2026-02-11T12:43:09.965Z",
+          "lastUpdated": "2026-02-11T15:40:57.981Z"
+        },
+        "lastFile": "D:\\Study\\workspace\\vol-saas-test\\app\\admin\\mass-times\\page.tsx"
+      },
+      "schedules": {
+        "phase": "do",
+        "phaseNumber": 3,
+        "matchRate": null,
+        "iterationCount": 0,
+        "requirements": [],
+        "documents": {},
+        "timestamps": {
+          "started": "2026-02-11T12:50:43.994Z",
+          "lastUpdated": "2026-02-11T12:50:51.083Z"
+        },
+        "lastFile": "D:\\Study\\workspace\\vol-saas-test\\components\\schedules\\schedule-dialog.tsx"
+      },
+      "auto-assign": {
+        "phase": "do",
+        "phaseNumber": 3,
+        "matchRate": null,
+        "iterationCount": 0,
+        "requirements": [],
+        "documents": {},
+        "timestamps": {
+          "started": "2026-02-11T12:55:01.907Z",
+          "lastUpdated": "2026-02-11T13:14:01.072Z"
+        },
+        "lastFile": "D:\\Study\\workspace\\vol-saas-test\\app\\api\\admin\\assignments\\auto-assign\\route.ts"
+      },
+      "assignments": {
+        "phase": "do",
+        "phaseNumber": 3,
+        "matchRate": null,
+        "iterationCount": 0,
+        "requirements": [],
+        "documents": {},
+        "timestamps": {
+          "started": "2026-02-11T13:12:05.771Z",
+          "lastUpdated": "2026-02-11T15:31:53.612Z"
+        },
+        "lastFile": "D:\\Study\\workspace\\vol-saas-test\\app\\admin\\assignments\\page.tsx"
+      },
+      "vol-saas-test": {
+        "phase": "do",
+        "phaseNumber": 3,
+        "matchRate": null,
+        "iterationCount": 0,
+        "requirements": [],
+        "documents": {},
+        "timestamps": {
+          "started": "2026-02-11T15:23:48.329Z",
+          "lastUpdated": "2026-02-11T15:23:48.329Z"
+        },
+        "lastFile": "D:\\Study\\workspace\\vol-saas-test\\lib\\error-logger.ts"
+      },
+      "admin": {
+        "phase": "do",
+        "phaseNumber": 3,
+        "matchRate": null,
+        "iterationCount": 0,
+        "requirements": [],
+        "documents": {},
+        "timestamps": {
+          "started": "2026-02-11T15:32:03.468Z",
+          "lastUpdated": "2026-02-11T15:33:17.349Z"
+        },
+        "lastFile": "D:\\Study\\workspace\\vol-saas-test\\components\\admin\\admin-navbar.tsx"
+      },
+      "automation": {
+        "phase": "do",
+        "phaseNumber": 3,
+        "matchRate": null,
+        "iterationCount": 0,
+        "requirements": [],
+        "documents": {},
+        "timestamps": {
+          "started": "2026-02-11T15:33:40.797Z",
+          "lastUpdated": "2026-02-11T15:33:40.797Z"
+        },
+        "lastFile": "D:\\Study\\workspace\\vol-saas-test\\app\\admin\\automation\\page.tsx"
+      },
+      "reports": {
+        "phase": "do",
+        "phaseNumber": 3,
+        "matchRate": null,
+        "iterationCount": 0,
+        "requirements": [],
+        "documents": {},
+        "timestamps": {
+          "started": "2026-02-11T15:33:56.061Z",
+          "lastUpdated": "2026-02-11T15:33:56.061Z"
+        },
+        "lastFile": "D:\\Study\\workspace\\vol-saas-test\\app\\admin\\reports\\page.tsx"
+      }
+    },
+    "pipeline": {
+      "currentPhase": 1,
+      "level": "Dynamic",
+      "phaseHistory": []
+    },
+    "session": {
+      "startedAt": "2026-02-11T12:32:23.667Z",
+      "onboardingCompleted": false,
+      "lastActivity": "2026-02-11T15:40:57.981Z"
+    },
+    "history": [
+      {
+        "timestamp": "2026-02-11T12:33:43.394Z",
+        "feature": "dashboard",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-11T12:43:09.965Z",
+        "feature": "mass-times",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-11T12:50:43.994Z",
+        "feature": "schedules",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-11T12:50:51.083Z",
+        "feature": "schedules",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-11T12:55:01.907Z",
+        "feature": "auto-assign",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-11T12:55:14.351Z",
+        "feature": "auto-assign",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-11T13:12:05.771Z",
+        "feature": "assignments",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-11T13:12:17.506Z",
+        "feature": "assignments",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-11T13:12:33.240Z",
+        "feature": "assignments",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-11T13:12:42.387Z",
+        "feature": "assignments",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-11T13:13:12.498Z",
+        "feature": "assignments",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-11T13:13:29.645Z",
+        "feature": "assignments",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-11T13:13:45.912Z",
+        "feature": "assignments",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-11T13:14:01.072Z",
+        "feature": "auto-assign",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-11T15:23:48.329Z",
+        "feature": "vol-saas-test",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-11T15:23:56.561Z",
+        "feature": "mass-times",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-11T15:24:05.962Z",
+        "feature": "mass-times",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-11T15:24:14.317Z",
+        "feature": "mass-times",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-11T15:24:26.838Z",
+        "feature": "mass-times",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-11T15:24:41.318Z",
+        "feature": "mass-times",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-11T15:24:51.411Z",
+        "feature": "mass-times",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-11T15:25:04.972Z",
+        "feature": "mass-times",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-11T15:25:19.837Z",
+        "feature": "mass-times",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-11T15:31:27.040Z",
+        "feature": "dashboard",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-11T15:31:43.729Z",
+        "feature": "dashboard",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-11T15:31:53.612Z",
+        "feature": "assignments",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-11T15:32:03.468Z",
+        "feature": "admin",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-11T15:32:22.496Z",
+        "feature": "admin",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-11T15:32:33.861Z",
+        "feature": "admin",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-11T15:32:42.282Z",
+        "feature": "admin",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-11T15:32:50.017Z",
+        "feature": "admin",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-11T15:33:05.845Z",
+        "feature": "admin",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-11T15:33:17.349Z",
+        "feature": "admin",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-11T15:33:40.797Z",
+        "feature": "automation",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-11T15:33:56.061Z",
+        "feature": "reports",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-11T15:40:47.336Z",
+        "feature": "mass-times",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-11T15:40:57.981Z",
+        "feature": "mass-times",
+        "phase": "do",
+        "action": "updated"
+      }
+    ]
+  }
+}
