@@ -286,7 +286,7 @@ export default function MassTimesPage() {
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">미사 일정</h1>
           <p className="text-gray-600 mt-2">
-            요일별 미사 시간을 설정하세요. 저장하면 템플릿과 12개월 일정이 자동 생성됩니다.
+          요일별 미사 시간과 봉사 역할을 설정해주세요.<br>설정이 끝나면 <strong>저장</strong>버튼을 눌러주세요.</br>
           </p>
         </div>
         {/* 저장 버튼 */}
