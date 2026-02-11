@@ -188,6 +188,19 @@ export default function ScheduleDialog({
       return;
     }
 
+    // 추가 모드일 때 중복 일정 체크 (프론트엔드)
+    if (!isEditing && schedules && schedules.length > 0) {
+      const duplicateSchedule = schedules.find((s: any) => {
+        const scheduleDate = new Date(s.date).toISOString().split('T')[0];
+        return scheduleDate === data.date && s.time === data.time;
+      });
+
+      if (duplicateSchedule) {
+        setError(`${data.date} ${data.time}에 이미 미사 일정이 존재합니다.\n다른 시간을 선택해주세요.`);
+        return;
+      }
+    }
+
     setLoading(true);
     setError('');
 
@@ -215,6 +228,8 @@ export default function ScheduleDialog({
       });
 
       if (res.ok) {
+        // 성공 시 명확한 피드백 제공
+        alert(isEditing ? '미사 일정이 수정되었습니다.' : '미사 일정이 추가되었습니다.');
         onSuccess();
       } else {
         const errorData = await res.json();
@@ -372,8 +387,8 @@ export default function ScheduleDialog({
 
           {/* 에러 메시지 */}
           {error && (
-            <div className="bg-red-50 border border-red-200 rounded-md p-3 text-sm text-red-700">
-              {error}
+            <div className="bg-red-50 border-2 border-red-400 rounded-md p-4 text-sm text-red-800 font-medium whitespace-pre-line">
+              ⚠️ {error}
             </div>
           )}
 
