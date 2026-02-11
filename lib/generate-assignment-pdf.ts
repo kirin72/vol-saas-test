@@ -6,7 +6,6 @@
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { registerKoreanFont } from '@/lib/pdf/load-korean-font';
-import { vestmentColorLabels } from '@/lib/validations/template';
 
 // 배정 데이터 타입 (assignments 페이지의 MassSchedule과 동일)
 interface ScheduleForPdf {
@@ -17,7 +16,6 @@ interface ScheduleForPdf {
   massTemplate: {
     id: string;
     massType: string;
-    vestmentColor: string | null;
     slots: Array<{
       id: string;
       requiredCount: number;
@@ -219,8 +217,8 @@ async function buildAssignmentPdf(
   // 6. 고유 역할 목록 추출
   const roles = extractUniqueRoles(schedules);
 
-  // 7. 메인 테이블 헤더 구성 (날짜, 시간, 제의색상, ...역할명들)
-  const headRow = ['날짜', '시간', '제의색상', ...roles.map((r) => r.name)];
+  // 7. 메인 테이블 헤더 구성 (날짜, 시간, ...역할명들)
+  const headRow = ['날짜', '시간', ...roles.map((r) => r.name)];
 
   // 8. 날짜별 그룹화 (같은 날짜 rowSpan 병합용)
   const dateGroups = groupSchedulesByDate(schedules);
@@ -257,14 +255,6 @@ async function buildAssignmentPdf(
       // ─── 시간 셀 ───
       row.push({
         content: formatTime12Hour(schedule.time),
-        styles: { halign: 'center' as const, fontSize: 8 },
-      });
-
-      // ─── 제의색상 셀 ───
-      row.push({
-        content: schedule.massTemplate?.vestmentColor
-          ? vestmentColorLabels[schedule.massTemplate.vestmentColor] || ''
-          : '',
         styles: { halign: 'center' as const, fontSize: 8 },
       });
 
@@ -331,16 +321,15 @@ async function buildAssignmentPdf(
       halign: 'center',
       fontSize: 9,
     },
-    // 컬럼별 스타일 (기본 3개 + 역할별)
+    // 컬럼별 스타일 (기본 2개 + 역할별)
     columnStyles: {
       0: { cellWidth: 22 },  // 날짜
       1: { cellWidth: 24 },  // 시간
-      2: { cellWidth: 18 },  // 제의색상
     },
     didParseCell: (data) => {
       // ─── 역할 헤더에 각 역할의 color를 배경색으로 적용 ───
-      if (data.section === 'head' && data.column.index >= 3) {
-        const roleIndex = data.column.index - 3;
+      if (data.section === 'head' && data.column.index >= 2) {
+        const roleIndex = data.column.index - 2;
         if (roleIndex < roles.length) {
           const roleColor = hexToRgb(roles[roleIndex].color);
           data.cell.styles.fillColor = roleColor;

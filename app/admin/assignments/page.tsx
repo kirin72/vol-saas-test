@@ -30,7 +30,6 @@ interface MassSchedule {
   massTemplate: {
     id: string;
     massType: string;
-    vestmentColor: string | null;
     slots: Array<{
       id: string;
       requiredCount: number;

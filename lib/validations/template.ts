@@ -20,8 +20,8 @@ export const templateCreateSchema = z.object({
     .min(1, '템플릿 이름은 필수입니다')
     .max(100, '템플릿 이름은 최대 100글자까지 가능합니다'),
 
-  // 미사 종류 (평일/토요일/주일/특전)
-  massType: z.enum(['WEEKDAY', 'SATURDAY', 'SUNDAY', 'SPECIAL'], {
+  // 미사 종류
+  massType: z.enum(['WEEKDAY', 'SATURDAY', 'SUNDAY', 'SPECIAL', 'FEAST', 'MEMORIAL', 'WEDDING', 'FUNERAL', 'VOTIVE', 'COMBINED', 'GROUP'], {
     errorMap: () => ({ message: '미사 종류를 선택해주세요' }),
   }),
 
@@ -36,13 +36,6 @@ export const templateCreateSchema = z.object({
   time: z
     .string()
     .regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, '올바른 시간 형식이 아닙니다 (예: 10:00)'),
-
-  // 제의 색상 (선택사항)
-  vestmentColor: z
-    .enum(['WHITE', 'RED', 'GREEN', 'PURPLE', 'ROSE', 'BLACK', 'GOLD'])
-    .nullable()
-    .optional()
-    .default(null),
 
   // 역할별 필요 인원 (최소 1개 역할 필수)
   slots: z
@@ -78,28 +71,6 @@ export const dayOfWeekLabels: Record<string, string> = {
   FRIDAY: '금요일',
   SATURDAY: '토요일',
   SUNDAY: '일요일',
-};
-
-// 제의 색상 라벨
-export const vestmentColorLabels: Record<string, string> = {
-  WHITE: '백색',
-  RED: '홍색',
-  GREEN: '녹색',
-  PURPLE: '자색',
-  ROSE: '장미색',
-  BLACK: '검정색',
-  GOLD: '황금색',
-};
-
-// 제의 색상 → 실제 CSS 색상 코드 매핑
-export const vestmentColorCodes: Record<string, string> = {
-  WHITE: '#FFFFFF',
-  RED: '#DC2626',
-  GREEN: '#16A34A',
-  PURPLE: '#7C3AED',
-  ROSE: '#F472B6',
-  BLACK: '#1F2937',
-  GOLD: '#EAB308',
 };
 
 // 요일 → 숫자 변환 (Date.getDay() 기준: 일=0, 월=1, ...)

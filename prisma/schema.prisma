@@ -235,6 +235,13 @@ enum MassType {
   SATURDAY // 토요일미사
   SUNDAY   // 주일미사
   SPECIAL  // 특전미사
+  FEAST    // 대축일미사
+  MEMORIAL // 기념일미사
+  WEDDING  // 혼인미사
+  FUNERAL  // 장례미사
+  VOTIVE   // 기원미사
+  COMBINED // 합동미사
+  GROUP    // 특수 단체 미사
 }
 
 enum DayOfWeek {
@@ -254,7 +261,6 @@ model MassTemplate {
   massType       MassType
   dayOfWeek      Json?      // 반복 요일 배열 (예: ["MONDAY","WEDNESDAY","FRIDAY"])
   time           String     // "10:00"
-  vestmentColor  String?    // 제의 색상 (WHITE, RED, GREEN, PURPLE, ROSE, BLACK, GOLD)
   isActive       Boolean    @default(true)
   createdAt      DateTime   @default(now())
   updatedAt      DateTime   @updatedAt

@@ -298,7 +298,7 @@ export default function RolesPage() {
           역할의 추가/수정/삭제는 &apos;역할 관리&apos; 버튼을 눌러주세요.
         </p>
         <p className="text-sm text-gray-500">
-          자동 배정을 위한 남녀 우선 설정은 역할 수정에서 변경할 수 있습니다.
+          자동 배정을 위한 남녀 우선 설정은 &quot;역할 관리&quot;를 누르면 나오는 &quot;역할 수정&quot;에서 변경할 수 있습니다.
         </p>
       </div>
 
@@ -422,13 +422,19 @@ export default function RolesPage() {
 
       {/* 활성/비활성 역할 요약 — 기본 모드에서만 표시 */}
       {roles.length > 0 && mode === 'default' && (
-        <div className="text-sm text-gray-500 flex gap-4">
-          <span>
-            활성: {roles.filter((r) => r.isActive).length}개
-          </span>
-          <span>
-            비활성: {roles.filter((r) => !r.isActive).length}개
-          </span>
+        <div className="flex gap-3">
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-green-50 border border-green-200 rounded-lg">
+            <span className="w-2.5 h-2.5 rounded-full bg-green-500" />
+            <span className="text-sm font-medium text-green-700">
+              활성 {roles.filter((r) => r.isActive).length}개
+            </span>
+          </div>
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg">
+            <span className="w-2.5 h-2.5 rounded-full bg-gray-400" />
+            <span className="text-sm font-medium text-gray-500">
+              비활성 {roles.filter((r) => !r.isActive).length}개
+            </span>
+          </div>
         </div>
       )}
 

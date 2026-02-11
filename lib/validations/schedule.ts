@@ -15,18 +15,11 @@ export const scheduleCreateSchema = z.object({
 
   time: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, '올바른 시간 형식이 아닙니다 (예: 10:00)'),
 
-  massType: z.enum(['WEEKDAY', 'SATURDAY', 'SUNDAY', 'SPECIAL'], {
+  massType: z.enum(['WEEKDAY', 'SATURDAY', 'SUNDAY', 'SPECIAL', 'FEAST', 'MEMORIAL', 'WEDDING', 'FUNERAL', 'VOTIVE', 'COMBINED', 'GROUP'], {
     errorMap: () => ({ message: '미사 종류를 선택해주세요' }),
   }),
 
   notes: z.string().max(500, '메모는 최대 500자까지 가능합니다').optional().or(z.literal('')),
-
-  // 제의 색상 (선택사항)
-  vestmentColor: z
-    .enum(['WHITE', 'RED', 'GREEN', 'PURPLE', 'ROSE', 'BLACK', 'GOLD'])
-    .nullable()
-    .optional()
-    .default(null),
 
   requiredRoles: z
     .array(roleRequirementSchema)
@@ -42,9 +35,17 @@ export type ScheduleCreateInput = z.infer<typeof scheduleCreateSchema>;
 export type ScheduleUpdateInput = z.infer<typeof scheduleUpdateSchema>;
 export type RoleRequirement = z.infer<typeof roleRequirementSchema>;
 
-// 미사 종류 한글 변환 (순서: 주일미사, 평일미사, 특전미사)
+// 미사 종류 한글 변환
 export const massTypeLabels: Record<string, string> = {
   SUNDAY: '주일미사',
   WEEKDAY: '평일미사',
   SATURDAY: '특전미사',
+  SPECIAL: '특전미사',
+  FEAST: '대축일미사',
+  MEMORIAL: '기념일미사',
+  WEDDING: '혼인미사',
+  FUNERAL: '장례미사',
+  VOTIVE: '기원미사',
+  COMBINED: '합동미사',
+  GROUP: '특수 단체 미사',
 };

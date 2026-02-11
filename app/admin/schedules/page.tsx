@@ -8,11 +8,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { PlusCircle, Edit, Trash2, Loader2, ChevronLeft, ChevronRight, Calendar, List } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, Loader2 } from 'lucide-react';
 import ScheduleDialog from '@/components/schedules/schedule-dialog';
 import ScheduleCalendar from '@/components/schedules/schedule-calendar';
 import { massTypeLabels } from '@/lib/validations/schedule';
-import { vestmentColorLabels, vestmentColorCodes } from '@/lib/validations/template';
 import { DesktopTable, MobileCardList, MobileCard, MobileCardHeader, MobileCardRow, MobileCardActions } from '@/components/ui/responsive-table';
 
 interface MassSchedule {
@@ -23,7 +22,6 @@ interface MassSchedule {
   massTemplate: {
     id: string;
     massType: string;
-    vestmentColor: string | null;
     slots: Array<{
       id: string;
       requiredCount: number;
@@ -45,9 +43,6 @@ export default function SchedulesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [deleting, setDeleting] = useState<string | null>(null);
-
-  // 뷰 모드 (calendar / list)
-  const [viewMode, setViewMode] = useState<'calendar' | 'list'>('calendar');
 
   // 다이얼로그 상태
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -174,7 +169,6 @@ export default function SchedulesPage() {
   // 날짜 선택 핸들러
   const handleDateSelect = (date: Date) => {
     setSelectedDate(date);
-    setViewMode('list'); // 날짜 선택 시 리스트 뷰로 전환
   };
 
   // 전체 보기
@@ -214,89 +208,41 @@ export default function SchedulesPage() {
           </p>
         </div>
 
-        <div className="flex gap-2 flex-shrink-0">
-          {/* 뷰 모드 전환 버튼 */}
-          <Button
-            variant={viewMode === 'calendar' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setViewMode('calendar')}
-          >
-            <Calendar className="h-4 w-4 mr-1" />
-            캘린더
-          </Button>
-          <Button
-            variant={viewMode === 'list' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setViewMode('list')}
-          >
-            <List className="h-4 w-4 mr-1" />
-            리스트
-          </Button>
-
-          {/* 일정 추가 버튼 */}
-          <Button onClick={() => handleAdd()}>
-            <PlusCircle className="mr-2 h-4 w-4" />
-            일정 추가
-          </Button>
-        </div>
       </div>
 
-      {/* 캘린더 뷰 */}
-      {viewMode === 'calendar' && (
-        <div className="space-y-6">
-          {/* 캘린더 */}
-          <ScheduleCalendar
-            currentDate={currentDate}
-            schedules={schedules}
-            selectedDate={selectedDate}
-            onDateSelect={handleDateSelect}
-            onPrevMonth={handlePrevMonth}
-            onNextMonth={handleNextMonth}
-            onAddSchedule={handleAdd}
-          />
-        </div>
-      )}
+      {/* 캘린더 */}
+      <ScheduleCalendar
+        currentDate={currentDate}
+        schedules={schedules}
+        selectedDate={selectedDate}
+        onDateSelect={handleDateSelect}
+        onPrevMonth={handlePrevMonth}
+        onNextMonth={handleNextMonth}
+        onAddSchedule={handleAdd}
+      />
 
-      {/* 리스트 뷰 */}
-      {viewMode === 'list' && (
+      {/* 선택된 날짜의 일정 리스트 */}
+      {selectedDate && (
         <Card>
           <CardHeader>
             <div className="flex justify-between items-center">
               <div>
                 <CardTitle>
-                  {selectedDate
-                    ? selectedDate.toLocaleDateString('ko-KR', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric',
-                        weekday: 'long',
-                      })
-                    : currentDate.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long' })}
+                  {selectedDate.toLocaleDateString('ko-KR', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    weekday: 'long',
+                  })}
                 </CardTitle>
-                {selectedDate && (
-                  <Button
-                    variant="link"
-                    size="sm"
-                    onClick={handleShowAll}
-                    className="mt-1 p-0 h-auto text-blue-600"
-                  >
-                    전체 보기 →
-                  </Button>
-                )}
-              </div>
-              <div className="flex gap-2">
-                {!selectedDate && (
-                  <>
-                    <Button variant="outline" size="sm" onClick={handlePrevMonth}>
-                      <ChevronLeft className="h-4 w-4 mr-1" />
-                      이전 달
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={handleNextMonth}>
-                      다음 달
-                      <ChevronRight className="h-4 w-4 ml-1" />
-                    </Button>
-                  </>
-                )}
+                <Button
+                  variant="link"
+                  size="sm"
+                  onClick={handleShowAll}
+                  className="mt-1 p-0 h-auto text-blue-600"
+                >
+                  전체 보기 →
+                </Button>
               </div>
             </div>
           </CardHeader>
@@ -304,11 +250,11 @@ export default function SchedulesPage() {
             {filteredSchedules.length === 0 ? (
               <div className="text-center py-12">
                 <p className="text-gray-500 mb-4">
-                  {selectedDate ? '이 날짜에 일정이 없습니다' : '이번 달 일정이 없습니다'}
+                  이 날짜에 일정이 없습니다
                 </p>
-                <Button onClick={() => handleAdd()}>
+                <Button onClick={() => handleAdd(selectedDate)}>
                   <PlusCircle className="mr-2 h-4 w-4" />
-                  {selectedDate ? '이 날짜에 일정 추가하기' : '첫 번째 일정 추가하기'}
+                  이 날짜에 일정 추가하기
                 </Button>
               </div>
             ) : (
@@ -334,23 +280,9 @@ export default function SchedulesPage() {
                           </Badge>
                         </MobileCardHeader>
                         <MobileCardRow label="미사 종류">
-                          <div className="flex items-center gap-1">
-                            <Badge variant="outline" className="text-xs">
-                              {massTypeLabels[schedule.massTemplate?.massType || 'WEEKDAY']}
-                            </Badge>
-                            {/* 제의 색상 (선택된 경우에만 표시) */}
-                            {schedule.massTemplate?.vestmentColor && (
-                              <Badge variant="outline" className="flex items-center gap-1 text-xs">
-                                <span
-                                  className={`inline-block w-2.5 h-2.5 rounded-full shrink-0 ${
-                                    schedule.massTemplate.vestmentColor === 'WHITE' ? 'border border-gray-300' : ''
-                                  }`}
-                                  style={{ backgroundColor: vestmentColorCodes[schedule.massTemplate.vestmentColor] }}
-                                />
-                                {vestmentColorLabels[schedule.massTemplate.vestmentColor]}
-                              </Badge>
-                            )}
-                          </div>
+                          <Badge variant="outline" className="text-xs">
+                            {massTypeLabels[schedule.massTemplate?.massType || 'WEEKDAY']}
+                          </Badge>
                         </MobileCardRow>
                         <div className="flex flex-wrap gap-1">
                           {schedule.massTemplate?.slots
@@ -425,23 +357,9 @@ export default function SchedulesPage() {
                           )}
                           <TableCell>{schedule.time}</TableCell>
                           <TableCell>
-                            <div className="flex items-center gap-1">
-                              <Badge variant="outline">
-                                {massTypeLabels[schedule.massTemplate?.massType || 'WEEKDAY']}
-                              </Badge>
-                              {/* 제의 색상 (선택된 경우에만 표시) */}
-                              {schedule.massTemplate?.vestmentColor && (
-                                <Badge variant="outline" className="flex items-center gap-1">
-                                  <span
-                                    className={`inline-block w-2.5 h-2.5 rounded-full shrink-0 ${
-                                      schedule.massTemplate.vestmentColor === 'WHITE' ? 'border border-gray-300' : ''
-                                    }`}
-                                    style={{ backgroundColor: vestmentColorCodes[schedule.massTemplate.vestmentColor] }}
-                                  />
-                                  {vestmentColorLabels[schedule.massTemplate.vestmentColor]}
-                                </Badge>
-                              )}
-                            </div>
+                            <Badge variant="outline">
+                              {massTypeLabels[schedule.massTemplate?.massType || 'WEEKDAY']}
+                            </Badge>
                           </TableCell>
                           <TableCell>
                             <div className="flex flex-wrap gap-1">

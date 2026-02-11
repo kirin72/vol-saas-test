@@ -8,11 +8,9 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { scheduleCreateSchema, type ScheduleCreateInput, massTypeLabels } from '@/lib/validations/schedule';
-import { vestmentColorLabels, vestmentColorCodes } from '@/lib/validations/template';
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
@@ -65,13 +63,6 @@ const generateTimeOptions = () => {
 
 const timeOptions = generateTimeOptions();
 
-// 제의 색상 옵션
-const VESTMENT_COLOR_OPTIONS = Object.entries(vestmentColorLabels).map(([value, label]) => ({
-  value,
-  label,
-  color: vestmentColorCodes[value],
-}));
-
 export default function ScheduleDialog({
   open,
   onOpenChange,
@@ -102,7 +93,6 @@ export default function ScheduleDialog({
       time: '10:00',
       massType: 'SUNDAY',
       notes: '',
-      vestmentColor: null,
       requiredRoles: [{ roleId: '', count: 1 }],
     },
   });
@@ -166,7 +156,6 @@ export default function ScheduleDialog({
           time: schedule.time || '10:00',
           massType: schedule.massTemplate?.massType || 'SUNDAY',
           notes: schedule.notes || '',
-          vestmentColor: (schedule.massTemplate?.vestmentColor as any) || null,
           requiredRoles: [],
         });
 
@@ -183,7 +172,6 @@ export default function ScheduleDialog({
           time: '10:00',
           massType: 'SUNDAY',
           notes: '',
-          vestmentColor: null,
           requiredRoles: [],
         });
         setSelectedRoleIds([]);
@@ -212,7 +200,6 @@ export default function ScheduleDialog({
 
       const submitData = {
         ...data,
-        vestmentColor: data.vestmentColor || null,
         requiredRoles,
       };
 
@@ -246,11 +233,8 @@ export default function ScheduleDialog({
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {isEditing ? '미사 일정 수정' : '새 봉사 일정 추가'}
+            {isEditing ? '미사 일정 수정' : '미사 일정 추가'}
           </DialogTitle>
-          <DialogDescription>
-            미사 일정에 맞추어 필요한 봉사 역할을 입력해주세요.
-          </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -309,50 +293,6 @@ export default function ScheduleDialog({
               {errors.massType && (
                 <p className="text-sm text-red-600">{errors.massType.message}</p>
               )}
-            </div>
-
-            {/* 제의 색상 (선택사항) */}
-            <div className="space-y-2">
-              <Label>제의 색상</Label>
-              <div className="flex flex-wrap gap-2">
-                {VESTMENT_COLOR_OPTIONS.map(({ value, label, color }) => {
-                  const isSelected = watch('vestmentColor') === value;
-                  // 백색은 테두리로 구분
-                  const isWhite = value === 'WHITE';
-                  return (
-                    <button
-                      key={value}
-                      type="button"
-                      onClick={() => {
-                        // 이미 선택된 색상 클릭 시 선택 해제
-                        if (isSelected) {
-                          setValue('vestmentColor', null as any);
-                        } else {
-                          setValue('vestmentColor', value as any);
-                        }
-                      }}
-                      disabled={loading}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-sm transition-all ${
-                        isSelected
-                          ? 'ring-2 ring-blue-500 ring-offset-1 border-blue-400 font-semibold'
-                          : 'border-gray-200 hover:border-gray-400'
-                      }`}
-                    >
-                      {/* 색상 원형 표시 */}
-                      <span
-                        className={`inline-block w-4 h-4 rounded-full shrink-0 ${
-                          isWhite ? 'border border-gray-300' : ''
-                        }`}
-                        style={{ backgroundColor: color }}
-                      />
-                      <span>{label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-              <p className="text-xs text-gray-500">
-                선택하지 않아도 됩니다. 다시 클릭하면 선택이 해제됩니다.
-              </p>
             </div>
 
             <div className="space-y-2">

@@ -11,7 +11,6 @@ import {
   LayoutDashboard,
   Users,
   Tags,
-  Copy,
   CalendarDays,
   CalendarCheck,
   Bell,
@@ -63,11 +62,6 @@ const menuItems: MenuItem[] = [
     href: '/admin/volunteers',
     label: '봉사자 관리',
     icon: Users,
-  },
-  {
-    href: '/admin/templates',
-    label: '미사 템플릿',
-    icon: Copy,
   },
   {
     href: '/admin/mass-times',

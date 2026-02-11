@@ -116,7 +116,6 @@ export async function POST(request: NextRequest) {
             ? validatedData.dayOfWeek
             : Prisma.JsonNull,
           time: validatedData.time,
-          vestmentColor: validatedData.vestmentColor || null,
           isActive: true,
         },
       });

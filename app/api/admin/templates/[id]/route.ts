@@ -132,7 +132,6 @@ export async function PATCH(
             ? validatedData.dayOfWeek
             : Prisma.JsonNull,
           time: validatedData.time,
-          vestmentColor: validatedData.vestmentColor || null,
         },
       });
 
