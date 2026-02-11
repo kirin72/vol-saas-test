@@ -5,7 +5,7 @@
  *
  * 알고리즘:
  * 1. 해당 월의 모든 일정 + 슬롯 + 기존 배정 조회
- * 2. 해당 조직의 활성 봉사자 조회 (역할, 성별, 가용성 포함)
+ * 2. 해당 조직의 활성 봉사자 조회 (관리자도 봉사 역할이 있으면 포함)
  * 3. 미충족 슬롯마다 점수 기반으로 최적 봉사자 선택
  *    - 성별 우선 매칭: +10점
  *    - 배정 균등: (최대배정 - 현재배정) * 5점
@@ -77,12 +77,13 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // 2. 해당 조직의 모든 활성 봉사자 조회
+    // 2. 해당 조직의 모든 활성 봉사자 조회 (관리자도 봉사 역할이 있으면 포함)
     const volunteers = await prisma.user.findMany({
       where: {
         organizationId,
-        role: 'VOLUNTEER',
+        role: { in: ['VOLUNTEER', 'ADMIN'] },
         status: 'ACTIVE',
+        userRoles: { some: {} }, // 봉사 역할이 있는 사용자만
       },
       include: {
         userRoles: {
