@@ -5,6 +5,7 @@
  */
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
 import { Resend } from 'resend';
 
 // Resend 클라이언트 초기화
@@ -12,13 +13,34 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function POST(request: Request) {
   try {
-    // 1. 인증 확인 (ADMIN만 허용)
+    // 1. 인증 확인 (ADMIN 또는 총무 허용)
     const session = await auth();
-    if (!session || session.user.role !== 'ADMIN') {
+    if (!session) {
       return NextResponse.json(
-        { error: '권한이 없습니다.' },
-        { status: 403 }
+        { error: '인증이 필요합니다.' },
+        { status: 401 }
       );
+    }
+
+    // ADMIN이 아닌 경우, VOLUNTEER이고 총무인지 확인
+    if (session.user.role !== 'ADMIN') {
+      if (session.user.role === 'VOLUNTEER' && session.user.organizationId) {
+        const org = await prisma.organization.findUnique({
+          where: { id: session.user.organizationId },
+          select: { treasurerId: true },
+        });
+        if (org?.treasurerId !== session.user.id) {
+          return NextResponse.json(
+            { error: '권한이 없습니다.' },
+            { status: 403 }
+          );
+        }
+      } else {
+        return NextResponse.json(
+          { error: '권한이 없습니다.' },
+          { status: 403 }
+        );
+      }
     }
 
     // 2. 요청 데이터 파싱

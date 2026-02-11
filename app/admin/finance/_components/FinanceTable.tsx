@@ -47,6 +47,13 @@ export function FinanceTable({
     return amount.toLocaleString('ko-KR') + '원';
   };
 
+  // 기록자 표시 함수: "이름 (세례명)" 또는 "이름"
+  const formatRecorder = (transaction: Transaction) => {
+    if (!transaction.recordedBy) return '-';
+    const { name, baptismalName } = transaction.recordedBy;
+    return baptismalName ? `${name} (${baptismalName})` : name;
+  };
+
   // 데이터가 없을 경우
   if (transactions.length === 0 && balanceForward === 0) {
     return (
@@ -93,6 +100,12 @@ export function FinanceTable({
                 </span>
               )}
             </div>
+            {/* 기록자 표시 (모바일) */}
+            {transaction.recordedBy && (
+              <p className="text-xs text-gray-400 mt-1">
+                기록: {formatRecorder(transaction)}
+              </p>
+            )}
           </MobileCard>
         ))}
       </MobileCardList>
@@ -106,6 +119,7 @@ export function FinanceTable({
               <TableHead className="w-32 text-right">수입</TableHead>
               <TableHead className="w-32 text-right">지출</TableHead>
               <TableHead>적요</TableHead>
+              <TableHead className="w-36">기록자</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -129,6 +143,7 @@ export function FinanceTable({
                   {showYear ? '전년도 이월' : '전월 이월'}{' '}
                   <span className="font-semibold text-blue-600">{formatAmount(balanceForward)}</span>
                 </TableCell>
+                <TableCell>-</TableCell>
               </TableRow>
             )}
 
@@ -163,6 +178,9 @@ export function FinanceTable({
                       ({transaction.user.name})
                     </span>
                   )}
+                </TableCell>
+                <TableCell className="text-sm text-gray-500">
+                  {formatRecorder(transaction)}
                 </TableCell>
               </TableRow>
             ))}

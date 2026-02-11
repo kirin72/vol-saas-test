@@ -23,6 +23,7 @@ export interface Transaction {
   amount: number; // 금액 (원 단위, 정수)
   description: string; // 적요
   userId: string | null; // 봉사자 ID (수입 시, 선택적)
+  recordedById: string | null; // 기록자 ID (관리자 또는 총무)
   createdAt: Date; // 생성 일시
   updatedAt: Date; // 수정 일시
 
@@ -30,6 +31,11 @@ export interface Transaction {
   user?: {
     id: string;
     name: string;
+  } | null;
+  recordedBy?: {
+    id: string;
+    name: string;
+    baptismalName: string | null;
   } | null;
 }
 

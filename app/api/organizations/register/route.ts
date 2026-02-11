@@ -176,7 +176,19 @@ export async function POST(request: NextRequest) {
         createdRoles.push(created);
       }
 
-      // 6. 성당 디렉토리 매칭이 있고, 미사시간 데이터가 있는 경우 → 템플릿 + 일정 자동 생성
+      // 6. 관리자를 봉사자 1번으로 자동 등록 (활성 역할에 대해 UserRole_ 매핑)
+      const activeRoles = createdRoles.filter((r) => r.isActive);
+      if (activeRoles.length > 0) {
+        await tx.userRole_.createMany({
+          data: activeRoles.map((role) => ({
+            userId: newAdmin.id,
+            volunteerRoleId: role.id,
+          })),
+          skipDuplicates: true,
+        });
+      }
+
+      // 7. 성당 디렉토리 매칭이 있고, 미사시간 데이터가 있는 경우 → 템플릿 + 일정 자동 생성
       let templatesCreated = 0;
       let schedulesCreated = 0;
 

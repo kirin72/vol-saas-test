@@ -50,7 +50,8 @@ async function buildFinancePdf(
   transactions: Transaction[],
   summary: MonthlyFinanceSummary,
   year: number,
-  month: number
+  month: number,
+  showRecorder: boolean = false // 기록자 표시 여부
 ): Promise<jsPDF> {
   const { balanceForward, totalIncome, totalExpense, balance } = summary;
 
@@ -69,17 +70,29 @@ async function buildFinancePdf(
   doc.setTextColor(17, 17, 17);
   doc.text(`${year}년 ${month}월 입출금내역`, 105, 20, { align: 'center' });
 
-  // 4. 테이블 body 데이터 구성
+  // 4. 기록자 포맷 함수 (showRecorder=true 시 사용)
+  const formatRecorder = (tx: Transaction) => {
+    if (!tx.recordedBy) return '-';
+    const { name, baptismalName } = tx.recordedBy;
+    return baptismalName ? `${name} (${baptismalName})` : name;
+  };
+
+  // 5. 테이블 body 데이터 구성
   const body: any[][] = [];
 
   // 이월금 행 (0이 아닐 때만)
   if (balanceForward !== 0) {
-    body.push([
+    const row: any[] = [
       { content: `${String(month).padStart(2, '0')}/01`, styles: { halign: 'center' as const } },
       { content: formatAmount(balanceForward), styles: { halign: 'right' as const, textColor: BLUE, fontStyle: 'bold' as const } },
       { content: '-', styles: { halign: 'center' as const, textColor: GRAY } },
       { content: '전월 이월', styles: { textColor: [85, 85, 85] } },
-    ]);
+    ];
+    // 기록자 컬럼 추가
+    if (showRecorder) {
+      row.push({ content: '-', styles: { halign: 'center' as const, textColor: GRAY } });
+    }
+    body.push(row);
   }
 
   // 거래 내역 행
@@ -87,7 +100,7 @@ async function buildFinancePdf(
     const isIncome = tx.type === 'income';
     const userInfo = tx.user ? ` (${tx.user.name})` : '';
 
-    body.push([
+    const row: any[] = [
       { content: formatDate(tx.date), styles: { halign: 'center' as const } },
       // 수입 셀
       isIncome
@@ -99,38 +112,51 @@ async function buildFinancePdf(
         : { content: '-', styles: { halign: 'center' as const, textColor: GRAY } },
       // 적요
       { content: `${tx.description}${userInfo}` },
-    ]);
+    ];
+    // 기록자 컬럼 추가
+    if (showRecorder) {
+      row.push({ content: formatRecorder(tx) });
+    }
+    body.push(row);
   });
 
-  // 5. autoTable 호출
+  // 6. 테이블 헤더/foot 구성 (기록자 컬럼 포함 여부)
+  const headColumns = showRecorder
+    ? ['날짜', '수입', '지출', '적요', '기록자']
+    : ['날짜', '수입', '지출', '적요'];
+
+  const footTotalRow: any[] = [
+    { content: '합계', styles: { halign: 'center' as const, fontStyle: 'bold' as const } },
+    { content: formatAmount(totalIncome), styles: { halign: 'right' as const, textColor: BLUE, fontStyle: 'bold' as const } },
+    { content: formatAmount(totalExpense), styles: { halign: 'right' as const, textColor: RED, fontStyle: 'bold' as const } },
+    { content: '' },
+  ];
+  if (showRecorder) {
+    footTotalRow.push({ content: '' });
+  }
+
+  const balanceColSpan = showRecorder ? 4 : 3;
+  const footBalanceRow: any[] = [
+    { content: '잔액 (이월 + 수입 - 지출)', colSpan: balanceColSpan, styles: { halign: 'right' as const, fontStyle: 'bold' as const } },
+    {
+      content: formatAmount(balance),
+      styles: {
+        halign: 'right' as const,
+        fontStyle: 'bold' as const,
+        fontSize: 11,
+        textColor: balance >= 0 ? GREEN : RED,
+      },
+    },
+  ];
+
+  // 7. autoTable 호출
   autoTable(doc, {
     startY: 28,
     // 테이블 헤더
-    head: [['날짜', '수입', '지출', '적요']],
+    head: [headColumns],
     body: body,
     // 합계 + 잔액 행을 foot으로
-    foot: [
-      // 합계 행
-      [
-        { content: '합계', styles: { halign: 'center' as const, fontStyle: 'bold' as const } },
-        { content: formatAmount(totalIncome), styles: { halign: 'right' as const, textColor: BLUE, fontStyle: 'bold' as const } },
-        { content: formatAmount(totalExpense), styles: { halign: 'right' as const, textColor: RED, fontStyle: 'bold' as const } },
-        { content: '' },
-      ],
-      // 잔액 행
-      [
-        { content: '잔액 (이월 + 수입 - 지출)', colSpan: 3, styles: { halign: 'right' as const, fontStyle: 'bold' as const } },
-        {
-          content: formatAmount(balance),
-          styles: {
-            halign: 'right' as const,
-            fontStyle: 'bold' as const,
-            fontSize: 11,
-            textColor: balance >= 0 ? GREEN : RED,
-          },
-        },
-      ],
-    ],
+    foot: [footTotalRow, footBalanceRow],
     // 테마 및 스타일
     theme: 'grid',
     styles: {
@@ -152,13 +178,21 @@ async function buildFinancePdf(
       textColor: [0, 0, 0],
       fontStyle: 'normal',
     },
-    // 컬럼별 스타일
-    columnStyles: {
-      0: { cellWidth: 30 },       // 날짜
-      1: { cellWidth: 35 },       // 수입
-      2: { cellWidth: 35 },       // 지출
-      3: { cellWidth: 'auto' },   // 적요
-    },
+    // 컬럼별 스타일 (기록자 포함 여부에 따라)
+    columnStyles: showRecorder
+      ? {
+          0: { cellWidth: 28 },       // 날짜
+          1: { cellWidth: 30 },       // 수입
+          2: { cellWidth: 30 },       // 지출
+          3: { cellWidth: 'auto' },   // 적요
+          4: { cellWidth: 35 },       // 기록자
+        }
+      : {
+          0: { cellWidth: 30 },       // 날짜
+          1: { cellWidth: 35 },       // 수입
+          2: { cellWidth: 35 },       // 지출
+          3: { cellWidth: 'auto' },   // 적요
+        },
     // 이월금 행 / 잔액 행 배경색 처리
     didParseCell: (data) => {
       // 이월금 행 (body의 첫 행이고 이월금이 있을 때)
@@ -195,7 +229,8 @@ export async function generateFinancePdf(
   transactions: Transaction[],
   summary: MonthlyFinanceSummary,
   year: number,
-  month: number
+  month: number,
+  showRecorder: boolean = false // 기록자 표시 여부
 ): Promise<void> {
   // 데이터가 전혀 없으면 안내
   if (transactions.length === 0 && summary.balanceForward === 0) {
@@ -204,7 +239,7 @@ export async function generateFinancePdf(
   }
 
   try {
-    const doc = await buildFinancePdf(transactions, summary, year, month);
+    const doc = await buildFinancePdf(transactions, summary, year, month, showRecorder);
     // PDF 파일 다운로드
     doc.save(`${year}년_${month}월_입출금내역.pdf`);
   } catch (err) {
@@ -225,8 +260,9 @@ export async function generateFinancePdfBlob(
   transactions: Transaction[],
   summary: MonthlyFinanceSummary,
   year: number,
-  month: number
+  month: number,
+  showRecorder: boolean = false // 기록자 표시 여부
 ): Promise<Blob> {
-  const doc = await buildFinancePdf(transactions, summary, year, month);
+  const doc = await buildFinancePdf(transactions, summary, year, month, showRecorder);
   return doc.output('blob');
 }

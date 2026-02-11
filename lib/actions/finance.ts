@@ -18,6 +18,43 @@ import type {
 } from '@/types/finance';
 
 /**
+ * 입출금 관리 접근 권한 확인 헬퍼
+ * ADMIN이면 바로 통과, VOLUNTEER이면 총무인지 DB에서 확인
+ */
+async function checkFinanceAccess(session: any): Promise<{
+  allowed: boolean;
+  organizationId: string | null;
+  error?: string;
+}> {
+  if (!session?.user) {
+    return { allowed: false, organizationId: null, error: '인증이 필요합니다.' };
+  }
+
+  const organizationId = session.user.organizationId;
+  if (!organizationId) {
+    return { allowed: false, organizationId: null, error: '본당 정보를 찾을 수 없습니다.' };
+  }
+
+  // ADMIN은 바로 통과
+  if (session.user.role === 'ADMIN') {
+    return { allowed: true, organizationId };
+  }
+
+  // VOLUNTEER인 경우 총무인지 확인
+  if (session.user.role === 'VOLUNTEER') {
+    const org = await prisma.organization.findUnique({
+      where: { id: organizationId },
+      select: { treasurerId: true },
+    });
+    if (org?.treasurerId === session.user.id) {
+      return { allowed: true, organizationId };
+    }
+  }
+
+  return { allowed: false, organizationId: null, error: '권한이 없습니다.' };
+}
+
+/**
  * 월별 입출금 내역 조회
  * @param year 조회할 년도 (예: 2026)
  * @param month 조회할 월 (1-12)
@@ -33,16 +70,13 @@ export async function getMonthlyTransactions(
   }>
 > {
   try {
-    // 1. 세션 확인
+    // 1. 세션 및 권한 확인 (ADMIN 또는 총무)
     const session = await auth();
-    if (!session || session.user.role !== 'ADMIN') {
-      return { success: false, error: '권한이 없습니다.' };
+    const access = await checkFinanceAccess(session);
+    if (!access.allowed) {
+      return { success: false, error: access.error! };
     }
-
-    const organizationId = session.user.organizationId;
-    if (!organizationId) {
-      return { success: false, error: '본당 정보를 찾을 수 없습니다.' };
-    }
+    const organizationId = access.organizationId!;
 
     // 2. 해당 년월의 시작일/종료일 계산
     const startDate = new Date(year, month - 1, 1); // month는 0-based
@@ -62,6 +96,13 @@ export async function getMonthlyTransactions(
           select: {
             id: true,
             name: true,
+          },
+        },
+        recordedBy: {
+          select: {
+            id: true,
+            name: true,
+            baptismalName: true,
           },
         },
       },
@@ -126,16 +167,13 @@ export async function createTransaction(
   input: CreateTransactionInput
 ): Promise<FinanceActionResult<Transaction>> {
   try {
-    // 1. 세션 확인
+    // 1. 세션 및 권한 확인 (ADMIN 또는 총무)
     const session = await auth();
-    if (!session || session.user.role !== 'ADMIN') {
-      return { success: false, error: '권한이 없습니다.' };
+    const access = await checkFinanceAccess(session);
+    if (!access.allowed) {
+      return { success: false, error: access.error! };
     }
-
-    const organizationId = session.user.organizationId;
-    if (!organizationId) {
-      return { success: false, error: '본당 정보를 찾을 수 없습니다.' };
-    }
+    const organizationId = access.organizationId!;
 
     // 2. Zod 스키마로 입력 검증
     const validationResult = transactionSchema.safeParse(input);
@@ -166,7 +204,7 @@ export async function createTransaction(
       }
     }
 
-    // 4. Transaction 생성
+    // 4. Transaction 생성 (기록자 ID 자동 저장)
     const transaction = await prisma.transaction.create({
       data: {
         organizationId,
@@ -175,12 +213,20 @@ export async function createTransaction(
         amount: validatedData.amount,
         description: validatedData.description,
         userId: validatedData.userId,
+        recordedById: session!.user.id, // 기록자 (관리자 또는 총무)
       },
       include: {
         user: {
           select: {
             id: true,
             name: true,
+          },
+        },
+        recordedBy: {
+          select: {
+            id: true,
+            name: true,
+            baptismalName: true,
           },
         },
       },
@@ -202,8 +248,9 @@ export async function createTransaction(
       }
     }
 
-    // 6. 캐시 갱신
+    // 6. 캐시 갱신 (관리자/봉사자 양쪽 경로)
     revalidatePath('/admin/finance');
+    revalidatePath('/volunteer/finance');
 
     return {
       success: true,
@@ -282,16 +329,13 @@ export async function getYearlyTransactions(
   }>
 > {
   try {
-    // 1. 세션 확인
+    // 1. 세션 및 권한 확인 (ADMIN 또는 총무)
     const session = await auth();
-    if (!session || session.user.role !== 'ADMIN') {
-      return { success: false, error: '권한이 없습니다.' };
+    const access = await checkFinanceAccess(session);
+    if (!access.allowed) {
+      return { success: false, error: access.error! };
     }
-
-    const organizationId = session.user.organizationId;
-    if (!organizationId) {
-      return { success: false, error: '본당 정보를 찾을 수 없습니다.' };
-    }
+    const organizationId = access.organizationId!;
 
     // 2. 해당 년도의 시작일/종료일 계산
     const startDate = new Date(year, 0, 1); // 1월 1일
@@ -311,6 +355,13 @@ export async function getYearlyTransactions(
           select: {
             id: true,
             name: true,
+          },
+        },
+        recordedBy: {
+          select: {
+            id: true,
+            name: true,
+            baptismalName: true,
           },
         },
       },
@@ -394,16 +445,13 @@ export async function getAllTransactions(): Promise<
   }>
 > {
   try {
-    // 1. 세션 확인
+    // 1. 세션 및 권한 확인 (ADMIN 또는 총무)
     const session = await auth();
-    if (!session || session.user.role !== 'ADMIN') {
-      return { success: false, error: '권한이 없습니다.' };
+    const access = await checkFinanceAccess(session);
+    if (!access.allowed) {
+      return { success: false, error: access.error! };
     }
-
-    const organizationId = session.user.organizationId;
-    if (!organizationId) {
-      return { success: false, error: '본당 정보를 찾을 수 없습니다.' };
-    }
+    const organizationId = access.organizationId!;
 
     // 2. 모든 입출금 내역 조회
     const transactions = await prisma.transaction.findMany({
@@ -415,6 +463,13 @@ export async function getAllTransactions(): Promise<
           select: {
             id: true,
             name: true,
+          },
+        },
+        recordedBy: {
+          select: {
+            id: true,
+            name: true,
+            baptismalName: true,
           },
         },
       },
@@ -477,16 +532,13 @@ export async function getVolunteersForFinance(): Promise<
   FinanceActionResult<{ id: string; name: string }[]>
 > {
   try {
-    // 1. 세션 확인
+    // 1. 세션 및 권한 확인 (ADMIN 또는 총무)
     const session = await auth();
-    if (!session || session.user.role !== 'ADMIN') {
-      return { success: false, error: '권한이 없습니다.' };
+    const access = await checkFinanceAccess(session);
+    if (!access.allowed) {
+      return { success: false, error: access.error! };
     }
-
-    const organizationId = session.user.organizationId;
-    if (!organizationId) {
-      return { success: false, error: '본당 정보를 찾을 수 없습니다.' };
-    }
+    const organizationId = access.organizationId!;
 
     // 2. 해당 본당의 봉사자 목록 조회
     const volunteers = await prisma.user.findMany({

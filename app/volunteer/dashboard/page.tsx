@@ -8,12 +8,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AvailabilityForm } from '@/components/volunteer/availability-form';
 import { AssignmentList } from '@/components/volunteer/assignment-list';
 import { InstallBanner } from '@/components/pwa/install-prompt';
-import { Loader2, Calendar as CalendarIcon, List } from 'lucide-react';
+import { Loader2, Calendar as CalendarIcon, List, Wallet } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { checkIsTreasurer } from '@/lib/actions/treasurer';
 
 interface VolunteerInfo {
   availableThisMonth: boolean | null;
@@ -39,6 +41,7 @@ interface Assignment {
     color: string | null;
   };
   status: string;
+  assignmentMethod: 'MANUAL' | 'AUTO'; // 배정 방법
 }
 
 export default function VolunteerDashboardPage() {
@@ -46,6 +49,7 @@ export default function VolunteerDashboardPage() {
   const [volunteerInfo, setVolunteerInfo] = useState<VolunteerInfo | null>(null);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
+  const [isTreasurer, setIsTreasurer] = useState(false); // 총무 여부
 
   // 현재 월
   const currentMonth = new Date().toISOString().slice(0, 7);
@@ -58,19 +62,27 @@ export default function VolunteerDashboardPage() {
     try {
       setLoading(true);
 
-      // 봉사자 정보 조회
-      const infoRes = await fetch('/api/volunteer/info');
+      // 봉사자 정보 + 총무 여부 + 배정 동시 조회
+      const [infoRes, assignmentsRes, treasurerResult] = await Promise.all([
+        fetch('/api/volunteer/info'),
+        fetch(`/api/volunteer/assignments?month=${currentMonth}`),
+        checkIsTreasurer(),
+      ]);
+
+      // 봉사자 정보 설정
       if (infoRes.ok) {
         const data = await infoRes.json();
         setVolunteerInfo(data);
       }
 
-      // 배정 조회
-      const assignmentsRes = await fetch(`/api/volunteer/assignments?month=${currentMonth}`);
+      // 배정 설정
       if (assignmentsRes.ok) {
         const data = await assignmentsRes.json();
         setAssignments(data);
       }
+
+      // 총무 여부 설정
+      setIsTreasurer(treasurerResult);
     } catch (error) {
       console.error('데이터 조회 오류:', error);
     } finally {
@@ -98,6 +110,26 @@ export default function VolunteerDashboardPage() {
           이번 달 배정된 봉사 일정을 확인하고 관리하세요
         </p>
       </div>
+
+      {/* 총무: 입출금 관리 바로가기 */}
+      {isTreasurer && (
+        <Card className="border-green-200 bg-green-50">
+          <CardContent className="flex items-center justify-between py-4">
+            <div className="flex items-center gap-3">
+              <Wallet className="h-5 w-5 text-green-600" />
+              <div>
+                <p className="font-medium text-green-900">입출금 관리</p>
+                <p className="text-sm text-green-700">총무로 지정되어 입출금 관리에 접근할 수 있습니다.</p>
+              </div>
+            </div>
+            <Button asChild variant="outline" className="border-green-300 text-green-700 hover:bg-green-100">
+              <Link href="/volunteer/finance">
+                입출금 관리
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       {/* 참여 가능 여부 및 선호 정보 */}
       <AvailabilityForm
@@ -138,8 +170,8 @@ export default function VolunteerDashboardPage() {
           </div>
         </CardHeader>
         <CardContent>
-          {/* 자동배정 안내 문구 (배정이 있을 때만 표시) */}
-          {assignments.length > 0 && (
+          {/* 자동배정 안내 문구 (자동배정된 항목이 있을 때만 표시) */}
+          {assignments.some((a) => a.assignmentMethod === 'AUTO') && (
             <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
               <p className="text-sm text-blue-800 leading-relaxed">
                 최근 봉사 기록과 선호 날짜를 고려하여{' '}

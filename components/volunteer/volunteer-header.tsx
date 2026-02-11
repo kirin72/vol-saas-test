@@ -4,10 +4,11 @@
  */
 'use client';
 
+import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { signOut } from 'next-auth/react';
-import { User } from 'lucide-react';
+import { User, Wallet } from 'lucide-react';
 
 interface VolunteerHeaderProps {
   organizationName: string;
@@ -18,6 +19,7 @@ interface VolunteerHeaderProps {
     name: string;
     color: string | null;
   }>;
+  isTreasurer?: boolean; // 총무 여부
 }
 
 export function VolunteerHeader({
@@ -25,6 +27,7 @@ export function VolunteerHeader({
   volunteerName,
   baptismalName,
   roles,
+  isTreasurer = false,
 }: VolunteerHeaderProps) {
   return (
     <header className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
@@ -65,6 +68,16 @@ export function VolunteerHeader({
                 </div>
               </div>
             </div>
+
+            {/* 총무: 입출금 관리 링크 */}
+            {isTreasurer && (
+              <Button asChild variant="outline" size="sm">
+                <Link href="/volunteer/finance" className="flex items-center gap-1">
+                  <Wallet className="h-4 w-4" />
+                  <span className="hidden sm:inline">입출금 관리</span>
+                </Link>
+              </Button>
+            )}
 
             {/* 로그아웃 버튼 */}
             <Button

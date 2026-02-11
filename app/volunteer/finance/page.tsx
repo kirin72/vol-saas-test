@@ -1,20 +1,23 @@
 /**
- * 입출금 관리 페이지
- * 월별 입출금 내역 조회 및 관리
+ * 봉사자(총무)용 입출금 관리 페이지
+ * - admin/finance와 동일한 UI 및 Server Actions 재사용
+ * - 총무만 접근 가능 (checkIsTreasurer로 검증)
  */
 'use client';
 
 import { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { Plus, Download, Loader2, Mail } from 'lucide-react';
-import { MonthNavigator } from './_components/MonthNavigator';
-import { FinanceTable } from './_components/FinanceTable';
-import { FinanceSummary } from './_components/FinanceSummary';
-import { FinanceRecordModal } from './_components/FinanceRecordModal';
-import { ViewModeSelector, type ViewMode } from './_components/ViewModeSelector';
+import { Plus, Download, Loader2, Mail, ArrowLeft } from 'lucide-react';
+import Link from 'next/link';
+import { MonthNavigator } from '@/app/admin/finance/_components/MonthNavigator';
+import { FinanceTable } from '@/app/admin/finance/_components/FinanceTable';
+import { FinanceSummary } from '@/app/admin/finance/_components/FinanceSummary';
+import { FinanceRecordModal } from '@/app/admin/finance/_components/FinanceRecordModal';
+import { ViewModeSelector, type ViewMode } from '@/app/admin/finance/_components/ViewModeSelector';
 import { generateFinancePdf, generateFinancePdfBlob } from '@/lib/generate-finance-pdf';
 import { EmailSendDialog } from '@/components/email-send-dialog';
+import { checkIsTreasurer } from '@/lib/actions/treasurer';
 import {
   getMonthlyTransactions,
   getYearlyTransactions,
@@ -28,7 +31,7 @@ import type {
   AllFinanceSummary,
 } from '@/types/finance';
 
-export default function FinancePage() {
+export default function VolunteerFinancePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -43,6 +46,9 @@ export default function FinancePage() {
   const [month, setMonth] = useState(
     parseInt(searchParams.get('month') || String(now.getMonth() + 1))
   );
+
+  // 권한 상태
+  const [authorized, setAuthorized] = useState<boolean | null>(null); // null=확인 중
 
   // 데이터 상태
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -73,6 +79,17 @@ export default function FinancePage() {
   // 이메일 발송 다이얼로그 상태
   const [emailDialogOpen, setEmailDialogOpen] = useState(false);
 
+  // 총무 권한 확인
+  useEffect(() => {
+    checkIsTreasurer().then((result) => {
+      setAuthorized(result);
+      if (!result) {
+        // 총무가 아니면 대시보드로 리다이렉트
+        router.replace('/volunteer/dashboard');
+      }
+    });
+  }, [router]);
+
   // 데이터 로드
   const loadData = async () => {
     setIsLoading(true);
@@ -81,7 +98,6 @@ export default function FinancePage() {
     try {
       // 보기 모드에 따라 다른 API 호출
       if (viewMode === 'monthly') {
-        // 월별 조회
         const transactionsResult = await getMonthlyTransactions(year, month);
         if (transactionsResult.success) {
           setTransactions(transactionsResult.data.transactions);
@@ -90,7 +106,6 @@ export default function FinancePage() {
           setError(transactionsResult.error);
         }
       } else if (viewMode === 'yearly') {
-        // 년간 조회
         const transactionsResult = await getYearlyTransactions(year);
         if (transactionsResult.success) {
           setTransactions(transactionsResult.data.transactions);
@@ -99,7 +114,6 @@ export default function FinancePage() {
           setError(transactionsResult.error);
         }
       } else if (viewMode === 'all') {
-        // 전체 조회
         const transactionsResult = await getAllTransactions();
         if (transactionsResult.success) {
           setTransactions(transactionsResult.data.transactions);
@@ -123,6 +137,8 @@ export default function FinancePage() {
 
   // 년월/보기모드 변경 시 데이터 재로드 및 URL 업데이트
   useEffect(() => {
+    if (authorized !== true) return; // 권한 확인 전에는 로드 안 함
+
     loadData();
 
     // URL 업데이트
@@ -135,10 +151,10 @@ export default function FinancePage() {
       params.set('month', String(month));
     }
 
-    router.push(`/admin/finance?${params.toString()}`, {
+    router.push(`/volunteer/finance?${params.toString()}`, {
       scroll: false,
     });
-  }, [year, month, viewMode]);
+  }, [year, month, viewMode, authorized]);
 
   // 보기 모드 변경 핸들러
   const handleViewModeChange = (mode: ViewMode) => {
@@ -153,7 +169,6 @@ export default function FinancePage() {
 
   // PDF 입출금내역 다운로드
   const handleDownloadPdf = async () => {
-    // 월별 보기 모드에서만 PDF 생성
     if (viewMode !== 'monthly') return;
 
     // 기록자 표시 여부 확인
@@ -172,27 +187,48 @@ export default function FinancePage() {
     }
   };
 
-  // PDF 버튼 비활성 조건: 월별 보기가 아니거나, 데이터가 전혀 없는 경우
+  // PDF 버튼 비활성 조건
   const isPdfDisabled = (() => {
     if (viewMode !== 'monthly') return true;
     if (isLoading) return true;
     if (generatingPdf) return true;
-    // 이월금이 있거나 거래 내역이 있으면 활성화
     const balanceForward = 'balanceForward' in summary ? summary.balanceForward : 0;
     return transactions.length === 0 && balanceForward === 0;
   })();
 
-  // 모달 성공 핸들러 (저장 후 리스트 새로고침)
+  // 모달 성공 핸들러
   const handleModalSuccess = () => {
     loadData();
   };
+
+  // 권한 확인 중
+  if (authorized === null) {
+    return (
+      <div className="flex justify-center items-center min-h-96">
+        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+      </div>
+    );
+  }
+
+  // 미인가 (리다이렉트 대기)
+  if (!authorized) {
+    return null;
+  }
 
   return (
     <div className="space-y-6">
       {/* 헤더 */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <h1 className="text-2xl font-bold text-gray-900">입출금 관리</h1>
-        <div className="flex items-center gap-4 flex-shrink-0 flex-wrap">
+        <div className="flex items-center gap-3">
+          {/* 뒤로가기 (대시보드) */}
+          <Button asChild variant="ghost" size="sm">
+            <Link href="/volunteer/dashboard">
+              <ArrowLeft className="h-4 w-4" />
+            </Link>
+          </Button>
+          <h1 className="text-2xl font-bold text-gray-900">입출금 관리</h1>
+        </div>
+        <div className="flex items-center gap-4 shrink-0 flex-wrap">
           {/* 보기 모드 선택 */}
           <ViewModeSelector
             viewMode={viewMode}
@@ -212,7 +248,7 @@ export default function FinancePage() {
             )}
             <span>{generatingPdf ? 'PDF 생성 중...' : '입출금내역 저장'}</span>
           </Button>
-          {/* 이메일 발송 버튼 (월별 보기에서만 활성) */}
+          {/* 이메일 발송 버튼 */}
           <Button
             variant="outline"
             disabled={isPdfDisabled}
@@ -321,7 +357,6 @@ export default function FinancePage() {
         generatePdfBlob={() => {
           // 기록자 표시 여부 확인
           const showRecorder = window.confirm('이메일 첨부 PDF에 기록자를 표시할까요?');
-          // 현재 월별 데이터로 PDF Blob 생성
           const monthlySummary = summary as MonthlyFinanceSummary;
           return generateFinancePdfBlob(transactions, monthlySummary, year, month, showRecorder);
         }}

@@ -254,6 +254,7 @@ export async function POST(request: NextRequest) {
           userId: a.userId,
           volunteerRoleId: a.volunteerRoleId,
           status: 'ASSIGNED',
+          assignmentMethod: 'AUTO', // 자동배정 표시
         })),
       });
     }

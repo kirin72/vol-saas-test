@@ -15,6 +15,7 @@ import {
   CalendarCheck,
   Bell,
   Wallet,
+  ClipboardList,
   HelpCircle,
   Menu,
   LogOut,
@@ -87,6 +88,11 @@ const menuItems: MenuItem[] = [
     href: '/admin/finance',
     label: '입출금 관리',
     icon: Wallet,
+  },
+  {
+    href: '/admin/my-assignments',
+    label: '나의 봉사 현황',
+    icon: ClipboardList,
   },
   {
     href: '/admin/setup-guide',

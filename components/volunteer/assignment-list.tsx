@@ -43,12 +43,14 @@ interface AssignmentListProps {
   assignments: Assignment[];
   viewMode: 'list' | 'calendar';
   onUpdate: () => void;
+  readOnly?: boolean; // 교체/삭제 요청 버튼 숨김 (관리자 본인 봉사 현황용)
 }
 
 export function AssignmentList({
   assignments,
   viewMode,
   onUpdate,
+  readOnly = false,
 }: AssignmentListProps) {
   const [requestDialogOpen, setRequestDialogOpen] = useState(false);
   const [selectedAssignment, setSelectedAssignment] = useState<Assignment | null>(null);
@@ -258,7 +260,7 @@ export function AssignmentList({
                 {assignment.volunteerRole.name}
               </Badge>
             </MobileCardRow>
-            {assignment.request?.status !== 'PENDING' && (
+            {!readOnly && assignment.request?.status !== 'PENDING' && (
               <MobileCardActions>
                 <Button
                   variant="outline"
@@ -292,7 +294,7 @@ export function AssignmentList({
               <TableHead>미사 종류</TableHead>
               <TableHead>역할</TableHead>
               <TableHead>상태</TableHead>
-              <TableHead className="text-right">관리</TableHead>
+              {!readOnly && <TableHead className="text-right">관리</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -319,26 +321,28 @@ export function AssignmentList({
                   </Badge>
                 </TableCell>
                 <TableCell>{renderStatusBadge(assignment)}</TableCell>
-                <TableCell className="text-right space-x-2">
-                  {assignment.request?.status !== 'PENDING' && (
-                    <>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleRequest(assignment, 'CHANGE')}
-                      >
-                        교체 요청
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => handleRequest(assignment, 'DELETE')}
-                      >
-                        삭제 요청
-                      </Button>
-                    </>
-                  )}
-                </TableCell>
+                {!readOnly && (
+                  <TableCell className="text-right space-x-2">
+                    {assignment.request?.status !== 'PENDING' && (
+                      <>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleRequest(assignment, 'CHANGE')}
+                        >
+                          교체 요청
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleRequest(assignment, 'DELETE')}
+                        >
+                          삭제 요청
+                        </Button>
+                      </>
+                    )}
+                  </TableCell>
+                )}
               </TableRow>
             ))}
           </TableBody>

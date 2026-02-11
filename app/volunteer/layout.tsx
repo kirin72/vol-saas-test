@@ -27,7 +27,7 @@ export default async function VolunteerLayout({
     redirect('/auth/login');
   }
 
-  // 봉사자 정보 가져오기
+  // 봉사자 정보 + 총무 여부 가져오기
   const volunteer = await prisma.user.findUnique({
     where: { id: session.user.id },
     select: {
@@ -36,6 +36,7 @@ export default async function VolunteerLayout({
       organization: {
         select: {
           name: true,
+          treasurerId: true, // 총무 ID 확인용
         },
       },
       userRoles: {
@@ -50,6 +51,9 @@ export default async function VolunteerLayout({
     redirect('/auth/login');
   }
 
+  // 현재 봉사자가 총무인지 확인
+  const isTreasurer = volunteer.organization?.treasurerId === session.user.id;
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* 상단 헤더 */}
@@ -58,6 +62,7 @@ export default async function VolunteerLayout({
         volunteerName={volunteer.name}
         baptismalName={volunteer.baptismalName}
         roles={volunteer.userRoles.map((ur) => ur.volunteerRole)}
+        isTreasurer={isTreasurer}
       />
 
       {/* 메인 컨텐츠 */}

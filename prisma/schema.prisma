@@ -22,12 +22,14 @@ model Organization {
   slug      String   @unique // URL 친화적 식별자
   phone     String?
   email     String?
-  address   String?
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  address      String?
+  treasurerId  String?  // 총무 봉사자 ID
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   // Relations
+  treasurer            User?    @relation("OrganizationTreasurer", fields: [treasurerId], references: [id], onDelete: SetNull)
   users                User[]
   volunteerRoles       VolunteerRole[]
   massTemplates        MassTemplate[]
@@ -175,8 +177,10 @@ model User {
   assignments         Assignment[]
   assignmentHistories AssignmentHistory[]
   assignmentRequests  AssignmentRequest[]
-  transactions        Transaction[]  // 입금 내역 (봉사자가 입금한 거래)
-  feedbacks           Feedback[]     // 피드백
+  transactions         Transaction[]  @relation("TransactionUser") // 입금 내역 (봉사자가 입금한 거래)
+  recordedTransactions Transaction[]  @relation("TransactionRecorder") // 기록한 거래 내역
+  treasurerOf          Organization[] @relation("OrganizationTreasurer") // 총무로 지정된 조직
+  feedbacks            Feedback[]     // 피드백
 
   @@index([organizationId])
   @@index([email])
@@ -317,6 +321,11 @@ model MassSchedule {
 // ============================================
 // 11. Assignment (배정)
 // ============================================
+enum AssignmentMethod {
+  MANUAL // 수동 배정
+  AUTO   // 자동 배정
+}
+
 enum AssignmentStatus {
   ASSIGNED  // 배정됨
   CONFIRMED // 확인됨
@@ -331,6 +340,7 @@ model Assignment {
   userId          String
   volunteerRoleId String
   status          AssignmentStatus @default(ASSIGNED)
+  assignmentMethod AssignmentMethod @default(MANUAL) // 배정 방법 (수동/자동)
   assignedAt      DateTime         @default(now())
   confirmedAt     DateTime?
   notes           String?
@@ -417,17 +427,20 @@ model Transaction {
   amount         Int      // 금액 (원 단위, 정수)
   description    String   // 적요
   userId         String?  // 봉사자 ID (수입 시, 선택적)
+  recordedById   String?  // 기록자 ID (관리자 또는 총무)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
   // Relations
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  user         User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  user         User?         @relation("TransactionUser", fields: [userId], references: [id], onDelete: SetNull)
+  recordedBy   User?         @relation("TransactionRecorder", fields: [recordedById], references: [id], onDelete: SetNull)
 
   // Indexes
   @@index([organizationId, date(sort: Desc)]) // 본당별 날짜 내림차순 조회
   @@index([organizationId, type])              // 본당별 유형별 조회
   @@index([userId])                            // 봉사자별 납부 이력 조회
+  @@index([recordedById])                      // 기록자별 조회
   @@map("transactions")
 }
 

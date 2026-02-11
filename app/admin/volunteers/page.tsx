@@ -10,8 +10,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { PlusCircle, Mail, Phone, Loader2, LayoutGrid, List as ListIcon } from 'lucide-react';
+import { PlusCircle, Mail, Phone, Loader2, LayoutGrid, List as ListIcon, UserCheck, Pencil } from 'lucide-react';
 import { DesktopTable, MobileCardList, MobileCard, MobileCardHeader, MobileCardRow, MobileCardActions } from '@/components/ui/responsive-table';
+import { getTreasurer, type TreasurerInfo } from '@/lib/actions/treasurer';
+import { TreasurerDialog } from './_components/TreasurerDialog';
 
 interface Volunteer {
   id: string;
@@ -36,6 +38,10 @@ export default function VolunteersPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  // 총무 관련 상태
+  const [treasurer, setTreasurer] = useState<TreasurerInfo | null>(null); // 현재 총무 정보
+  const [treasurerDialogOpen, setTreasurerDialogOpen] = useState(false); // 총무 선택 Dialog 열림
+
   // 뷰 모드 (card / list)
   const [viewMode, setViewMode] = useState<'card' | 'list'>('list');
 
@@ -57,14 +63,33 @@ export default function VolunteersPage() {
   const fetchVolunteers = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/admin/volunteers');
+
+      // 봉사자 목록 + 총무 정보 동시 조회
+      const [response, treasurerResult] = await Promise.all([
+        fetch('/api/admin/volunteers'),
+        getTreasurer(),
+      ]);
+
       if (!response.ok) throw new Error('봉사자 목록 조회 실패');
       const data = await response.json();
       setVolunteers(data);
+
+      // 총무 정보 설정
+      if (treasurerResult.success) {
+        setTreasurer(treasurerResult.data || null);
+      }
     } catch (err: any) {
       setError(err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // 총무 변경 후 데이터 갱신
+  const handleTreasurerChange = async () => {
+    const result = await getTreasurer();
+    if (result.success) {
+      setTreasurer(result.data || null);
     }
   };
 
@@ -151,6 +176,59 @@ export default function VolunteersPage() {
           </Button>
         </div>
       </div>
+
+      {/* 총무 지정 배너 */}
+      {treasurer ? (
+        // 총무가 지정된 경우: 초록 배경
+        <div className="bg-green-50 border border-green-200 rounded-md px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <UserCheck className="h-5 w-5 text-green-600" />
+            <span className="text-sm text-green-800">
+              <strong>총무:</strong> {treasurer.name}
+              {treasurer.baptismalName && (
+                <span className="text-green-700"> ({treasurer.baptismalName})</span>
+              )}
+            </span>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setTreasurerDialogOpen(true)}
+            className="text-green-700 border-green-300 hover:bg-green-100"
+          >
+            <Pencil className="h-3 w-3 mr-1" />
+            변경
+          </Button>
+        </div>
+      ) : (
+        // 총무가 미지정인 경우: 노란 배경
+        <div className="bg-yellow-50 border border-yellow-200 rounded-md px-4 py-3 flex items-center justify-between">
+          <span className="text-sm text-yellow-800">
+            총무가 지정되지 않았습니다. 총무를 지정하면 봉사자가 직접 입출금을 관리할 수 있습니다.
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setTreasurerDialogOpen(true)}
+            className="text-yellow-700 border-yellow-300 hover:bg-yellow-100 shrink-0"
+          >
+            총무 지정하기
+          </Button>
+        </div>
+      )}
+
+      {/* 총무 선택 Dialog */}
+      <TreasurerDialog
+        open={treasurerDialogOpen}
+        onOpenChange={setTreasurerDialogOpen}
+        volunteers={volunteers.map((v) => ({
+          id: v.id,
+          name: v.name,
+          baptismalName: v.baptismalName,
+        }))}
+        currentTreasurerId={treasurer?.id || null}
+        onSuccess={handleTreasurerChange}
+      />
 
       {/* 안내 배너 */}
       <div className="bg-blue-50 border border-blue-200 text-blue-700 text-sm px-4 py-3 rounded-md">
