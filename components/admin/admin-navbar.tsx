@@ -19,6 +19,7 @@ import {
   HelpCircle,
   Menu,
   LogOut,
+  Clock,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -55,7 +56,7 @@ const menuItems: MenuItem[] = [
   },
   {
     href: '/admin/roles',
-    label: '역할 관리',
+    label: '봉사 역할 관리',
     icon: Tags,
   },
   {
@@ -69,8 +70,13 @@ const menuItems: MenuItem[] = [
     icon: Copy,
   },
   {
+    href: '/admin/mass-times',
+    label: '미사 일정',
+    icon: Clock,
+  },
+  {
     href: '/admin/schedules',
-    label: '봉사 일정',
+    label: '미사일정 추가',
     icon: CalendarDays,
   },
   {
