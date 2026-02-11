@@ -1,92 +1,103 @@
 /**
  * 메인 랜딩 페이지
- * 봉사자 관리 시스템
+ * 봉사자 관리 시스템 - 모바일 최적화 버전
  */
 import Link from 'next/link';
-import { Button } from '@/components/ui/button';
+import Image from 'next/image';
+import { Sparkles, RefreshCcw, Bell, Wallet } from 'lucide-react';
 
 export default function Home() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 px-4 py-6 sm:py-12">
-      <main className="max-w-6xl mx-auto text-center space-y-4 sm:space-y-8">
-        {/* 헤더 */}
-        <div className="space-y-2 sm:space-y-4">
-          <h1 className="text-3xl sm:text-5xl font-bold text-gray-900 leading-tight">
-            봉사자 관리
-            <br />
-            <span className="text-blue-600">쉽고 스마트하게!</span>
-          </h1>
-          <p className="text-base sm:text-xl text-gray-600 max-w-2xl mx-auto">
-            손쉬운 자동화 플랫폼으로
-            <br />
-            봉사자 배정, 장부, 알림까지
-            <br />
-	    한 번에 관리하세요!
-          </p>
-        </div>
+    <div className="bg-slate-50 text-gray-800 min-h-screen pb-32">
+      {/* HERO */}
+      <section className="text-center px-5 pt-10 pb-6">
+        <h1 className="text-3xl font-bold leading-tight">
+          성당 봉사자 관리<br />
+          <span className="text-blue-600">간편하고 체계적으로</span>
+        </h1>
 
-        {/* 주요 기능 - 모바일에서 2개씩, 데스크톱에서 4개 */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 py-3 sm:py-8">
-          <div className="bg-white p-3 sm:p-6 rounded-lg shadow-md">
-            <div className="text-2xl sm:text-4xl mb-2 sm:mb-4">📅</div>
-            <h3 className="text-sm sm:text-lg font-semibold mb-1 sm:mb-2">봉사 일정 관리</h3>
-            <p className="text-gray-600 text-xs sm:text-sm">
-              독서단, 제대회 등
-              <br />
-	            자동화 관리
-            </p>
+        <p className="mt-4 text-gray-600 text-base leading-relaxed">
+          복잡한 봉사배정과 회계를<br />
+          한 번에 정리해 드립니다.
+        </p>
+      </section>
+
+      {/* FEATURES */}
+      <section className="px-4">
+        <div className="grid grid-cols-2 gap-4">
+          {/* 쉬운 봉사자 배정 */}
+          <div className="bg-white rounded-2xl shadow-md p-4 text-center">
+            <div className="w-12 h-12 mx-auto mb-3 flex items-center justify-center rounded-xl bg-purple-100 text-purple-600">
+              <Sparkles className="w-6 h-6" />
+            </div>
+            <h3 className="font-semibold">쉬운 봉사자 배정</h3>
+            <p className="text-sm text-gray-500 mt-1">몇 번의 클릭으로 자동 배정</p>
           </div>
 
-          <div className="bg-white p-3 sm:p-6 rounded-lg shadow-md">
-            <div className="text-2xl sm:text-4xl mb-2 sm:mb-4">👥</div>
-            <h3 className="text-sm sm:text-lg font-semibold mb-1 sm:mb-2">봉사자 배정</h3>
-            <p className="text-gray-600 text-xs sm:text-sm">
-              수동/자동 배정으로
-              <br />
-              <b>3초</b>만에 배정 완료!
-            </p>
+          {/* 일정 변경도 간편하게 */}
+          <div className="bg-white rounded-2xl shadow-md p-4 text-center">
+            <div className="w-12 h-12 mx-auto mb-3 flex items-center justify-center rounded-xl bg-green-100 text-green-600">
+              <RefreshCcw className="w-6 h-6" />
+            </div>
+            <h3 className="font-semibold">일정 변경도 간편하게</h3>
+            <p className="text-sm text-gray-500 mt-1">봉사자가 직접 요청 가능</p>
           </div>
 
-          <div className="bg-white p-3 sm:p-6 rounded-lg shadow-md">
-            <div className="text-2xl sm:text-4xl mb-2 sm:mb-4">🔔</div>
-            <h3 className="text-sm sm:text-lg font-semibold mb-1 sm:mb-2">알림 시스템</h3>
-            <p className="text-gray-600 text-xs sm:text-sm">
-              봉사자 페이지로
-              <br />
-              손쉬운 일정 변경
-            </p>
+          {/* 자동 알림 시스템 */}
+          <div className="bg-white rounded-2xl shadow-md p-4 text-center">
+            <div className="w-12 h-12 mx-auto mb-3 flex items-center justify-center rounded-xl bg-orange-100 text-orange-600">
+              <Bell className="w-6 h-6" />
+            </div>
+            <h3 className="font-semibold">자동 알림 시스템</h3>
+            <p className="text-sm text-gray-500 mt-1">배정 하루 전 카톡 안내</p>
           </div>
 
-          <div className="bg-white p-3 sm:p-6 rounded-lg shadow-md">
-            <div className="text-2xl sm:text-4xl mb-2 sm:mb-4">💰</div>
-            <h3 className="text-sm sm:text-lg font-semibold mb-1 sm:mb-2">회비 출납 장부</h3>
-            <p className="text-gray-600 text-xs sm:text-sm">
-              자동 정산 장부로
-	            <br />
-              회계기록 간편 관리
-            </p>
+          {/* 회계까지 한 번에 */}
+          <div className="bg-white rounded-2xl shadow-md p-4 text-center">
+            <div className="w-12 h-12 mx-auto mb-3 flex items-center justify-center rounded-xl bg-blue-100 text-blue-600">
+              <Wallet className="w-6 h-6" />
+            </div>
+            <h3 className="font-semibold">회계까지 한 번에</h3>
+            <p className="text-sm text-gray-500 mt-1">입출금 자동 정리</p>
           </div>
         </div>
+      </section>
 
-        {/* CTA 버튼 - 로그인 먼저, 무료 시작 아래 */}
-        <div className="flex flex-col gap-2 sm:gap-3 items-center pt-2 sm:pt-4">
-          <Link href="/auth/login" className="w-full max-w-xs">
-            <Button size="lg" variant="outline" className="w-full px-8">
+      {/* SCREENSHOT */}
+      <section className="px-5 mt-10 text-center">
+        <div className="mt-10 px-5">
+          <Image
+            src="/auto-assign.png"
+            alt="자동배정 화면"
+            width={800}
+            height={600}
+            className="rounded-2xl border border-gray-200 shadow-lg mx-auto"
+            priority
+          />
+        </div>
+        <p className="mt-4 text-gray-600 text-sm">
+          공정한 자동 배정으로 복잡한 봉사 배정 시간을 크게 줄일 수 있습니다.
+        </p>
+      </section>
+
+      {/* CTA - 하단 고정 */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-4 shadow-lg">
+        <p className="text-xs text-gray-500 text-center mb-2">
+          성당 관리자 · 단체장용 봉사 관리 서비스
+        </p>
+        <div className="flex gap-3">
+          <Link href="/auth/login" className="flex-1">
+            <button className="w-full border rounded-xl py-3 font-medium hover:bg-gray-50 transition-colors">
               로그인
-            </Button>
+            </button>
           </Link>
-          <Link href="/auth/register" className="w-full max-w-xs">
-            <Button size="lg" className="w-full px-8">
+          <Link href="/auth/register" className="flex-1">
+            <button className="w-full rounded-xl py-3 font-semibold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 transition-all">
               무료로 시작하기
-            </Button>
+            </button>
           </Link>
         </div>
-
-        {/* 푸터 */}
-        <footer className="pt-4 sm:pt-12 text-sm text-gray-500">
-          © 2026 MechInno, Inc. All rights reserved.
-        </footer>
-      </main>
+      </div>
     </div>
   );
 }
