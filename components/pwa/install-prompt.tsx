@@ -154,7 +154,7 @@ export function InstallBanner() {
 /**
  * 설치 버튼 (관리자 드로어에 사용)
  */
-export function InstallButton() {
+export function InstallButton({ compact = false }: { compact?: boolean }) {
   const [deferredPrompt, setDeferredPrompt] =
     useState<BeforeInstallPromptEvent | null>(null);
   const [showButton, setShowButton] = useState(false);
@@ -219,6 +219,22 @@ export function InstallButton() {
 
   if (!showButton) return null;
 
+  // Compact 모드 (헤더용)
+  if (compact) {
+    return (
+      <Button
+        onClick={handleInstall}
+        variant="outline"
+        size="sm"
+        className="gap-1"
+      >
+        <Download className="w-4 h-4" />
+        <span className="hidden sm:inline">앱 설치</span>
+      </Button>
+    );
+  }
+
+  // 기본 모드 (드로어용)
   return (
     <Button
       onClick={handleInstall}

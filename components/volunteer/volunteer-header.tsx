@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { signOut } from 'next-auth/react';
 import { User, Wallet } from 'lucide-react';
+import { InstallButton } from '@/components/pwa/install-prompt';
 
 interface VolunteerHeaderProps {
   organizationName: string;
@@ -78,6 +79,9 @@ export function VolunteerHeader({
                 </Link>
               </Button>
             )}
+
+            {/* 앱 설치 버튼 */}
+            <InstallButton compact />
 
             {/* 로그아웃 버튼 */}
             <Button
