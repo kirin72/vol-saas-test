@@ -6,9 +6,10 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, Save, Plus, Trash2, AlertCircle, CheckCircle2, CalendarDays } from 'lucide-react';
+import { Loader2, Save, Plus, Trash2, AlertCircle, CheckCircle2, CalendarDays, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 
 // 요일 목록 (일~토 순서)
@@ -57,6 +58,8 @@ interface VolunteerRole {
 type DaySelectedRoles = Record<string, string[]>;
 
 export default function MassTimesPage() {
+  const router = useRouter();
+
   // 요일별 미사시간 상태
   const [dayMassTimes, setDayMassTimes] = useState<DayMassTimes>({
     SUNDAY: [],
@@ -300,11 +303,11 @@ export default function MassTimesPage() {
         </div>
         {/* 버튼 그룹 */}
         <div className="flex gap-3 shrink-0">
-          {/* 개별미사추가 버튼 */}
+          {/* 미사추가 버튼 */}
           <Button asChild variant="outline" size="lg">
             <Link href="/admin/schedules">
               <CalendarDays className="h-4 w-4 mr-2" />
-              개별미사추가
+              미사추가
             </Link>
           </Button>
           {/* 저장 버튼 */}
@@ -319,6 +322,16 @@ export default function MassTimesPage() {
               <Save className="h-4 w-4 mr-2" />
             )}
             {saving ? '저장 중...' : '저장'}
+          </Button>
+          {/* 뒤로가기 버튼 */}
+          <Button
+            onClick={() => router.back()}
+            variant="outline"
+            size="lg"
+            className="gap-2"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            뒤로가기
           </Button>
         </div>
       </div>

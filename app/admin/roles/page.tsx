@@ -7,9 +7,10 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Settings, Loader2, Plus, Edit, Trash2, Check, X } from 'lucide-react';
+import { Settings, Loader2, Plus, Edit, Trash2, Check, X, ArrowLeft } from 'lucide-react';
 import RoleDialog from '@/components/roles/role-dialog';
 
 // 역할 타입
@@ -30,6 +31,7 @@ interface VolunteerRole {
 type PageMode = 'default' | 'edit' | 'delete';
 
 export default function RolesPage() {
+  const router = useRouter();
   const [roles, setRoles] = useState<VolunteerRole[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -434,6 +436,18 @@ export default function RolesPage() {
           </div>
         </div>
       )}
+
+      {/* 뒤로가기 버튼 */}
+      <div className="pt-6 flex justify-center">
+        <Button
+          onClick={() => router.back()}
+          variant="outline"
+          className="min-h-[44px] gap-2"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          뒤로가기
+        </Button>
+      </div>
 
       {/* 역할 추가/수정 다이얼로그 */}
       <RoleDialog

@@ -5,12 +5,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { PlusCircle, Mail, Phone, Loader2, LayoutGrid, List as ListIcon, UserCheck, Pencil } from 'lucide-react';
+import { PlusCircle, Mail, Phone, Loader2, LayoutGrid, List as ListIcon, UserCheck, Pencil, ArrowLeft } from 'lucide-react';
 import { DesktopTable, MobileCardList, MobileCard, MobileCardHeader, MobileCardRow, MobileCardActions } from '@/components/ui/responsive-table';
 import { getTreasurer, type TreasurerInfo } from '@/lib/actions/treasurer';
 import { TreasurerDialog } from './_components/TreasurerDialog';
@@ -35,6 +36,7 @@ interface Volunteer {
 }
 
 export default function VolunteersPage() {
+  const router = useRouter();
   const [volunteers, setVolunteers] = useState<Volunteer[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -168,13 +170,23 @@ export default function VolunteersPage() {
             </Button>
           </div>
 
-          {/* 등록 버튼 */}
-          <Button asChild>
-            <Link href="/admin/volunteers/new">
-              <PlusCircle className="mr-2 h-4 w-4" />
-              봉사자 등록
-            </Link>
-          </Button>
+          {/* 버튼 그룹 */}
+          <div className="flex gap-3">
+            <Button asChild>
+              <Link href="/admin/volunteers/new">
+                <PlusCircle className="mr-2 h-4 w-4" />
+                봉사자 등록
+              </Link>
+            </Button>
+            <Button
+              onClick={() => router.back()}
+              variant="outline"
+              className="gap-2"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              뒤로가기
+            </Button>
+          </div>
         </div>
       </div>
 
