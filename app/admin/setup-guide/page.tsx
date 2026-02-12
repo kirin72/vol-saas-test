@@ -126,6 +126,7 @@ export default function SetupGuidePage() {
                 </p>
                 <Link
                   href="/admin/mass-times"
+                  onClick={() => window.scrollTo(0, 0)}
                   className="inline-flex items-center gap-1 text-sm font-medium text-purple-600 hover:text-purple-800 transition-colors"
                 >
                   미사 일정 페이지로 이동

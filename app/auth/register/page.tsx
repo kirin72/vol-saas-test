@@ -12,6 +12,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 // 성당 디렉토리 검색 결과 타입
 interface ChurchDirectoryResult {
@@ -43,6 +52,7 @@ export default function RegisterPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
 
   // 조직 정보
   const [orgName, setOrgName] = useState(''); // 사용자가 입력하는 원본 값
@@ -201,27 +211,33 @@ export default function RegisterPage() {
         throw new Error(data.error || '회원가입에 실패했습니다.');
       }
 
-      // 회원가입 성공 → 확인 메시지 후 자동 로그인
-      alert('회원가입이 완료되었습니다!');
-
-      // 자동 로그인 시도
-      const loginResult = await signIn('credentials', {
-        email: adminEmail,
-        password: adminPassword,
-        redirect: false,
-      });
-
-      if (loginResult?.ok) {
-        // 로그인 성공 → 관리자 대시보드로 이동
-        window.location.href = '/admin/dashboard';
-      } else {
-        // 자동 로그인 실패 시 로그인 페이지로 이동
-        router.push('/auth/login');
-      }
+      // 회원가입 성공 → 확인 메시지 표시
+      setShowSuccessDialog(true);
     } catch (err: any) {
       setError(err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // 회원가입 성공 다이얼로그 확인 핸들러
+  const handleSuccessConfirm = async () => {
+    setShowSuccessDialog(false);
+    setLoading(true);
+
+    // 자동 로그인 시도
+    const loginResult = await signIn('credentials', {
+      email: adminEmail,
+      password: adminPassword,
+      redirect: false,
+    });
+
+    if (loginResult?.ok) {
+      // 로그인 성공 → 관리자 대시보드로 이동
+      window.location.href = '/admin/dashboard';
+    } else {
+      // 자동 로그인 실패 시 로그인 페이지로 이동
+      router.push('/auth/login');
     }
   };
 
@@ -461,6 +477,23 @@ export default function RegisterPage() {
           </form>
         </CardContent>
       </Card>
+
+      {/* 회원가입 완료 다이얼로그 */}
+      <AlertDialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>회원가입이 완료되었습니다!</AlertDialogTitle>
+            <AlertDialogDescription>
+              관리자 대시보드로 이동합니다.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={handleSuccessConfirm}>
+              확인
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

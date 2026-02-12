@@ -31,7 +31,7 @@ export default function Home() {
               <Sparkles className="w-6 h-6" />
             </div>
             <h3 className="font-semibold">쉬운 봉사자 배정</h3>
-            <p className="text-sm text-gray-500 mt-1">몇번 클릭으로 자동 배정</p>
+            <p className="text-sm text-gray-500 mt-1">몇번 클릭으로 자동배정</p>
           </div>
 
           {/* 일정 변경도 간편하게 */}

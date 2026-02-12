@@ -210,6 +210,11 @@ export default function SchedulesPage() {
 
       </div>
 
+      {/* 안내 문구 */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-700">
+        달력의 <strong>+</strong> 를 누르면 해당 날짜의 미사를 추가할 수 있습니다.
+      </div>
+
       {/* 캘린더 */}
       <ScheduleCalendar
         currentDate={currentDate}

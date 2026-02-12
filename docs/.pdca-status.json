@@ -1,6 +1,6 @@
 {
   "version": "2.0",
-  "lastUpdated": "2026-02-11T23:50:35.586Z",
+  "lastUpdated": "2026-02-12T00:08:35.582Z",
   "activeFeatures": [
     "dashboard",
     "mass-times",
@@ -10,7 +10,9 @@
     "vol-saas-test",
     "admin",
     "automation",
-    "reports"
+    "reports",
+    "setup-guide",
+    "register"
   ],
   "primaryFeature": "dashboard",
   "features": {
@@ -49,9 +51,9 @@
       "documents": {},
       "timestamps": {
         "started": "2026-02-11T12:50:43.994Z",
-        "lastUpdated": "2026-02-11T12:50:51.083Z"
+        "lastUpdated": "2026-02-12T00:07:49.782Z"
       },
-      "lastFile": "D:\\Study\\workspace\\vol-saas-test\\components\\schedules\\schedule-dialog.tsx"
+      "lastFile": "D:\\Study\\workspace\\vol-saas-test\\app\\admin\\schedules\\page.tsx"
     },
     "auto-assign": {
       "phase": "do",
@@ -130,6 +132,32 @@
         "lastUpdated": "2026-02-11T15:33:56.061Z"
       },
       "lastFile": "D:\\Study\\workspace\\vol-saas-test\\app\\admin\\reports\\page.tsx"
+    },
+    "setup-guide": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-02-12T00:07:40.816Z",
+        "lastUpdated": "2026-02-12T00:07:40.816Z"
+      },
+      "lastFile": "D:\\Study\\workspace\\vol-saas-test\\app\\admin\\setup-guide\\page.tsx"
+    },
+    "register": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-02-12T00:08:05.358Z",
+        "lastUpdated": "2026-02-12T00:08:35.582Z"
+      },
+      "lastFile": "D:\\Study\\workspace\\vol-saas-test\\app\\auth\\register\\page.tsx"
     }
   },
   "pipeline": {
@@ -140,7 +168,7 @@
   "session": {
     "startedAt": "2026-02-11T12:32:23.667Z",
     "onboardingCompleted": false,
-    "lastActivity": "2026-02-11T23:50:35.586Z"
+    "lastActivity": "2026-02-12T00:08:35.582Z"
   },
   "history": [
     {
@@ -392,6 +420,48 @@
     {
       "timestamp": "2026-02-11T23:50:35.586Z",
       "feature": "vol-saas-test",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T00:07:40.816Z",
+      "feature": "setup-guide",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T00:07:49.782Z",
+      "feature": "schedules",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T00:08:05.358Z",
+      "feature": "register",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T00:08:12.472Z",
+      "feature": "register",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T00:08:19.997Z",
+      "feature": "register",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T00:08:29.131Z",
+      "feature": "register",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-12T00:08:35.582Z",
+      "feature": "register",
       "phase": "do",
       "action": "updated"
     }
