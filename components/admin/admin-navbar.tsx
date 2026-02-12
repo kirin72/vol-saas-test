@@ -263,11 +263,13 @@ export function AdminNavbar({ organizationName, groupName, userName, baptismalNa
             })}
           </nav>
 
-          {/* 오른쪽: 사용자 정보 + 로그아웃 (데스크톱) */}
-          <div className="hidden lg:flex items-center gap-4">
+          {/* 오른쪽: 사용자 정보 + 앱 설치 + 로그아웃 (데스크톱) */}
+          <div className="hidden lg:flex items-center gap-3">
             <span className="text-sm text-gray-600">
               {userName}{baptismalName ? ` ${baptismalName}` : ''}
             </span>
+            {/* 앱 설치 버튼 */}
+            <InstallButton compact />
             <Button
               onClick={() => signOut({ callbackUrl: '/auth/login' })}
               variant="outline"
