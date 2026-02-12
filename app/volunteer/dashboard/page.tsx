@@ -13,9 +13,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AvailabilityForm } from '@/components/volunteer/availability-form';
 import { AssignmentList } from '@/components/volunteer/assignment-list';
 import { InstallBanner } from '@/components/pwa/install-prompt';
-import { Loader2, Calendar as CalendarIcon, List, Wallet } from 'lucide-react';
+import { Loader2, Calendar as CalendarIcon, List, Wallet, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { checkIsTreasurer } from '@/lib/actions/treasurer';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 
 interface VolunteerInfo {
   availableThisMonth: boolean | null;
@@ -50,9 +55,21 @@ export default function VolunteerDashboardPage() {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
   const [isTreasurer, setIsTreasurer] = useState(false); // 총무 여부
+  const [isAvailabilityOpen, setIsAvailabilityOpen] = useState(false); // 참여정보 펼침 상태
 
   // 현재 월
   const currentMonth = new Date().toISOString().slice(0, 7);
+
+  // 참여정보가 한번이라도 입력되었는지 체크
+  const hasAvailabilityData = (info: VolunteerInfo | null): boolean => {
+    if (!info) return false;
+    return (
+      info.availableThisMonth !== null ||
+      (info.preferredDays && info.preferredDays.length > 0) ||
+      (info.unavailableDays && info.unavailableDays.length > 0) ||
+      (info.unavailableDates && info.unavailableDates.length > 0)
+    );
+  };
 
   useEffect(() => {
     fetchData();
@@ -98,6 +115,9 @@ export default function VolunteerDashboardPage() {
     );
   }
 
+  // 참여정보가 한번이라도 입력되었는지
+  const hasData = hasAvailabilityData(volunteerInfo);
+
   return (
     <div className="space-y-6">
       {/* PWA 설치 배너 (모바일에서 미설치 시 표시) */}
@@ -131,11 +151,13 @@ export default function VolunteerDashboardPage() {
         </Card>
       )}
 
-      {/* 참여 가능 여부 및 선호 정보 */}
-      <AvailabilityForm
-        initialData={volunteerInfo}
-        onUpdate={fetchData}
-      />
+      {/* 참여 가능 여부 및 선호 정보 - 데이터가 없으면 위에 표시 */}
+      {!hasData && (
+        <AvailabilityForm
+          initialData={volunteerInfo}
+          onUpdate={fetchData}
+        />
+      )}
 
       {/* 배정된 일정 */}
       <Card>
@@ -191,6 +213,43 @@ export default function VolunteerDashboardPage() {
           />
         </CardContent>
       </Card>
+
+      {/* 참여 가능 여부 및 선호 정보 - 데이터가 있으면 아래에 접힌 상태로 표시 */}
+      {hasData && (
+        <Card>
+          <Collapsible
+            open={isAvailabilityOpen}
+            onOpenChange={setIsAvailabilityOpen}
+          >
+            <CollapsibleTrigger asChild>
+              <CardHeader className="cursor-pointer hover:bg-gray-50 transition-colors">
+                <div className="flex justify-between items-center">
+                  <CardTitle className="flex items-center gap-2">
+                    참여 정보
+                    <span className="text-sm text-gray-500 font-normal">
+                      (클릭하여 {isAvailabilityOpen ? '접기' : '펼치기'})
+                    </span>
+                  </CardTitle>
+                  {isAvailabilityOpen ? (
+                    <ChevronUp className="h-5 w-5 text-gray-500" />
+                  ) : (
+                    <ChevronDown className="h-5 w-5 text-gray-500" />
+                  )}
+                </div>
+              </CardHeader>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <div className="px-6 pb-6">
+                <AvailabilityForm
+                  initialData={volunteerInfo}
+                  onUpdate={fetchData}
+                  hideCard
+                />
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
+        </Card>
+      )}
     </div>
   );
 }

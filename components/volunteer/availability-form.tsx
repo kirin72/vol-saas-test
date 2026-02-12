@@ -22,11 +22,12 @@ interface AvailabilityFormProps {
     unavailableDates: string[] | null;
   } | null;
   onUpdate: () => void;
+  hideCard?: boolean; // Card 감싸기 여부
 }
 
 const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
 
-export function AvailabilityForm({ initialData, onUpdate }: AvailabilityFormProps) {
+export function AvailabilityForm({ initialData, onUpdate, hideCard = false }: AvailabilityFormProps) {
   const [saving, setSaving] = useState(false);
 
   // 폼 상태
@@ -102,6 +103,162 @@ export function AvailabilityForm({ initialData, onUpdate }: AvailabilityFormProp
     setUnavailableDates(unavailableDates.filter((d) => d !== date));
   };
 
+  // 폼 내용
+  const formContent = (
+    <div className="space-y-6">
+      {/* 이번 달 참여 가능 여부 */}
+      <div>
+        <Label className="text-base font-semibold mb-3 block">
+          이번 달 참여 가능 여부
+        </Label>
+        <RadioGroup
+          value={availableThisMonth === null ? 'null' : availableThisMonth.toString()}
+          onValueChange={(value) =>
+            setAvailableThisMonth(value === 'null' ? null : value === 'true')
+          }
+        >
+          <div className="flex items-center space-x-2">
+            <RadioGroupItem value="true" id="available-yes" />
+            <Label htmlFor="available-yes" className="font-normal cursor-pointer">
+              참여 가능
+            </Label>
+          </div>
+          <div className="flex items-center space-x-2">
+            <RadioGroupItem value="false" id="available-no" />
+            <Label htmlFor="available-no" className="font-normal cursor-pointer">
+              참여 불가
+            </Label>
+          </div>
+        </RadioGroup>
+      </div>
+
+      {/* 선호 요일 */}
+      <div>
+        <Label className="text-base font-semibold mb-3 block">
+          선호 요일
+          <span className="text-xs text-gray-500 font-normal ml-2">
+            (클릭하여 선택/해제)
+          </span>
+        </Label>
+        <div className="grid grid-cols-4 sm:flex sm:flex-wrap gap-2">
+          {dayNames.map((name, index) => {
+            const isSelected = preferredDays.includes(index);
+            return (
+              <button
+                key={index}
+                type="button"
+                onClick={() => toggleDay(index, 'preferred')}
+                className={`px-3 py-2.5 sm:px-4 sm:py-2 min-h-[44px] rounded-md text-sm font-medium transition-all cursor-pointer ${
+                  isSelected
+                    ? 'bg-blue-600 text-white shadow-md scale-105'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:scale-105'
+                }`}
+              >
+                {name}요일
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* 불가 요일 */}
+      <div>
+        <Label className="text-base font-semibold mb-3 block">
+          불가 요일
+          <span className="text-xs text-gray-500 font-normal ml-2">
+            (클릭하여 선택/해제)
+          </span>
+        </Label>
+        <div className="grid grid-cols-4 sm:flex sm:flex-wrap gap-2">
+          {dayNames.map((name, index) => {
+            const isSelected = unavailableDays.includes(index);
+            return (
+              <button
+                key={index}
+                type="button"
+                onClick={() => toggleDay(index, 'unavailable')}
+                className={`px-3 py-2.5 sm:px-4 sm:py-2 min-h-[44px] rounded-md text-sm font-medium transition-all cursor-pointer ${
+                  isSelected
+                    ? 'bg-red-600 text-white shadow-md scale-105'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:scale-105'
+                }`}
+              >
+                {name}요일
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* 이번 달 불가 날짜 */}
+      <div>
+        <Label className="text-base font-semibold mb-3 block">
+          이번 달 불가 날짜
+        </Label>
+
+        <div className="flex gap-2 mb-3">
+          <input
+            type="date"
+            value={newDate}
+            onChange={(e) => setNewDate(e.target.value)}
+            className="flex-1 px-3 py-2 border border-gray-300 rounded-md"
+          />
+          <Button
+            type="button"
+            onClick={addUnavailableDate}
+            disabled={!newDate}
+            size="sm"
+          >
+            <Plus className="h-4 w-4 mr-1" />
+            추가
+          </Button>
+        </div>
+
+        {unavailableDates.length === 0 ? (
+          <p className="text-sm text-gray-500">없음</p>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            {unavailableDates.map((date) => (
+              <Badge
+                key={date}
+                variant="secondary"
+                className="px-3 py-1.5"
+              >
+                <Calendar className="h-3 w-3 mr-1" />
+                {new Date(date).toLocaleDateString('ko-KR', {
+                  month: 'long',
+                  day: 'numeric',
+                })}
+                <button
+                  type="button"
+                  onClick={() => removeUnavailableDate(date)}
+                  className="ml-2 hover:text-red-600"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </Badge>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  // hideCard가 true면 내용만 반환
+  if (hideCard) {
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-end">
+          <Button size="sm" onClick={handleSave} disabled={saving}>
+            {saving ? '저장 중...' : '적용'}
+          </Button>
+        </div>
+        {formContent}
+      </div>
+    );
+  }
+
+  // hideCard가 false면 Card로 감싸서 반환
   return (
     <Card>
       <CardHeader>
@@ -113,141 +270,7 @@ export function AvailabilityForm({ initialData, onUpdate }: AvailabilityFormProp
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* 이번 달 참여 가능 여부 */}
-        <div>
-          <Label className="text-base font-semibold mb-3 block">
-            이번 달 참여 가능 여부
-          </Label>
-          <RadioGroup
-            value={availableThisMonth === null ? 'null' : availableThisMonth.toString()}
-            onValueChange={(value) =>
-              setAvailableThisMonth(value === 'null' ? null : value === 'true')
-            }
-          >
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="true" id="available-yes" />
-              <Label htmlFor="available-yes" className="font-normal cursor-pointer">
-                참여 가능
-              </Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="false" id="available-no" />
-              <Label htmlFor="available-no" className="font-normal cursor-pointer">
-                참여 불가
-              </Label>
-            </div>
-          </RadioGroup>
-        </div>
-
-        {/* 선호 요일 */}
-        <div>
-          <Label className="text-base font-semibold mb-3 block">
-            선호 요일
-            <span className="text-xs text-gray-500 font-normal ml-2">
-              (클릭하여 선택/해제)
-            </span>
-          </Label>
-          <div className="grid grid-cols-4 sm:flex sm:flex-wrap gap-2">
-            {dayNames.map((name, index) => {
-              const isSelected = preferredDays.includes(index);
-              return (
-                <button
-                  key={index}
-                  type="button"
-                  onClick={() => toggleDay(index, 'preferred')}
-                  className={`px-3 py-2.5 sm:px-4 sm:py-2 min-h-[44px] rounded-md text-sm font-medium transition-all cursor-pointer ${
-                    isSelected
-                      ? 'bg-blue-600 text-white shadow-md scale-105'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:scale-105'
-                  }`}
-                >
-                  {name}요일
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* 불가 요일 */}
-        <div>
-          <Label className="text-base font-semibold mb-3 block">
-            불가 요일
-            <span className="text-xs text-gray-500 font-normal ml-2">
-              (클릭하여 선택/해제)
-            </span>
-          </Label>
-          <div className="grid grid-cols-4 sm:flex sm:flex-wrap gap-2">
-            {dayNames.map((name, index) => {
-              const isSelected = unavailableDays.includes(index);
-              return (
-                <button
-                  key={index}
-                  type="button"
-                  onClick={() => toggleDay(index, 'unavailable')}
-                  className={`px-3 py-2.5 sm:px-4 sm:py-2 min-h-[44px] rounded-md text-sm font-medium transition-all cursor-pointer ${
-                    isSelected
-                      ? 'bg-red-600 text-white shadow-md scale-105'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:scale-105'
-                  }`}
-                >
-                  {name}요일
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* 이번 달 불가 날짜 */}
-        <div>
-          <Label className="text-base font-semibold mb-3 block">
-            이번 달 불가 날짜
-          </Label>
-
-          <div className="flex gap-2 mb-3">
-            <input
-              type="date"
-              value={newDate}
-              onChange={(e) => setNewDate(e.target.value)}
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-md"
-            />
-            <Button
-              type="button"
-              onClick={addUnavailableDate}
-              disabled={!newDate}
-              size="sm"
-            >
-              <Plus className="h-4 w-4 mr-1" />
-              추가
-            </Button>
-          </div>
-
-          {unavailableDates.length === 0 ? (
-            <p className="text-sm text-gray-500">없음</p>
-          ) : (
-            <div className="flex flex-wrap gap-2">
-              {unavailableDates.map((date) => (
-                <Badge
-                  key={date}
-                  variant="secondary"
-                  className="px-3 py-1.5"
-                >
-                  <Calendar className="h-3 w-3 mr-1" />
-                  {new Date(date).toLocaleDateString('ko-KR', {
-                    month: 'long',
-                    day: 'numeric',
-                  })}
-                  <button
-                    type="button"
-                    onClick={() => removeUnavailableDate(date)}
-                    className="ml-2 hover:text-red-600"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                </Badge>
-              ))}
-            </div>
-          )}
-        </div>
+        {formContent}
       </CardContent>
     </Card>
   );
