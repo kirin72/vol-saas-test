@@ -63,7 +63,7 @@ export default function VolunteerDashboardPage() {
   // 참여정보가 한번이라도 입력되었는지 체크
   const hasAvailabilityData = (info: VolunteerInfo | null): boolean => {
     if (!info) return false;
-    return (
+    return Boolean(
       info.availableThisMonth !== null ||
       (info.preferredDays && info.preferredDays.length > 0) ||
       (info.unavailableDays && info.unavailableDays.length > 0) ||
