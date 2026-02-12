@@ -71,8 +71,8 @@ export default function Home() {
             📱 실제 사용 화면예시
           </div>
 
-          {/* 스크린샷 - 90% 크기 */}
-          <div className="w-[90%] mx-auto">
+          {/* 스크린샷 - 모바일 90%, 데스크톱 최대 400px */}
+          <div className="w-[90%] max-w-[400px] mx-auto">
             <Image
               src="/auto-assign.png"
               alt="자동배정 화면"
