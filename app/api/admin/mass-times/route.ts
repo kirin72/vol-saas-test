@@ -345,7 +345,17 @@ export async function POST(request: NextRequest) {
 
     // 트랜잭션으로 기존 데이터 삭제 + 새 템플릿/일정 생성
     const result = await prisma.$transaction(async (tx) => {
-      // 1. 기존 템플릿 전체 삭제 (cascade: slots, schedules → assignments)
+      // 1. 기존 배정(Assignment) 삭제 (외래 키 제약 조건 순서)
+      await tx.assignment.deleteMany({
+        where: { organizationId },
+      });
+
+      // 2. 기존 미사 일정(MassSchedule) 삭제
+      await tx.massSchedule.deleteMany({
+        where: { organizationId },
+      });
+
+      // 3. 기존 템플릿(MassTemplate) 삭제 (TemplateSlot은 onDelete: Cascade로 자동 삭제)
       await tx.massTemplate.deleteMany({
         where: { organizationId },
       });
