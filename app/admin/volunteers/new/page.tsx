@@ -291,7 +291,7 @@ export default function NewVolunteerPage() {
 
             {/* 비밀번호 안내 (등록 시 자동 생성, 수정은 개별 페이지에서) */}
             <p className="text-xs text-gray-500">
-              비밀번호는 010을 제외한 휴대폰 번호 뒷 8자리로 자동 등록됩니다.
+              봉사자 개별 로그인 비밀번호는 휴대폰 번호 뒷 8자리 입니다.
             </p>
 
             {/* 봉사 역할 선택 */}

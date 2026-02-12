@@ -289,16 +289,13 @@ export default function RolesPage() {
 
         {/* 안내 문구 (제목 아래 별도 줄) */}
         <p className="text-gray-600">
-          역할을 클릭하여 활성/비활성을 전환하세요. 비활성화된 역할은 배정에서 제외됩니다.
+          역할을 클릭하여 활성/비활성을 전환하세요.
         </p>
         <p className="text-sm text-gray-500">
-          역할의 색상은 캘린더에 표시되는 색상입니다.
+          역할의 추가/수정은 &apos;역할 관리&apos; 버튼을 눌러주세요.
         </p>
         <p className="text-sm text-gray-500">
-          역할의 추가/수정/삭제는 &apos;역할 관리&apos; 버튼을 눌러주세요.
-        </p>
-        <p className="text-sm text-gray-500">
-          자동 배정을 위한 남녀 우선 설정은 &quot;역할 관리&quot;를 누르면 나오는 &quot;역할 수정&quot;에서 변경할 수 있습니다.
+        &quot;자동 배정&quot;용 성별 우선배정은 &quot;역할 수정&quot;에서 변경할 수 있습니다.
         </p>
       </div>
 

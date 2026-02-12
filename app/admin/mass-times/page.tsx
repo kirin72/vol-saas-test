@@ -340,11 +340,10 @@ export default function MassTimesPage() {
       {source === 'templates' && (
         <div className="bg-blue-50 border border-blue-200 rounded-md p-4 text-sm text-blue-700 flex items-start gap-2">
           <AlertCircle className="h-5 w-5 shrink-0 mt-0.5" />
-          <div>
-            <p>
-              기존에 저장된 미사 템플릿에서 시간을 불러왔습니다.
-              수정 후 저장하면 기존 템플릿과 일정이 모두 재생성됩니다.
-            </p>
+          <div className="space-y-1">
+            <p>DB에 저장된 미사 시간을 불러왔습니다.</p>
+            <p>실제와 다를 수 있으니 아래 시간표를 확인해 주세요.</p>
+            <p>각 미사별로 하단의 봉사 역할도 선택해 주세요.</p>
           </div>
         </div>
       )}

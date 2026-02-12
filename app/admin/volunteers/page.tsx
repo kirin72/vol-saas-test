@@ -205,8 +205,9 @@ export default function VolunteersPage() {
         // 총무가 미지정인 경우: 노란 배경
         <div className="bg-yellow-50 border border-yellow-200 rounded-md px-4 py-3 flex items-center justify-between">
           <span className="text-sm text-yellow-800">
-            총무가 지정되지 않았습니다. 총무를 지정하면 봉사자가 직접 입출금을 관리할 수 있습니다.
-            총무는 등록된 봉사자 중 한명을 선택할 수 있습니다.
+            총무가 지정되어 있지 않습니다.<br>
+            총무는 입출금을 관리할 수 있습니다.<br>
+            우측 버튼으로 총무를 지정해 주세요.
           </span>
           <Button
             variant="outline"
@@ -234,7 +235,7 @@ export default function VolunteersPage() {
 
       {/* 안내 배너 */}
       <div className="bg-blue-50 border border-blue-200 text-blue-700 text-sm px-4 py-3 rounded-md">
-        모든 봉사자는 본인의 이름과 휴대폰번호 뒷자리 8자리로 개별 로그인 할 수 있습니다.
+      ⭐모든 봉사자는 본인의 <strong>이름</strong>과 <strong>휴대폰번호</strong> 뒤 8자리로 개별 로그인 할 수 있습니다.
       </div>
 
       {/* 봉사자 목록 */}
