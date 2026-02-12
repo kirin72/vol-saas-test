@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const month = searchParams.get('month');
 
-    let whereClause: any = {
+    const whereClause: any = {
       userId: session.user.id,
       organizationId: session.user.organizationId,
     };

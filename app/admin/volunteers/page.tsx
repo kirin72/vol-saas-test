@@ -205,8 +205,8 @@ export default function VolunteersPage() {
         // 총무가 미지정인 경우: 노란 배경
         <div className="bg-yellow-50 border border-yellow-200 rounded-md px-4 py-3 flex items-center justify-between">
           <span className="text-sm text-yellow-800">
-            총무가 지정되어 있지 않습니다.<br>
-            총무는 입출금을 관리할 수 있습니다.<br>
+            총무가 지정되어 있지 않습니다.<br />
+            총무는 입출금을 관리할 수 있습니다.<br />
             우측 버튼으로 총무를 지정해 주세요.
           </span>
           <Button

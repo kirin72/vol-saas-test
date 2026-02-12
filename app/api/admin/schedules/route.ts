@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const month = searchParams.get('month');
 
-    let whereClause: any = { organizationId };
+    const whereClause: any = { organizationId };
 
     if (month) {
       // 월 시작/끝 날짜 계산

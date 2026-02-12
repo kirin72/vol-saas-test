@@ -164,7 +164,7 @@ function getDatesForDayOfWeek(year: number, month: number, dayOfWeek: number): D
   const lastDay = new Date(year, month, 0);
 
   // 첫 번째 해당 요일 찾기
-  let current = new Date(firstDay);
+  const current = new Date(firstDay);
   const diff = (dayOfWeek - current.getDay() + 7) % 7;
   current.setDate(current.getDate() + diff);
 

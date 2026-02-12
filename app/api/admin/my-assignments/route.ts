@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
     const month = searchParams.get('month');
 
     // 배정 조회 조건
-    let whereClause: any = {
+    const whereClause: any = {
       userId: session.user.id,
       organizationId: session.user.organizationId,
     };

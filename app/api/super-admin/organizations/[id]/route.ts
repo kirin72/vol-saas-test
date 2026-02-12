@@ -165,7 +165,7 @@ export async function PATCH(
       });
 
       // 비밀번호 해시 (변경 시에만)
-      let updateData: any = {
+      const updateData: any = {
         name: adminName,
         email: adminEmail,
         phone: adminPhone || null,

@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
     const month = searchParams.get('month');
 
     // 해당 월의 일정 조회 (배정 정보 포함)
-    let whereClause: any = { organizationId };
+    const whereClause: any = { organizationId };
 
     if (month) {
       const [year, monthNum] = month.split('-');
